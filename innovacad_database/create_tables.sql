@@ -1,0 +1,91 @@
+create table trainers
+(
+    trainer_id    varchar(36) default UUID() primary key,
+    user_id       varchar(36)        not null,
+    first_name    varchar(24)         not null,
+    last_name     varchar(24)         not null,
+    email         varchar(256) unique not null,
+    username      varchar(32) unique  not null,
+    birthday_date date,
+    FOREIGN KEY (trainer_id) REFERENCES user (id) ON DELETE CASCADE
+);
+
+create table trainees
+(
+    trainee_id    varchar(36) default UUID() primary key,
+    user_id       varchar(36)        not null,
+    first_name    varchar(24)         not null,
+    last_name     varchar(24)         not null,
+    email         varchar(256) unique not null,
+    username      varchar(32) unique  not null,
+    birthday_date date,
+    FOREIGN KEY (trainee_id) REFERENCES user (id) ON DELETE CASCADE
+);
+
+create table courses
+(
+    course_id  varchar(36)                              default UUID() primary key,
+    identifier varchar(8)  not null, -- TPSI, CISEG, GRSI...
+    name       varchar(64) not null,
+    status     ENUM ('ongoing', 'finished', 'starting') default 'starting'
+);
+
+create table classes
+(
+    class_id             varchar(36) default UUID() primary key,
+    course_id            varchar(36)   not null,
+    location             varchar(6)    not null, -- PAL, CAS...
+    identifier           int(4) unique not null, -- 0525
+    start_date_timestamp int(11)       not null,
+    end_date_timestamp   int(11)       not null,
+    FOREIGN KEY (course_id) REFERENCES courses (course_id)
+);
+
+create table modules
+(
+    module_id          varchar(36) default UUID() primary key,
+    name               varchar(64) unique not null,
+    duration           int(3)             not null,
+    sequence_module_id varchar(36),
+    FOREIGN KEY (sequence_module_id) REFERENCES modules (module_id)
+);
+
+create table rooms
+(
+    room_id  varchar(6) default '0.00-A' primary key,
+    capacity int not null
+);
+
+create table schedules
+(
+    schedule_id          varchar(36) default UUID() primary key,
+    course_id            varchar(36) not null,
+    module_id            varchar(36) not null,
+    trainer_id           varchar(36) not null,
+    room_id              varchar(6),
+    online               boolean     default false,
+    start_date_timestamp int(11)     not null,
+    end_date_timestamp   int(11)     not null,
+    FOREIGN KEY (course_id) REFERENCES courses (course_id),
+    FOREIGN KEY (module_id) REFERENCES modules (module_id),
+    FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id),
+    FOREIGN KEY (room_id) REFERENCES rooms (room_id)
+);
+
+create table availabilities
+(
+    availability_id      varchar(36) default UUID() primary key,
+    trainer_id           varchar(36) not null,
+    start_date_timestamp int(11)     not null,
+    end_date_timestamp   int(11)     not null
+);
+
+create table enrollments
+(
+    enrollment_id varchar(36)   default UUID() primary key,
+    class_id      varchar(36) not null,
+    trainee_id    varchar(36) not null,
+    final_grade   decimal(4, 2) default 00.00,
+    FOREIGN KEY (class_id) REFERENCES classes (class_id),
+    FOREIGN KEY (trainee_id) REFERENCES trainees (trainee_id)
+);
