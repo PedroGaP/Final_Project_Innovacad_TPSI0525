@@ -1,7 +1,11 @@
+DROP DATABASE innovacad_tpsi0525;
+CREATE DATABASE innovacad_tpsi0525;
+USE innovacad_tpsi0525;
+
 create table trainers
 (
     trainer_id    varchar(36) default UUID() primary key,
-    user_id       varchar(36)        not null,
+    user_id       varchar(36)         not null,
     first_name    varchar(24)         not null,
     last_name     varchar(24)         not null,
     email         varchar(256) unique not null,
@@ -13,7 +17,7 @@ create table trainers
 create table trainees
 (
     trainee_id    varchar(36) default UUID() primary key,
-    user_id       varchar(36)        not null,
+    user_id       varchar(36)         not null,
     first_name    varchar(24)         not null,
     last_name     varchar(24)         not null,
     email         varchar(256) unique not null,
@@ -89,3 +93,12 @@ create table enrollments
     FOREIGN KEY (class_id) REFERENCES classes (class_id),
     FOREIGN KEY (trainee_id) REFERENCES trainees (trainee_id)
 );
+
+create table classes_modules
+(
+    class_id         varchar(36) not null,
+    module_id        varchar(36) not null,
+    current_duration int(3) default 0,
+    FOREIGN KEY (class_id) REFERENCES classes (class_id),
+    FOREIGN KEY (module_id) REFERENCES modules (module_id)
+)
