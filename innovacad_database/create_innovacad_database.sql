@@ -27,20 +27,20 @@ create table IF NOT EXISTS trainees
 
 create table IF NOT EXISTS courses
 (
-    course_id  varchar(36)                              default UUID() primary key,
+    course_id  varchar(36) default UUID() primary key,
     identifier varchar(8)  not null, -- TPSI, CISEG, GRSI...
-    name       varchar(64) not null,
-    status     ENUM ('ongoing', 'finished', 'starting') default 'starting'
+    name       varchar(64) not null
 );
 
 create table IF NOT EXISTS classes
 (
-    class_id             varchar(36) default UUID() primary key,
-    course_id            varchar(36)   not null,
-    location             varchar(6)    not null, -- PAL, CAS...
+    class_id             varchar(36)                              default UUID() primary key,
+    course_id            varchar(36)       not null,
+    location             varchar(6)        not null, -- PAL, CAS...
     identifier           varchar(4) unique not null, -- 0525
-    start_date_timestamp int(11)       not null,
-    end_date_timestamp   int(11)       not null,
+    status               ENUM ('ongoing', 'finished', 'starting') default 'starting',
+    start_date_timestamp int(11)           not null,
+    end_date_timestamp   int(11)           not null,
     FOREIGN KEY (course_id) REFERENCES courses (course_id)
 );
 
@@ -62,14 +62,14 @@ create table IF NOT EXISTS rooms
 create table IF NOT EXISTS schedules
 (
     schedule_id          varchar(36) default UUID() primary key,
-    course_id            varchar(36) not null,
+    class_id             varchar(36) not null,
     module_id            varchar(36) not null,
     trainer_id           varchar(36) not null,
     room_id              varchar(6),
     online               boolean     default false,
     start_date_timestamp int(11)     not null,
     end_date_timestamp   int(11)     not null,
-    FOREIGN KEY (course_id) REFERENCES courses (course_id),
+    FOREIGN KEY (class_id) REFERENCES classes (class_id),
     FOREIGN KEY (module_id) REFERENCES modules (module_id),
     FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id),
     FOREIGN KEY (room_id) REFERENCES rooms (room_id)
