@@ -11,7 +11,7 @@ create table trainers
     email         varchar(256) unique not null,
     username      varchar(32) unique  not null,
     birthday_date date,
-    FOREIGN KEY (trainer_id) REFERENCES user (id) ON DELETE CASCADE
+    FOREIGN KEY (trainer_id) REFERENCES user(id) ON DELETE CASCADE
 );
 
 create table trainees
