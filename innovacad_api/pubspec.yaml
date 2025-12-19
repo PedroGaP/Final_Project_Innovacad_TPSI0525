@@ -14,8 +14,8 @@ dependencies:
   vaden_security: ^1.0.0
   vaden: ^1.0.2
   result_dart: ^2.1.1
-  stormberry: ^0.18.0
   uuid: ^4.5.2
+  mysql_utils: ^2.1.12
 
 dev_dependencies:
   build_runner: ^2.10.3

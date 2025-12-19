@@ -2,8 +2,9 @@ import 'package:innovacad_api/src/domain/dtos/trainer_create_dto.dart';
 import 'package:innovacad_api/src/domain/dtos/trainer_update_dto.dart';
 import 'package:innovacad_api/src/domain/entities/trainer.dart';
 import 'package:innovacad_api/src/domain/repositories/trainer_repository.dart';
-import 'package:uuid/uuid.dart';
+import 'package:vaden/vaden.dart';
 
+@Repository()
 class TrainerRepositoryImpl implements ITrainerRepository {
   /*
   TODO: Inject DB
@@ -20,7 +21,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
   }
 
   @override
-  Future<Trainer?> getById(Uuid id) {
+  Future<Trainer?> getById(String id) {
     // TODO: To Implement
     throw UnimplementedError();
   }
@@ -38,7 +39,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
   }
 
   @override
-  Future<Trainer?> delete(Uuid id) {
+  Future<Trainer?> delete(String id) {
     // TODO: To Implement
     throw UnimplementedError();
   }

@@ -1,4 +1,4 @@
-import 'package:api_projeto_final/vaden_application.dart';
+import 'package:innovacad_api/vaden_application.dart';
 
 Future<void> main(List<String> args) async {
   final vaden = VadenApp();
@@ -6,4 +6,3 @@ Future<void> main(List<String> args) async {
   final server = await vaden.run(args);
   print('Server listening on port ${server.port}');
 }
-

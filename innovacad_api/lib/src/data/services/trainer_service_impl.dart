@@ -3,8 +3,9 @@ import 'package:innovacad_api/src/domain/dtos/trainer_create_dto.dart';
 import 'package:innovacad_api/src/domain/dtos/trainer_update_dto.dart';
 import 'package:innovacad_api/src/domain/entities/trainer.dart';
 import 'package:innovacad_api/src/domain/services/trainer_service.dart';
-import 'package:uuid/uuid.dart';
+import 'package:vaden/vaden.dart';
 
+@Service()
 class TrainerServiceImpl implements ITrainerService {
   final TrainerRepositoryImpl _repository;
 
@@ -16,7 +17,7 @@ class TrainerServiceImpl implements ITrainerService {
   }
 
   @override
-  Future<Trainer?> getById(Uuid id) async {
+  Future<Trainer?> getById(String id) async {
     return await _repository.getById(id);
   }
 
@@ -31,7 +32,7 @@ class TrainerServiceImpl implements ITrainerService {
   }
 
   @override
-  Future<Trainer?> delete(Uuid id) async {
+  Future<Trainer?> delete(String id) async {
     return await _repository.delete(id);
   }
 }

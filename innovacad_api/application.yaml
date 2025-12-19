@@ -4,13 +4,19 @@ openapi:
   description: API gerada automaticamente pelo Vaden.
   enable: true
 
-#redis:
-#  port: 6379
-#  host: localhost
+redis:
+  port: 6379
+  host: localhost
 server:
   port: 8080
   host: localhost
-
+security:
+  secret: AisuSijfdiflkDkldkeokdokDKodk
+  tokenValidity: 3600
+  refreshTokenValidity: 604800
+  issuer: "vaden"
+  audiences:
+    - "vaden"
 env:
   base_url: http://localhost
   mode: debug

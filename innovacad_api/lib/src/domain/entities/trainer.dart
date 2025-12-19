@@ -1,11 +1,16 @@
-import 'package:stormberry/stormberry.dart';
-import 'package:uuid/uuid.dart';
+import 'package:vaden/vaden.dart';
 
-@Model()
-abstract class Trainer {
-  @PrimaryKey()
-  Uuid get id;
-  String get first_name;
-  String get last_name;
-  DateTime get birthday_date;
+@Component()
+class Trainer {
+  String id;
+  String first_name;
+  String last_name;
+  DateTime birthday_date;
+
+  Trainer({
+    required this.id,
+    required this.first_name,
+    required this.last_name,
+    required this.birthday_date,
+  });
 }
