@@ -1,8 +1,7 @@
-DROP DATABASE innovacad_tpsi0525;
-CREATE DATABASE innovacad_tpsi0525;
+CREATE DATABASE IF NOT EXISTS innovacad_tpsi0525;
 USE innovacad_tpsi0525;
 
-create table trainers
+create table IF NOT EXISTS trainers
 (
     trainer_id    varchar(36) default UUID() primary key,
     user_id       varchar(36)         not null,
@@ -11,10 +10,10 @@ create table trainers
     email         varchar(256) unique not null,
     username      varchar(32) unique  not null,
     birthday_date date,
-    FOREIGN KEY (trainer_id) REFERENCES user(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE
 );
 
-create table trainees
+create table IF NOT EXISTS trainees
 (
     trainee_id    varchar(36) default UUID() primary key,
     user_id       varchar(36)         not null,
@@ -23,10 +22,10 @@ create table trainees
     email         varchar(256) unique not null,
     username      varchar(32) unique  not null,
     birthday_date date,
-    FOREIGN KEY (trainee_id) REFERENCES user (id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE
 );
 
-create table courses
+create table IF NOT EXISTS courses
 (
     course_id  varchar(36)                              default UUID() primary key,
     identifier varchar(8)  not null, -- TPSI, CISEG, GRSI...
@@ -34,33 +33,33 @@ create table courses
     status     ENUM ('ongoing', 'finished', 'starting') default 'starting'
 );
 
-create table classes
+create table IF NOT EXISTS classes
 (
     class_id             varchar(36) default UUID() primary key,
     course_id            varchar(36)   not null,
     location             varchar(6)    not null, -- PAL, CAS...
-    identifier           int(4) unique not null, -- 0525
+    identifier           varchar(4) unique not null, -- 0525
     start_date_timestamp int(11)       not null,
     end_date_timestamp   int(11)       not null,
     FOREIGN KEY (course_id) REFERENCES courses (course_id)
 );
 
-create table modules
+create table IF NOT EXISTS modules
 (
     module_id          varchar(36) default UUID() primary key,
     name               varchar(64) unique not null,
     duration           int(3)             not null,
-    sequence_module_id varchar(36),
+    sequence_module_id varchar(36)        null,
     FOREIGN KEY (sequence_module_id) REFERENCES modules (module_id)
 );
 
-create table rooms
+create table IF NOT EXISTS rooms
 (
     room_id  varchar(6) default '0.00-A' primary key,
     capacity int not null
 );
 
-create table schedules
+create table IF NOT EXISTS schedules
 (
     schedule_id          varchar(36) default UUID() primary key,
     course_id            varchar(36) not null,
@@ -76,7 +75,7 @@ create table schedules
     FOREIGN KEY (room_id) REFERENCES rooms (room_id)
 );
 
-create table availabilities
+create table IF NOT EXISTS availabilities
 (
     availability_id      varchar(36) default UUID() primary key,
     trainer_id           varchar(36) not null,
@@ -84,7 +83,7 @@ create table availabilities
     end_date_timestamp   int(11)     not null
 );
 
-create table enrollments
+create table IF NOT EXISTS enrollments
 (
     enrollment_id varchar(36)   default UUID() primary key,
     class_id      varchar(36) not null,
@@ -94,7 +93,7 @@ create table enrollments
     FOREIGN KEY (trainee_id) REFERENCES trainees (trainee_id)
 );
 
-create table classes_modules
+create table IF NOT EXISTS classes_modules
 (
     class_id         varchar(36) not null,
     module_id        varchar(36) not null,
