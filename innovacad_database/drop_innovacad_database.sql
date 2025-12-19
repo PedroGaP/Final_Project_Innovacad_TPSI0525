@@ -1,7 +1,7 @@
 use innovacad_tpsi0525;
 
 -- Comment this to not delete Better Auth API Tables
-Delete from user where 1;
+-- Delete from user where 1;
 -- Delete from session where 1;
 -- Delete from account where 1;
 -- Delete from jwks where 1;
@@ -17,7 +17,7 @@ delete from courses where 1;
 
 -- Disable foreign key checks temporarily so we avoid the issue where it can't be removed because it references itself on `sequence_module_id` column
 SET FOREIGN_KEY_CHECKS = 0;
-DELETE FROM modules;
+DELETE FROM modules where 1;
 SET FOREIGN_KEY_CHECKS = 1;
 
 delete from trainers where 1;

@@ -8,6 +8,10 @@ Select UNIX_TIMESTAMP(DATE_ADD(NOW(), INTERVAL 1 YEAR));
 Select *
 from user;
 
+-- Get all from account
+Select *
+from account;
+
 -- Get all trainers
 Select *
 from trainers;
@@ -43,3 +47,6 @@ from schedules;
 -- Get all from availabilities
 Select *
 from availabilities;
+
+-- Get trainer schedules
+Select * from schedules where trainer_id = '60dcc0e4-7935-4472-8c9d-0f739b1ce68e';
