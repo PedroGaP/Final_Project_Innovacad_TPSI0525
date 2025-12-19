@@ -3,6 +3,9 @@
   <component name="DataSourcePerFileMappings">
     <file url="file://$PROJECT_DIR$/create_innovacad_database.sql" value="6ae30c96-f8ec-473a-91db-842286ce8af3" />
     <file url="file://$PROJECT_DIR$/default_data_insert.sql" value="6ae30c96-f8ec-473a-91db-842286ce8af3" />
+    <file url="file://$PROJECT_DIR$/drop_innovacad_database.sql" value="6ae30c96-f8ec-473a-91db-842286ce8af3" />
+    <file url="file://$PROJECT_DIR$/drop_stored_procedures_innovacad.sql" value="6ae30c96-f8ec-473a-91db-842286ce8af3" />
     <file url="file://$PROJECT_DIR$/filtering_queries.sql" value="6ae30c96-f8ec-473a-91db-842286ce8af3" />
+    <file url="file://$PROJECT_DIR$/stored_procedures_innovacad.sql" value="6ae30c96-f8ec-473a-91db-842286ce8af3" />
   </component>
 </project>

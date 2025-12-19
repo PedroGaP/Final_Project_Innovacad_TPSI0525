@@ -3,7 +3,10 @@
   <component name="SqlDialectMappings">
     <file url="file://$PROJECT_DIR$/create_innovacad_database.sql" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/default_data_insert.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/drop_innovacad_database.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/drop_stored_procedures_innovacad.sql" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/filtering_queries.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/stored_procedures_innovacad.sql" dialect="MySQL" />
     <file url="PROJECT" dialect="MySQL" />
   </component>
 </project>
