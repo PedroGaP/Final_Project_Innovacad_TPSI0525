@@ -1,19 +1,27 @@
 import { betterAuth } from "better-auth";
-import { jwt, openAPI } from "better-auth/plugins";
+import { bearer, jwt, openAPI } from "better-auth/plugins";
 import { API } from "@/src/utils/env";
 import { createPool } from "mysql2/promise";
 
 const auth = betterAuth({
-  plugins: [
-    openAPI(),
-    jwt({
-      jwks: {
-        keyPairConfig: {
-          alg: "EdDSA",
-        },
+  secret: API.JWT.SECRET,
+  session: {
+    cookieCache: {
+      enabled: true,
+      strategy: "jwt",
+    },
+    additionalFields: {
+      iss: {
+        type: "string",
+        defaultValue: API.JWT.ISSUER,
       },
-    }),
-  ],
+      aud: {
+        type: "string",
+        defaultValue: API.JWT.AUDIENCE,
+      },
+    },
+  },
+  plugins: [openAPI(), bearer()],
   emailAndPassword: {
     enabled: true,
   },

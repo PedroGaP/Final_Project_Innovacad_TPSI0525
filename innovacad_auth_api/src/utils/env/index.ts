@@ -12,4 +12,9 @@ export const API = {
     DATABASE: ENV.MYSQL_DATABASE ?? "your_database",
     PASSWORD: ENV.MYSQL_PASSWORD ?? "your_password",
   },
+  JWT: {
+    ISSUER: ENV.JWT_ISSUER ?? "your_jwt_issuer",
+    AUDIENCE: ENV.JWT_AUDIENCE ?? "your_jwt_audience",
+    SECRET: ENV.JWT_SECRET ?? "your_jwt_secret",
+  },
 };
