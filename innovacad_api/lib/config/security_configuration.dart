@@ -1,16 +1,12 @@
+import 'package:innovacad_api/src/data/services/auth_service.dart';
 import 'package:vaden/vaden.dart';
 import 'package:vaden_security/vaden_security.dart';
 
 @Configuration()
 class SecurityConfiguration {
   @Bean()
-  PasswordEncoder passwordEncoder() {
-    return BCryptPasswordEncoder(cost: 10);
-  }
-
-  @Bean()
   JwtService jwtService(ApplicationSettings settings) {
-    return JwtService.withSettings(settings);
+    return AuthService.withSettings(settings);
   }
 
   @Bean()

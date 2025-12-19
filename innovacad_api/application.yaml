@@ -4,19 +4,28 @@ openapi:
   description: API gerada automaticamente pelo Vaden.
   enable: true
 
+mysql:
+  hostname: mysql.grod.ovh
+  username: innovacad_tpsi0525
+  database: innovacad_tpsi0525
+  password: H>u:b]0M#-+7U,.%wd1knx1-e
+
 redis:
   port: 6379
   host: localhost
+
 server:
   port: 8080
   host: localhost
+
 security:
-  secret: AisuSijfdiflkDkldkeokdokDKodk
+  secret: aV9sb3ZlX2lubm92YWNhZF9vX3BlZHJvX25hb19lX3NhbnRvX2Vfb19maWxpcGVfZV9hbmFv
   tokenValidity: 3600
   refreshTokenValidity: 604800
-  issuer: "vaden"
+  issuer: "innovacad_tpsi0525"
   audiences:
-    - "vaden"
+    - "innovacad_tpsi0525"
+
 env:
   base_url: http://localhost
   mode: debug
