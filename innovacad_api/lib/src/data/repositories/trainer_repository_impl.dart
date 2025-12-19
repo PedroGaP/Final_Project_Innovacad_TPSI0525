@@ -1,38 +1,45 @@
+import 'package:innovacad_api/src/domain/dtos/trainer_create_dto.dart';
+import 'package:innovacad_api/src/domain/dtos/trainer_update_dto.dart';
 import 'package:innovacad_api/src/domain/entities/trainer.dart';
 import 'package:innovacad_api/src/domain/repositories/trainer_repository.dart';
+import 'package:uuid/uuid.dart';
 
 class TrainerRepositoryImpl implements ITrainerRepository {
-  final ITrainerRepository _trainerRepository;
+  /*
+  TODO: Inject DB
 
-  TrainerRepositoryImpl(this._trainerRepository);
+  final ITrainerRepository _database;
+
+  TrainerRepositoryImpl(this._database);
+  */
 
   @override
-  Future<Trainer> create(Trainer trainer) {
-    // TODO: implement createFormador
+  Future<List<Trainer>?> getAll() {
+    // TODO: To Implement
     throw UnimplementedError();
   }
 
   @override
-  Future<void> delete(int id) {
-    // TODO: implement deleteFormador
+  Future<Trainer?> getById(Uuid id) {
+    // TODO: To Implement
     throw UnimplementedError();
   }
 
   @override
-  Future<List<Trainer>> getAll() {
-    // TODO: implement getAllFormadores
+  Future<Trainer?> create(TrainerCreateDto dto) {
+    // TODO: To Implement
     throw UnimplementedError();
   }
 
   @override
-  Future<Trainer> getById(int id) {
-    // TODO: implement getFormadorById
+  Future<Trainer?> update(TrainerUpdateDto dto) {
+    // TODO: To Implement
     throw UnimplementedError();
   }
 
   @override
-  Future<Trainer> update(Trainer trainer) {
-    // TODO: implement updateFormador
+  Future<Trainer?> delete(Uuid id) {
+    // TODO: To Implement
     throw UnimplementedError();
   }
 }

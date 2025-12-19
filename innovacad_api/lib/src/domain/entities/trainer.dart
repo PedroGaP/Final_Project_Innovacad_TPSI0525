@@ -5,5 +5,7 @@ import 'package:uuid/uuid.dart';
 abstract class Trainer {
   @PrimaryKey()
   Uuid get id;
-  String get name;
+  String get first_name;
+  String get last_name;
+  DateTime get birthday_date;
 }

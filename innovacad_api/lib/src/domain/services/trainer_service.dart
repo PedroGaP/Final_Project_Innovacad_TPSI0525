@@ -4,8 +4,8 @@ import 'package:innovacad_api/src/domain/entities/trainer.dart';
 import 'package:uuid/uuid.dart';
 import 'package:vaden/vaden.dart';
 
-@Repository()
-abstract interface class ITrainerRepository {
+@Service()
+abstract interface class ITrainerService {
   Future<List<Trainer>?> getAll();
   Future<Trainer?> getById(Uuid id);
   Future<Trainer?> create(TrainerCreateDto dto);
