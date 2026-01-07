@@ -1,5 +1,11 @@
 drop procedure IsRoomAvailable;
 drop procedure IsTrainerAvailable;
+drop procedure IsClassAvailable;
 drop procedure HasClassFinished;
 drop procedure HasModuleFinished;
 drop procedure CanCreateSchedule;
+drop procedure EnrollTraineeInClass;
+drop procedure UpdateModuleProgress;
+drop procedure CanStartModule;
+drop procedure UpdateFinalGrade;
+drop procedure GetClassGradeReport;

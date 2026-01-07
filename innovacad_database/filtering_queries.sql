@@ -48,5 +48,9 @@ from schedules;
 Select *
 from availabilities;
 
+-- Get all from enrollments
+Select *
+from enrollments;
+
 -- Get trainer schedules
 Select * from schedules where trainer_id = '60dcc0e4-7935-4472-8c9d-0f739b1ce68e';
