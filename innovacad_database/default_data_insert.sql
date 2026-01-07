@@ -3,22 +3,22 @@ values ('77ab8510-dc5c-11f0-bdbd-98eecb87bc27', 'pedroga', 'pedroga@trainers.inn
        ('XZ72vjMHWyA4RJ6KwfjpObbnjVq1eygZ', 'filipej', 'filipej@trainers.innovacad.pt', true),
        ('68c8681a-ac3e-4e15-a590-0592cfc832b0', 'beatrizr', 'beatriz@trainees.innovacad.pt', false);
 
-insert into account(accountId, providerId, userId, password, createdAt, updatedAt)
-values ('XZ72vjMHWyA4RJ6KwfjpObbnjVq1eygZ', 'credential', 'XZ72vjMHWyA4RJ6KwfjpObbnjVq1eygZ',
-        '8433ec608f216d0495e8c6029d4b829e:56c3649de1995609f70593a46214d756409806fb4ff8967e72ceed1590950050f4e5a554669be65a56966644b3efa3c58ab6b4d3bc8af4bf61ffecb4586d3a9a',
-        NOW(), NOW()),
-       ('', 'credential', '', '', NOW(), NOW()),
-       ('', 'credential', '', '', NOW(), NOW());
+-- insert into account(accountId, providerId, userId, password, createdAt, updatedAt)
+-- values ('XZ72vjMHWyA4RJ6KwfjpObbnjVq1eygZ', 'credential', 'XZ72vjMHWyA4RJ6KwfjpObbnjVq1eygZ',
+--         '8433ec608f216d0495e8c6029d4b829e:56c3649de1995609f70593a46214d756409806fb4ff8967e72ceed1590950050f4e5a554669be65a56966644b3efa3c58ab6b4d3bc8af4bf61ffecb4586d3a9a',
+--        NOW(), NOW());
+       -- ('', 'credential', '', '', NOW(), NOW()),
+       -- ('', 'credential', '', '', NOW(), NOW());
 
 insert into trainers(trainer_id, user_id, first_name, last_name, email, username, birthday_date)
 values ('60dcc0e4-7935-4472-8c9d-0f739b1ce68e', '77ab8510-dc5c-11f0-bdbd-98eecb87bc27', 'Pedro', 'Guerra',
-        'pedroga@trainers.innovacad.pt', 'pedroga', NOW()),
-       ('28793aef-c6db-413d-9adc-3d1375897cfa', 'b7b1dc75-838d-476b-a4d0-28e5771f9f15', 'Filipe', 'Junqueiro',
-        'filipej@trainers.innovacad.pt', 'filipej', NOW());
+        'pedroga@trainers.innovacad.pt', 'pedroga', UNIX_TIMESTAMP(NOW())),
+       ('28793aef-c6db-413d-9adc-3d1375897cfa', 'XZ72vjMHWyA4RJ6KwfjpObbnjVq1eygZ', 'Filipe', 'Junqueiro',
+        'filipej@trainers.innovacad.pt', 'filipej', UNIX_TIMESTAMP(NOW()));
 
 insert into trainees(trainee_id, user_id, first_name, last_name, email, username, birthday_date)
 values ('b332fc2c-832a-4d33-8f2f-139d733be9f7', '68c8681a-ac3e-4e15-a590-0592cfc832b0', 'Beatriz', 'Rodrigues',
-        'beatrizr@trainees.innovacad.pt', 'beatrizr', NOW());
+        'beatrizr@trainees.innovacad.pt', 'beatrizr', UNIX_TIMESTAMP(NOW()));
 
 insert into courses(course_id, identifier, name)
 values ('f51d8cb3-a446-4b24-912e-504b9bcf0a61', 'TPSI', 'Técnico/a Programador de Sistemas Informáticos'),

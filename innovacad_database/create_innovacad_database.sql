@@ -9,7 +9,7 @@ create table IF NOT EXISTS trainers
     last_name     varchar(24)         not null,
     email         varchar(256) unique not null,
     username      varchar(32) unique  not null,
-    birthday_date date,
+    birthday_date int(11),
     FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE
 );
 
@@ -21,7 +21,7 @@ create table IF NOT EXISTS trainees
     last_name     varchar(24)         not null,
     email         varchar(256) unique not null,
     username      varchar(32) unique  not null,
-    birthday_date date,
+    birthday_date int(11),
     FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE
 );
 
@@ -100,4 +100,16 @@ create table IF NOT EXISTS classes_modules
     current_duration int(3) default 0,
     FOREIGN KEY (class_id) REFERENCES classes (class_id),
     FOREIGN KEY (module_id) REFERENCES modules (module_id)
-)
+);
+
+create table IF NOT EXISTS grades
+(
+    grade_id varchar(36) default UUID() primary key,
+    trainee_id varchar(36) not null,
+    class_id varchar(36) not null,
+    module_id varchar(36) not null,
+    final_grade decimal(4,2) default 00.00,
+    FOREIGN KEY (trainee_id) REFERENCES trainees(trainee_id),
+    FOREIGN KEY (class_id) REFERENCES classes(class_id),
+    FOREIGN KEY (module_id) REFERENCES modules(module_id)
+);
