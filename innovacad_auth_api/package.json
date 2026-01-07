@@ -1,20 +1,21 @@
 {
-  "name": "elysia_api_template",
-  "description": "A simple template using elysiajs + swagger.",
-  "version": "1.0.0",
-  "scripts": {
-    "dev": "bun run --watch ./src/index.ts",
-    "build": "bun build --compile --minify --bytecode ./src/index.ts --outfile ./build/api",
-    "migrate": "bunx @better-auth/cli migrate --config ./src/modules/auth/index.ts"
-  },
-  "dependencies": {
-    "@elysiajs/cors": "^1.4.0",
-    "better-auth": "^1.4.7",
-    "elysia": "latest",
-    "mysql2": "^3.16.0"
-  },
-  "devDependencies": {
-    "bun-types": "latest"
-  },
-  "module": "src/index.js"
+	"name": "elysia_api_template",
+	"description": "A simple template using elysiajs + swagger.",
+	"version": "1.0.0",
+	"scripts": {
+		"dev": "bun run --watch ./src/index.ts",
+		"build": "bun build --compile --minify --bytecode ./src/index.ts --outfile ./build/api",
+		"migrate": "bunx @better-auth/cli migrate --config ./src/modules/auth/index.ts"
+	},
+	"dependencies": {
+		"@elysiajs/cors": "^1.4.0",
+		"better-auth": "^1.4.7",
+		"elysia": "latest",
+		"mysql2": "^3.16.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.3.11",
+		"bun-types": "latest"
+	},
+	"module": "src/index.js"
 }
