@@ -1,6 +1,6 @@
-import 'package:innovacad_api/src/domain/dtos/trainer_create_dto.dart';
+import 'package:innovacad_api/src/domain/dtos/trainer/trainer_create_dto.dart';
 import 'package:innovacad_api/src/data/services/trainer_service_impl.dart';
-import 'package:innovacad_api/src/domain/dtos/trainer_update_dto.dart';
+import 'package:innovacad_api/src/domain/dtos/trainer/trainer_update_dto.dart';
 import 'package:vaden/vaden.dart';
 
 @Api(tag: "Trainers", description: "CRUD endpoint documentation for trainers")

@@ -1,5 +1,5 @@
 import { Elysia } from "elysia";
-import { auth, cors } from "@/modules/";
+import { auth, cors, seedAdmin } from "@/modules/";
 import { API } from "@/utils/env";
 
 new Elysia()
@@ -7,3 +7,5 @@ new Elysia()
 	.use(cors)
 	.mount(auth.handler)
 	.listen(API.PORT);
+
+await seedAdmin();

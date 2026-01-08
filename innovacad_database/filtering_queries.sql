@@ -1,52 +1,69 @@
--- Get current unix_timestamp
-Select UNIX_TIMESTAMP();
+-- ==========================================================
+-- TIME & DATE UTILS
+-- ==========================================================
+-- Get current Unix Timestamp
+SELECT UNIX_TIMESTAMP();
 
--- Get current unix_timestamp and add one year to it
-Select UNIX_TIMESTAMP(DATE_ADD(NOW(), INTERVAL 1 YEAR));
+-- Get Unix Timestamp for 1 year from now (useful for setting class end dates)
+SELECT UNIX_TIMESTAMP(DATE_ADD(NOW(), INTERVAL 1 YEAR));
 
--- Get all users
-Select *
-from user;
+-- ==========================================================
+-- CORE TABLE LISTING
+-- ==========================================================
+SELECT * FROM user;
+SELECT * FROM account;
+SELECT * FROM trainers;
+SELECT * FROM trainees;
+SELECT * FROM courses;
+SELECT * FROM modules;
+SELECT * FROM classes;
+SELECT * FROM rooms;
+SELECT * FROM courses_modules; -- Course curriculum/structure
+SELECT * FROM classes_modules; -- Active modules assigned to specific classes
+SELECT * FROM schedules;       -- Individual lesson calendar
+SELECT * FROM availabilities;  -- Trainer time slots
+SELECT * FROM enrollments;     -- Trainee-Class relationship
+SELECT * FROM grades;          -- Academic performance
 
--- Get all from account
-Select *
-from account;
+-- ==========================================================
+-- OPERATIONAL & LOGIC QUERIES
+-- ==========================================================
 
--- Get all trainers
-Select *
-from trainers;
+-- Get a course curriculum (List all modules belonging to a specific course identifier)
+SELECT c.identifier AS course, m.name AS module, m.duration
+FROM courses_modules cm
+JOIN courses c ON cm.course_id = c.course_id
+JOIN modules m ON cm.module_id = m.module_id
+WHERE c.identifier = 'TPSI';
 
--- Get all trainees
-Select *
-from trainees;
+-- Get a specific trainer's lesson schedule
+SELECT * FROM schedules
+WHERE trainer_id = '60dcc0e4-7935-4472-8c9d-0f739b1ce68e';
 
--- Get all from courses
-Select *
-from courses;
+-- Get a full class schedule (Lessons for all modules assigned to a specific class)
+SELECT s.* FROM schedules s
+JOIN classes_modules cm ON s.class_module_id = cm.classes_modules_id
+WHERE cm.class_id = '74a05d40-8e0d-4b52-9537-eb41dcb61100';
 
--- Get all from modules
-Select *
-from modules;
+-- Get academic report (Grades per trainee and module with student names)
+SELECT u.name AS trainee_name, g.grade, g.grade_type, m.name AS module_name
+FROM grades g
+JOIN trainees t ON g.trainee_id = t.trainee_id
+JOIN user u ON t.user_id = u.id
+JOIN classes_modules cm ON g.class_module_id = cm.classes_modules_id
+JOIN courses_modules com ON cm.courses_modules_id = com.courses_modules_id
+JOIN modules m ON com.module_id = m.module_id;
 
--- Get all from classes
-Select *
-from classes;
+-- List all "Free" time slots from trainers (Availability not yet fully booked)
+SELECT u.name AS trainer_name, a.start_date_timestamp, a.end_date_timestamp
+FROM availabilities a
+JOIN trainers t ON a.trainer_id = t.trainer_id
+JOIN user u ON t.user_id = u.id
+WHERE a.status = 'free';
 
--- Get all from rooms
-Select *
-from rooms;
-
--- Get all from classes_modules
-Select *
-from classes_modules;
-
--- Get all from schedules
-Select *
-from schedules;
-
--- Get all from availabilities
-Select *
-from availabilities;
-
--- Get trainer schedules
-Select * from schedules where trainer_id = '60dcc0e4-7935-4472-8c9d-0f739b1ce68e';
+-- Check room occupancy (Active or upcoming lessons for a specific room)
+SELECT s.*, r.room_name
+FROM schedules s
+JOIN rooms r ON s.room_id = r.room_id
+WHERE s.room_id = 1
+AND s.end_date_timestamp > NOW();
