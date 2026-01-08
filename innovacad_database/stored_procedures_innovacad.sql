@@ -64,6 +64,36 @@ CALL IsTrainerAvailable('28793aef-c6db-413d-9adc-3d1375897cfa', UNIX_TIMESTAMP(N
                         UNIX_TIMESTAMP(DATE_ADD(NOW(), INTERVAL 3 HOUR)), @available);
 SELECT @available AS available;
 
+-- Check if a class is available for a set start and end date
+-- Receives a p_class_id, p_start_timestamp and p_end_timestamp for querying
+DELIMITER //
+CREATE PROCEDURE IsClassAvailable(
+    IN p_class_id VARCHAR(36),
+    IN p_start_timestamp INT,
+    IN p_end_timestamp INT,
+    OUT p_available BOOLEAN
+)
+BEGIN
+    DECLARE v_conflict_count INT;
+
+    SELECT COUNT(*)
+    INTO v_conflict_count
+    FROM schedules
+    WHERE class_id = p_class_id
+      AND (p_start_timestamp < end_date_timestamp AND p_end_timestamp > start_date_timestamp);
+
+    IF v_conflict_count = 0 THEN
+        SET p_available = TRUE;
+    ELSE
+        SET p_available = FALSE;
+    END IF;
+END //
+DELIMITER ;
+
+CALL IsClassAvailable('74a05d40-8e0d-4b52-9537-eb41dcb61100', UNIX_TIMESTAMP(NOW()),
+                      UNIX_TIMESTAMP(DATE_ADD(NOW(), INTERVAL 3 HOUR)), @available);
+SELECT @available;
+
 -- Check if module has finished
 -- Receives a p_courses_modules_id, p_module_id, p_class_id, p_current_duration for querying
 
@@ -71,6 +101,7 @@ DELIMITER //
 CREATE PROCEDURE HasModuleFinished(IN p_courses_modules_id VARCHAR(36), IN p_class_id VARCHAR(36),
                                    OUT p_finished BOOLEAN)
 BEGIN
+    SET p_finished = FALSE;
 
     SELECT (cm.current_duration >= m.duration)
     INTO p_finished
@@ -81,6 +112,9 @@ BEGIN
 
     IF p_finished IS NULL THEN SET p_finished = FALSE; END IF;
 
+    IF p_finished IS NULL THEN
+        SET p_finished = FALSE;
+    END IF;
 END //
 DELIMITER ;
 
@@ -110,33 +144,111 @@ CALL HasClassFinished('74a05d40-8e0d-4b52-9537-eb41dcb61100', @finished);
 SELECT @finished AS finished;
 
 -- Check if a schedule can be created
--- Receives a p_room_id, p_class_id, p_trainer_id, p_module_id, p_room_id, p_start_timestamp, p_end_timestamp for querying
+-- Receives a p_room_id, p_class_id, p_trainer_id, p_module_id, p_start_timestamp, p_end_timestamp for querying
 DELIMITER //
-CREATE PROCEDURE CanCreateSchedule(IN p_room_id VARCHAR(6), IN p_trainer_id varchar(36), IN p_module_id varchar(36),
-                                   IN p_class_id varchar(36), IN p_start_timestamp int(11), IN p_end_timestamp int(11))
+CREATE PROCEDURE CanCreateSchedule(
+    IN p_room_id VARCHAR(6),
+    IN p_trainer_id VARCHAR(36),
+    IN p_module_id VARCHAR(36),
+    IN p_class_id VARCHAR(36),
+    IN p_start_timestamp INT(11),
+    IN p_end_timestamp INT(11),
+    OUT p_can_create BOOLEAN,
+    OUT p_reason VARCHAR(100)
+)
 BEGIN
+    DECLARE v_trainer_aval BOOLEAN DEFAULT FALSE;
+    DECLARE v_room_aval BOOLEAN DEFAULT FALSE;
+    DECLARE v_class_aval BOOLEAN DEFAULT FALSE;
+    DECLARE v_module_finished BOOLEAN DEFAULT TRUE;
+    DECLARE v_class_finished BOOLEAN DEFAULT TRUE;
+    DECLARE v_has_capacity BOOLEAN DEFAULT FALSE;
 
-    DECLARE trainer_aval BOOLEAN DEFAULT FALSE;
-    DECLARE room_aval BOOLEAN DEFAULT FALSE;
-    DECLARE class_finished BOOLEAN DEFAULT TRUE;
-    DECLARE module_finished BOOLEAN DEFAULT TRUE;
+    CALL IsTrainerAvailable(p_trainer_id, p_start_timestamp, p_end_timestamp, v_trainer_aval);
+    CALL IsRoomAvailable(p_room_id, p_start_timestamp, p_end_timestamp, v_room_aval);
+    CALL IsClassAvailable(p_class_id, p_start_timestamp, p_end_timestamp, v_class_aval);
 
-    SET @can_create = FALSE;
+    CALL HasModuleFinished(p_module_id, p_class_id, v_module_finished);
+    CALL HasClassFinished(p_class_id, v_class_finished);
+    CALL IsRoomAvailable(p_room_id, p_start_timestamp, p_end_timestamp, v_has_capacity);
 
-    CALL IsTrainerAvailable(p_trainer_id, p_start_timestamp, p_end_timestamp, trainer_aval);
-    CALL IsRoomAvailable(p_room_id, p_start_timestamp, p_end_timestamp, room_aval);
-    CALL HasModuleFinished(p_module_id, p_class_id, module_finished);
-    CALL HasClassFinished(p_class_id, class_finished);
-
-    IF (trainer_aval = TRUE) AND
-       (room_aval = TRUE) AND
-       (module_finished = FALSE) AND
-       (class_finished = FALSE)
-    THEN
-        SET @can_create = TRUE;
-
+    IF NOT v_trainer_aval THEN
+        SET p_reason = 'Formador indisponível ou fora do horário.';
+    ELSEIF NOT v_room_aval THEN
+        SET p_reason = 'Sala já ocupada neste horário.';
+    ELSEIF NOT v_class_aval THEN
+        SET p_reason = 'A Turma já tem outra aula neste horário.';
+    ELSEIF NOT v_has_capacity THEN
+        SET p_reason = 'Sala pequena demais para o número de alunos matriculados.';
+    ELSEIF v_module_finished THEN
+        SET p_reason = 'Este módulo já completou a carga horária total.';
+    ELSEIF v_class_finished THEN
+        SET p_reason = 'A turma já encerrou o curso.';
+    ELSE
+        SET p_can_create = TRUE;
+        SET p_reason = 'OK';
     END IF;
 
+    IF p_can_create IS NULL THEN SET p_can_create = FALSE; END IF;
+
+END //
+DELIMITER ;
+
+CALL CanCreateSchedule('0.22-A', '60dcc0e4-7935-4472-8c9d-0f739b1ce68e', 'aae85310-2af2-42b8-8dfb-17f3e0073f2b',
+                       '14100964-b06f-4423-b57f-0b545e3dc802', UNIX_TIMESTAMP(DATE_ADD(NOW(), INTERVAL 3 HOUR)),
+                       UNIX_TIMESTAMP(DATE_ADD(NOW(), INTERVAL 6 HOUR)), @can_create, @reason);
+SELECT @can_create, @reason;
+
+-- Enroll a Trainee to a class
+-- Receives a p_trainee_id and p_class_id for querying
+DELIMITER //
+CREATE PROCEDURE EnrollTraineeInClass(
+    IN p_trainee_id VARCHAR(36),
+    IN p_class_id VARCHAR(36),
+    OUT p_success BOOLEAN
+)
+BEGIN
+    INSERT INTO enrollments (class_id, trainee_id) VALUES (p_class_id, p_trainee_id);
+    SET p_success = TRUE;
+END //
+DELIMITER ;
+
+CALL EnrollTraineeInClass('b332fc2c-832a-4d33-8f2f-139d733be9f7', '74a05d40-8e0d-4b52-9537-eb41dcb61100', @success);
+SELECT @success;
+
+-- Updates a module current duration to a set number of hours, if module hasn't finished
+-- Receives a p_class_id, p_module_id and p_hours_to_add for querying
+DELIMITER //
+CREATE PROCEDURE UpdateModuleProgress(
+    IN p_class_id VARCHAR(36),
+    IN p_module_id VARCHAR(36),
+    IN p_hours_to_add INT,
+    OUT p_is_completed BOOLEAN,
+    OUT p_total_duration INT
+)
+BEGIN
+    DECLARE v_new_duration INT;
+    DECLARE v_total_duration INT;
+
+    UPDATE classes_modules
+    SET current_duration = current_duration + p_hours_to_add
+    WHERE class_id = p_class_id
+      AND module_id = p_module_id;
+
+    SELECT cm.current_duration, m.duration
+    INTO v_new_duration, v_total_duration
+    FROM classes_modules cm
+             JOIN modules m ON cm.module_id = m.module_id
+    WHERE cm.class_id = p_class_id
+      AND cm.module_id = p_module_id;
+
+    IF v_new_duration >= v_total_duration THEN
+        SET p_is_completed = TRUE;
+    ELSE
+        SET p_is_completed = FALSE;
+    END IF;
+
+    SET p_total_duration = v_total_duration;
 END //
 DELIMITER ;
 
