@@ -1,4 +1,4 @@
-import auth from "./auth";
+import { auth, seedAdmin } from "./auth";
 import cors from "./cors";
 
-export { cors, auth };
+export { cors, auth, seedAdmin };

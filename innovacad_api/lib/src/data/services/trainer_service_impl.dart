@@ -1,6 +1,6 @@
 import 'package:innovacad_api/src/data/repositories/trainer_repository_impl.dart';
-import 'package:innovacad_api/src/domain/dtos/trainer_create_dto.dart';
-import 'package:innovacad_api/src/domain/dtos/trainer_update_dto.dart';
+import 'package:innovacad_api/src/domain/dtos/trainer/trainer_create_dto.dart';
+import 'package:innovacad_api/src/domain/dtos/trainer/trainer_update_dto.dart';
 import 'package:innovacad_api/src/domain/entities/trainer.dart';
 import 'package:innovacad_api/src/domain/services/trainer_service.dart';
 import 'package:vaden/vaden.dart';

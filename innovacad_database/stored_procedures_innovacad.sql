@@ -2,7 +2,7 @@
 -- Receives a room_id, start_timestamp and end_timestamp for querying
 
 DELIMITER //
-CREATE PROCEDURE IsRoomAvailable(IN p_room_id VARCHAR(36), IN p_start_timestamp INT(11), IN p_end_timestamp INT(11),
+CREATE PROCEDURE IsRoomAvailable(IN p_room_id VARCHAR(36), IN p_start_timestamp TIMESTAMP, IN p_end_timestamp TIMESTAMP,
                                  OUT p_available BOOLEAN)
 BEGIN
 
@@ -31,8 +31,8 @@ SELECT @available AS available;
 -- Receives a trainer_id, start_timestamp and end_timestamp for querying
 
 DELIMITER //
-CREATE PROCEDURE IsTrainerAvailable(IN p_trainer_id VARCHAR(36), IN p_start_timestamp INT(11),
-                                    IN p_end_timestamp INT(11), OUT p_available BOOLEAN)
+CREATE PROCEDURE IsTrainerAvailable(IN p_trainer_id VARCHAR(36), IN p_start_timestamp TIMESTAMP,
+                                    IN p_end_timestamp TIMESTAMP, OUT p_available BOOLEAN)
 BEGIN
     DECLARE v_has_availability INT DEFAULT 0;
     DECLARE v_has_conflict INT DEFAULT 0;
@@ -95,19 +95,22 @@ CALL IsClassAvailable('74a05d40-8e0d-4b52-9537-eb41dcb61100', UNIX_TIMESTAMP(NOW
 SELECT @available;
 
 -- Check if module has finished
--- Receives a p_module_id, p_class_id, p_current_duration for querying
+-- Receives a p_courses_modules_id, p_module_id, p_class_id, p_current_duration for querying
 
 DELIMITER //
-CREATE PROCEDURE HasModuleFinished(IN p_module_id VARCHAR(36), IN p_class_id VARCHAR(36),
+CREATE PROCEDURE HasModuleFinished(IN p_courses_modules_id VARCHAR(36), IN p_class_id VARCHAR(36),
                                    OUT p_finished BOOLEAN)
 BEGIN
     SET p_finished = FALSE;
 
-    SELECT (cm.current_duration >= m.duration) INTO p_finished
-    FROM classes_modules as cm
-    JOIN modules m ON m.module_id = cm.module_id
+    SELECT (cm.current_duration >= m.duration)
+    INTO p_finished
+    FROM classes_modules cm
+             JOIN modules m ON m.module_id = cm.courses_modules_id
     WHERE cm.class_id = p_class_id
-      AND cm.module_id = p_module_id;
+      AND cm.courses_modules_id = p_courses_modules_id;
+
+    IF p_finished IS NULL THEN SET p_finished = FALSE; END IF;
 
     IF p_finished IS NULL THEN
         SET p_finished = FALSE;
@@ -249,84 +252,74 @@ BEGIN
 END //
 DELIMITER ;
 
-CALL UpdateModuleProgress('14100964-b06f-4423-b57f-0b545e3dc802', 'aae85310-2af2-42b8-8dfb-17f3e0073f2b', 3,
-                          @completed, @total_hours);
-SELECT @completed, @total_hours;
+CALL CanCreateSchedule('0.22-A', '60dcc0e4-7935-4472-8c9d-0f739b1ce68e', 'aae85310-2af2-42b8-8dfb-17f3e0073f2b',
+                       '14100964-b06f-4423-b57f-0b545e3dc802', UNIX_TIMESTAMP(DATE_ADD(NOW(), INTERVAL 3 HOUR)),
+                       UNIX_TIMESTAMP(DATE_ADD(NOW(), INTERVAL 6 HOUR)));
+SELECT @can_create;
 
--- Check if a class can start a module
--- Receives a p_class_id and p_module_id for querying
+-- Schedules a lesson
+-- Receives a p_class_module_id, p_trainer_id, p_room_id, p_availability_id, p_start_timestamp, p_end_timestamp, p_online
 DELIMITER //
-CREATE PROCEDURE CanStartModule(
-    IN p_class_id VARCHAR(36),
-    IN p_module_id VARCHAR(36),
-    OUT p_can_start BOOLEAN
+
+CREATE PROCEDURE ScheduleLesson(
+    IN p_class_module_id VARCHAR(36),
+    IN p_trainer_id VARCHAR(36),
+    IN p_room_id INT,
+    IN p_availability_id VARCHAR(36),
+    IN p_start_timestamp TIMESTAMP,
+    IN p_end_timestamp TIMESTAMP,
+    IN p_online BOOLEAN
 )
 BEGIN
-    DECLARE v_predecessor_id VARCHAR(36);
-    DECLARE v_predecessor_finished BOOLEAN DEFAULT FALSE;
+    DECLARE v_horas_aula INT;
+    DECLARE v_horas_disponiveis INT;
+    DECLARE v_room_ok BOOLEAN;
+    DECLARE v_trainer_ok BOOLEAN;
+    DECLARE v_class_id VARCHAR(36);
+    DECLARE v_courses_modules_id VARCHAR(36);
+    DECLARE v_mod_finished BOOLEAN;
 
-    SELECT sequence_module_id
-    INTO v_predecessor_id
-    FROM modules
-    WHERE module_id = p_module_id;
+    -- Obter IDs de contexto
+    SELECT class_id, courses_modules_id
+    INTO v_class_id, v_courses_modules_id
+    FROM classes_modules
+    WHERE classes_modules_id = p_class_module_id;
 
-    IF v_predecessor_id IS NULL THEN
-        SET p_can_start = TRUE;
+    CALL IsRoomAvailable(p_room_id, p_start_timestamp, p_end_timestamp, v_room_ok);
+    CALL IsTrainerAvailable(p_trainer_id, p_start_timestamp, p_end_timestamp, v_trainer_ok);
+    CALL HasModuleFinished(v_courses_modules_id, v_class_id, v_mod_finished);
+
+    -- Cálculo de horas da disponibilidade
+    SELECT (TIMESTAMPDIFF(HOUR, start_date_timestamp, end_date_timestamp) -
+            (SELECT COALESCE(SUM(TIMESTAMPDIFF(HOUR, start_date_timestamp, end_date_timestamp)), 0)
+             FROM schedules
+             WHERE availability_id = p_availability_id))
+    INTO v_horas_disponiveis
+    FROM availabilities
+    WHERE availability_id = p_availability_id;
+
+    SET v_horas_aula = TIMESTAMPDIFF(HOUR, p_start_timestamp, p_end_timestamp);
+
+    -- Lógica de Decisão
+    IF v_mod_finished THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Erro: Módulo já concluído para esta turma.';
+    ELSEIF NOT v_trainer_ok THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Erro: Formador indisponível ou com conflito.';
+    ELSEIF NOT v_room_ok AND NOT p_online THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Erro: Sala ocupada.';
+    ELSEIF v_horas_aula > v_horas_disponiveis THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Erro: Horas insuficientes no bloco de disponibilidade.';
     ELSE
-        CALL HasModuleFinished(v_predecessor_id, p_class_id, v_predecessor_finished);
-        SET p_can_start = v_predecessor_finished;
+        INSERT INTO schedules (class_module_id, trainer_id, room_id, availability_id, online, start_date_timestamp,
+                               end_date_timestamp)
+        VALUES (p_class_module_id, p_trainer_id, p_room_id, p_availability_id, p_online, p_start_timestamp,
+                p_end_timestamp);
+
+        -- Atualizar status da disponibilidade
+        UPDATE availabilities
+        SET status = IF(v_horas_disponiveis <= v_horas_aula, 'full', 'partial')
+        WHERE availability_id = p_availability_id;
     END IF;
 END //
+
 DELIMITER ;
-
-CALL CanStartModule('74a05d40-8e0d-4b52-9537-eb41dcb61100', 'aae85310-2af2-42b8-8dfb-17f3e0073f2b', @can_start);
-SELECT @can_start;
-
--- Update a trainee final grade
--- Receives a p_trainee_id and p_class_id
-DELIMITER //
-CREATE PROCEDURE UpdateFinalGrade(
-    IN p_trainee_id VARCHAR(36),
-    IN p_class_id VARCHAR(36),
-    OUT p_final_grade DECIMAL(4,2)
-)
-BEGIN
-    DECLARE v_average DECIMAL(4,2) DEFAULT 0.00;
-
-    SELECT COALESCE(AVG(final_grade), 0.00) INTO v_average
-    FROM grades
-    WHERE trainee_id = p_trainee_id AND class_id = p_class_id;
-
-    UPDATE enrollments
-    SET final_grade = v_average
-    WHERE trainee_id = p_trainee_id AND class_id = p_class_id;
-
-    SET p_final_grade = v_average;
-END //
-DELIMITER ;
-
-CALL UpdateFinalGrade('b332fc2c-832a-4d33-8f2f-139d733be9f7', '74a05d40-8e0d-4b52-9537-eb41dcb61100', @final_grade);
-SELECT @final_grade;
-
--- Generate a report wether the trainees were approved or not in a class
--- Receives a p_class_id for querying
-DELIMITER //
-CREATE PROCEDURE GetClassGradeReport(IN p_class_id VARCHAR(36))
-BEGIN
-    SELECT
-        CONCAT(t.first_name, ' ', t.last_name) AS trainee_name,
-        m.name AS module_name,
-        g.final_grade AS grade,
-        CASE
-            WHEN g.final_grade >= 9.5 THEN 'Aprovado'
-            ELSE 'Reprovado'
-        END AS status
-    FROM grades g
-    JOIN trainees t ON g.trainee_id = t.trainee_id
-    JOIN modules m ON g.module_id = m.module_id
-    WHERE g.class_id = p_class_id
-    ORDER BY t.last_name, m.name;
-END //
-DELIMITER ;
-
-CALL GetClassGradeReport('74a05d40-8e0d-4b52-9537-eb41dcb61100');
