@@ -17,6 +17,9 @@ redis:
 server:
   port: 8080
   host: localhost
+  cors:
+    enabled: true
+    allowed-origins: "*"
 
 security:
   secret: aV9sb3ZlX2lubm92YWNhZF9vX3BlZHJvX25hb19lX3NhbnRvX2Vfb19maWxpcGVfZV9hbmFv

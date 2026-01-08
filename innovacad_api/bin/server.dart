@@ -1,8 +1,25 @@
+import 'dart:io';
 import 'package:innovacad_api/vaden_application.dart';
 
 Future<void> main(List<String> args) async {
   final vaden = VadenApp();
   await vaden.setup();
   final server = await vaden.run(args);
-  print('Server listening on port ${server.port}');
+
+  print('--- InnovAcad API Server ---');
+  print('Server is running on:');
+
+  // Obtém todas as interfaces de rede (IPv4)
+  final interfaces = await NetworkInterface.list(
+    includeLoopback: true,
+    type: InternetAddressType.IPv4,
+  );
+
+  for (var interface in interfaces) {
+    for (var addr in interface.addresses) {
+      print('  > https://${addr.address}:${server.port}');
+    }
+  }
+
+  print('----------------------------');
 }
