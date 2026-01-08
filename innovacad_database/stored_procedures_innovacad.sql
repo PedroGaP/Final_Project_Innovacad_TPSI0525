@@ -79,8 +79,8 @@ BEGIN
     SELECT COUNT(*)
     INTO v_conflict_count
     FROM schedules
-    WHERE class_id = p_class_id
-      AND (p_start_timestamp < end_date_timestamp AND p_end_timestamp > start_date_timestamp);
+             JOIN classes_modules cm ON cm.class_id = p_class_id
+    WHERE (p_start_timestamp < end_date_timestamp AND p_end_timestamp > start_date_timestamp);
 
     IF v_conflict_count = 0 THEN
         SET p_available = TRUE;
@@ -233,14 +233,14 @@ BEGIN
     UPDATE classes_modules
     SET current_duration = current_duration + p_hours_to_add
     WHERE class_id = p_class_id
-      AND module_id = p_module_id;
+      AND classes_modules_id = p_module_id;
 
     SELECT cm.current_duration, m.duration
     INTO v_new_duration, v_total_duration
     FROM classes_modules cm
-             JOIN modules m ON cm.module_id = m.module_id
+             JOIN modules m ON cm.classes_modules_id = m.module_id
     WHERE cm.class_id = p_class_id
-      AND cm.module_id = p_module_id;
+      AND cm.classes_modules_id = p_module_id;
 
     IF v_new_duration >= v_total_duration THEN
         SET p_is_completed = TRUE;
