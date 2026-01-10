@@ -1,13 +1,13 @@
-import 'package:innovacad_api/src/data/repositories/class_repository_impl.dart';
 import 'package:innovacad_api/src/domain/dtos/class_model/class_model_create_dto.dart';
 import 'package:innovacad_api/src/domain/dtos/class_model/class_model_update_dto.dart';
 import 'package:innovacad_api/src/domain/entities/class_model.dart';
+import 'package:innovacad_api/src/domain/repositories/class_repository.dart';
 import 'package:innovacad_api/src/domain/services/class_service.dart';
 import 'package:vaden/vaden.dart';
 
 @Service()
 class ClassServiceImpl implements IClassService {
-  final ClassRepositoryImpl _repository;
+  final IClassRepository _repository;
 
   ClassServiceImpl(this._repository);
 
@@ -27,8 +27,8 @@ class ClassServiceImpl implements IClassService {
   }
 
   @override
-  Future<ClassModel?> update(ClassModelUpdateDto dto) async {
-    return await _repository.update(dto);
+  Future<ClassModel?> update(String id, ClassModelUpdateDto dto) async {
+    return await _repository.update(id, dto);
   }
 
   @override

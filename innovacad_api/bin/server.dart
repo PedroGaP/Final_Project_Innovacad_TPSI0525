@@ -1,8 +1,12 @@
 import 'dart:io';
+import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
 import 'package:innovacad_api/vaden_application.dart';
 
 Future<void> main(List<String> args) async {
   final vaden = VadenApp();
+
+  vaden.injector.add(MysqlConfiguration.new);
+
   await vaden.setup();
   final server = await vaden.run(args);
 

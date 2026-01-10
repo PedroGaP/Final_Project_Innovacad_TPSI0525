@@ -21,4 +21,5 @@ dependencies:
 
 dev_dependencies:
   build_runner: ^2.10.3
+  json_serializable: ^6.11.2
   vaden_class_scanner: ^1.0.2

@@ -6,6 +6,6 @@ abstract interface class IClassService {
   Future<List<ClassModel>?> getAll();
   Future<ClassModel?> getById(String id);
   Future<ClassModel?> create(ClassModelCreateDto dto);
-  Future<ClassModel?> update(ClassModelUpdateDto dto);
+  Future<ClassModel?> update(String id, ClassModelUpdateDto dto);
   Future<ClassModel?> delete(String id);
 }
