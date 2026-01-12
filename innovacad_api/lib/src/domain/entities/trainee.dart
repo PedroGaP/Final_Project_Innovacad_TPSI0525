@@ -1,22 +1,24 @@
 import 'package:innovacad_api/src/domain/converters/date_time_converter.dart';
-import 'package:vaden/vaden.dart';
-import 'package:json_annotation/json_annotation.dart';
+import 'package:innovacad_api/src/domain/entities/user.dart';
+import 'package:json_annotation/json_annotation.dart' as js;
 
 part 'trainee.g.dart';
 
-@Component()
-@JsonSerializable()
-class Trainee {
-  String trainee_id;
-  String user_id;
+@js.JsonSerializable()
+class Trainee extends User {
+  @js.JsonKey(name: "trainee_id")
+  String traineeId;
 
   @DateTimeConverter()
-  DateTime birthday_date;
+  @js.JsonKey(name: "birthday_date")
+  DateTime birthdayDate;
 
   Trainee({
-    required this.trainee_id,
-    required this.user_id,
-    required this.birthday_date,
+    required super.id,
+    required super.username,
+    required super.name,
+    required this.traineeId,
+    required this.birthdayDate,
   });
 
   factory Trainee.fromJson(Map<String, dynamic> json) =>

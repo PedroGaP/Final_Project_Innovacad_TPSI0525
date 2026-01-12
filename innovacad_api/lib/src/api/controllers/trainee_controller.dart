@@ -19,7 +19,7 @@ class TraineeController {
   }
 
   @Get('/<id>')
-  Future<Response> getById(@Param("id") String id) async {
+  Future<Response> getById(@Query("id") String id) async {
     final Result<dynamic> result = await _service.getById(id);
     return resultToResponse(result);
   }
@@ -40,7 +40,7 @@ class TraineeController {
   }
 
   @Delete("/<id>")
-  Future<Response> delete(@Param() String id) async {
+  Future<Response> delete(@Query('id') String id) async {
     final Result<dynamic> result = await _service.delete(id);
     return resultToResponse(result);
   }

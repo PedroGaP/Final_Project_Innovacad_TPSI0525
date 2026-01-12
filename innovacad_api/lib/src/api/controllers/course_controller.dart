@@ -1,12 +1,12 @@
 import 'package:innovacad_api/src/domain/dtos/course/course_create_dto.dart';
 import 'package:innovacad_api/src/domain/dtos/course/course_update_dto.dart';
-import 'package:innovacad_api/src/data/services/course_service_impl.dart';
+import 'package:innovacad_api/src/domain/services/course_service.dart';
 import 'package:vaden/vaden.dart';
 
 @Api(tag: "Courses", description: "CRUD for courses")
 @Controller("/courses")
 class CourseController {
-  final CourseServiceImpl _service;
+  final ICourseService _service;
 
   CourseController(this._service);
 
