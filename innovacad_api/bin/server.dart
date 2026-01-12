@@ -13,7 +13,6 @@ Future<void> main(List<String> args) async {
   print('--- InnovAcad API Server ---');
   print('Server is running on:');
 
-  // Obtém todas as interfaces de rede (IPv4)
   final interfaces = await NetworkInterface.list(
     includeLoopback: true,
     type: InternetAddressType.IPv4,

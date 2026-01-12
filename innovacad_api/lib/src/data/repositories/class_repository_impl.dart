@@ -11,9 +11,7 @@ import 'package:vaden/vaden.dart';
 
 @Repository()
 class ClassRepositoryImpl implements IClassRepository {
-  final MysqlConfiguration mysql;
-
-  ClassRepositoryImpl(this.mysql);
+  final String table = "classes";
 
   @override
   Future<List<ClassModel>?> getAll() async {
@@ -23,7 +21,7 @@ class ClassRepositoryImpl implements IClassRepository {
       conn = await MysqlConfiguration.connect();
 
       List<Map<String, dynamic>> classes = (await conn.getAll(
-        table: 'classes',
+        table: table,
       )).cast<Map<String, dynamic>>();
 
       classesModel = classes
@@ -46,7 +44,7 @@ class ClassRepositoryImpl implements IClassRepository {
       conn = await MysqlConfiguration.connect();
 
       Map<String, dynamic> klass = (await conn.getOne(
-        table: 'classes',
+        table: ';classes',
         where: {'class_id': id},
       )).cast<String, dynamic>();
 
@@ -70,11 +68,11 @@ class ClassRepositoryImpl implements IClassRepository {
       conn = await MysqlConfiguration.connect();
 
       BigInt inserted = await conn.insert(
-        table: 'classes',
+        table: table,
         insertData: dto.toJson(),
       );
 
-      if (inserted == 0) return null;
+      if (inserted < BigInt.from(1)) return null;
 
       model = ClassModel.fromJson(dto.toJson());
     } catch (e, s) {
@@ -102,12 +100,12 @@ class ClassRepositoryImpl implements IClassRepository {
       if (data.updatedFields.length == 0) return model;
 
       final update = await conn.update(
-        table: 'classes',
+        table: table,
         updateData: data.patchedModel,
         where: {'class_id': id},
       );
 
-      if (update.toInt() == 0) return model;
+      if (update < BigInt.from(1)) return model;
 
       model = ClassModel.fromJson(data.patchedModel);
       print(model);
@@ -132,17 +130,15 @@ class ClassRepositoryImpl implements IClassRepository {
       if (tempClass == null)
         throw "[UPDATE]: Something went wrong fetching the class data!";
 
-      BigInt delete = await conn.delete(
-        table: 'classes',
-        where: {'class_id': id},
-      );
+      BigInt delete = await conn.delete(table: table, where: {'class_id': id});
 
       if (delete == 0) return null;
+
+      model = tempClass;
     } catch (e, s) {
       log(e.toString());
       log(s.toString());
     } finally {
-      conn?.close();
       return model;
     }
   }

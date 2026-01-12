@@ -51,7 +51,10 @@ class UpdateUtils {
 
   static bool _isDateKey(String key) {
     final lowerKey = key.toLowerCase();
-    return lowerKey.contains('date') || lowerKey.contains('timestamp');
+    return lowerKey.contains('date') ||
+        lowerKey.contains('timestamp') ||
+        lowerKey.contains('createdat') ||
+        lowerKey.contains('updatedat');
   }
 
   static DateTime? _parseDate(dynamic value) {
