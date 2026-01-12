@@ -7,7 +7,8 @@ class DioConfiguration {
   Dio dioApoiaseConfig(ApplicationSettings settings) {
     return Dio(
       BaseOptions(
-        baseUrl: settings['env']['base_url'],
+        validateStatus: (status) => true,
+        //baseUrl: settings['env']['base_url'],
         headers: {},
       ),
     );

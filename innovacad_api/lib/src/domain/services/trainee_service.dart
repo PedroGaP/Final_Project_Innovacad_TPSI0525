@@ -1,11 +1,12 @@
+import 'package:innovacad_api/src/domain/daos/trainee_user_dao.dart';
 import 'package:innovacad_api/src/domain/dtos/trainee/trainee_create_dto.dart';
-import 'package:innovacad_api/src/domain/dtos/trainee/trainee_update_dto.dart';
-import 'package:innovacad_api/src/domain/entities/trainee.dart';
+import 'package:innovacad_api/src/core/result.dart';
+import 'package:innovacad_api/src/domain/dtos/trainee/trainee_user_update_dto.dart';
 
 abstract interface class ITraineeService {
-  Future<List<Trainee>?> getAll();
-  Future<Trainee?> getById(String id);
-  Future<Trainee?> create(TraineeCreateDto dto);
-  Future<Trainee?> update(TraineeUpdateDto dto);
-  Future<Trainee?> delete(String id);
+  Future<Result<List<TraineeUserDao>>> getAll();
+  Future<Result<TraineeUserDao>> getById(String id);
+  Future<Result<TraineeUserDao>> create(TraineeCreateDto dto);
+  Future<Result<TraineeUserDao>> update(String id, TraineeUserUpdateDto dto);
+  Future<Result<TraineeUserDao>> delete(String id);
 }
