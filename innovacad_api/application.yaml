@@ -12,11 +12,14 @@ mysql:
 
 redis:
   port: 6379
-  host: localhost
+  host: redis.grod.ovh
 
 server:
   port: 8080
   host: localhost
+  cors:
+    enabled: true
+    allowed-origins: "*"
 
 security:
   secret: aV9sb3ZlX2lubm92YWNhZF9vX3BlZHJvX25hb19lX3NhbnRvX2Vfb19maWxpcGVfZV9hbmFv

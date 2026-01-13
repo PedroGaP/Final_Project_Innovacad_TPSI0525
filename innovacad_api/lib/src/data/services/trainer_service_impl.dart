@@ -3,6 +3,7 @@ import 'package:innovacad_api/src/domain/dtos/trainer/trainer_create_dto.dart';
 import 'package:innovacad_api/src/domain/dtos/trainer/trainer_update_dto.dart';
 import 'package:innovacad_api/src/domain/entities/trainer.dart';
 import 'package:innovacad_api/src/domain/services/trainer_service.dart';
+import 'package:innovacad_api/src/core/result.dart';
 import 'package:vaden/vaden.dart';
 
 @Service()
@@ -12,27 +13,27 @@ class TrainerServiceImpl implements ITrainerService {
   TrainerServiceImpl(this._repository);
 
   @override
-  Future<List<Trainer>?> getAll() async {
+  Future<Result<List<Trainer>>> getAll() async {
     return await _repository.getAll();
   }
 
   @override
-  Future<Trainer?> getById(String id) async {
+  Future<Result<Trainer>> getById(String id) async {
     return await _repository.getById(id);
   }
 
   @override
-  Future<Trainer?> create(TrainerCreateDto dto) async {
+  Future<Result<Trainer>> create(TrainerCreateDto dto) async {
     return await _repository.create(dto);
   }
 
   @override
-  Future<Trainer?> update(TrainerUpdateDto dto) async {
-    return await _repository.update(dto);
+  Future<Result<Trainer>> update(String id, TrainerUpdateDto dto) async {
+    return await _repository.update(id, dto);
   }
 
   @override
-  Future<Trainer?> delete(String id) async {
+  Future<Result<Trainer>> delete(String id) async {
     return await _repository.delete(id);
   }
 }

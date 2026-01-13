@@ -1,37 +1,47 @@
+import 'package:innovacad_api/src/core/http_mapper.dart';
+import 'package:innovacad_api/src/core/result.dart';
 import 'package:innovacad_api/src/domain/dtos/trainee/trainee_create_dto.dart';
-import 'package:innovacad_api/src/data/services/trainee_service_impl.dart';
-import 'package:innovacad_api/src/domain/dtos/trainee/trainee_update_dto.dart';
+import 'package:innovacad_api/src/domain/dtos/trainee/trainee_user_update_dto.dart';
+import 'package:innovacad_api/src/domain/services/trainee_service.dart';
 import 'package:vaden/vaden.dart';
 
 @Api(tag: "Trainees", description: "CRUD endpoint documentation for trainees")
 @Controller("/trainees")
 class TraineeController {
-  final TraineeServiceImpl _service;
+  final ITraineeService _service;
 
   TraineeController(this._service);
 
   @Get('/')
   Future<Response> getAll() async {
-    return Response.ok(await _service.getAll());
+    final Result<List<dynamic>> result = await _service.getAll();
+    return resultToResponse(result);
   }
 
   @Get('/<id>')
   Future<Response> getById(@Param("id") String id) async {
-    return Response.ok(await _service.getById(id));
+    final Result<dynamic> result = await _service.getById(id);
+    return resultToResponse(result);
   }
 
   @Post("/")
   Future<Response> create(@Body() TraineeCreateDto dto) async {
-    return Response.ok(await _service.create(dto));
+    final Result<dynamic> result = await _service.create(dto);
+    return resultToResponse(result);
   }
 
-  @Put("/")
-  Future<Response> update(@Body() TraineeUpdateDto dto) async {
-    return Response.ok(await _service.update(dto));
+  @Put("/<id>")
+  Future<Response> update(
+    @Query('id') String id,
+    @Body() TraineeUserUpdateDto dto,
+  ) async {
+    final Result<dynamic> result = await _service.update(id, dto);
+    return resultToResponse(result);
   }
 
   @Delete("/<id>")
   Future<Response> delete(@Param() String id) async {
-    return Response.ok(await _service.delete(id));
+    final Result<dynamic> result = await _service.delete(id);
+    return resultToResponse(result);
   }
 }
