@@ -1,0 +1,52 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "🚀 Run All Services",
+      "dependsOn": ["Run Auth API", "Run Dart Build Runner", "Run Dart Server"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Run Auth API",
+      "type": "shell",
+      "command": "bun run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/innovacad_auth_api"
+      },
+      "presentation": {
+        "group": "innovacad-group",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Dart Build Runner",
+      "type": "shell",
+      "command": "dart run build_runner watch --delete-conflicting-outputs",
+      "options": {
+        "cwd": "${workspaceFolder}/innovacad_api"
+      },
+      "presentation": {
+        "group": "innovacad-group",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Dart Server",
+      "type": "shell",
+      "command": "nodemon --watch bin --watch lib -e dart --exec dart ./bin/server.dart",
+      "options": {
+        "cwd": "${workspaceFolder}/innovacad_api"
+      },
+      "presentation": {
+        "group": "innovacad-group",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

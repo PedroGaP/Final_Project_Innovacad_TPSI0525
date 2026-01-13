@@ -12,6 +12,7 @@ const pool = createPool({
 
 export const auth = betterAuth({
   secret: API.JWT.SECRET,
+  trustedOrigins: ["https://localhost:10000", "https://localhost:8080"],
   session: {
     cookieCache: {
       enabled: true,
@@ -37,7 +38,7 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
-    disableSignUp: true,
+    disableSignUp: false,
   },
   socialProviders: {
     microsoft: {

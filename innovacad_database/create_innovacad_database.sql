@@ -103,7 +103,7 @@ create table IF NOT EXISTS availabilities
     status               ENUM ('free','partial','full') not null default 'free',
     start_date_timestamp timestamp                      not null,
     end_date_timestamp   timestamp                      not null,
-    FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id)
+    FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id) ON DELETE CASCADE
 );
 
 create table IF NOT EXISTS schedules
@@ -121,7 +121,7 @@ create table IF NOT EXISTS schedules
     -- FOREIGN KEY (class_id) REFERENCES classes (class_id),
     -- FOREIGN KEY (module_id) REFERENCES modules (module_id),
     FOREIGN KEY (class_module_id) REFERENCES classes_modules (classes_modules_id),
-    FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id),
+    FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id) ON DELETE CASCADE,
     FOREIGN KEY (room_id) REFERENCES rooms (room_id),
     FOREIGN KEY (availability_id) REFERENCES availabilities (availability_id)
 );
@@ -132,8 +132,8 @@ create table IF NOT EXISTS enrollments
     class_id      varchar(36) not null,
     trainee_id    varchar(36) not null,
     final_grade   decimal(4, 2) default 00.00,
-    FOREIGN KEY (class_id) REFERENCES classes (class_id),
-    FOREIGN KEY (trainee_id) REFERENCES trainees (trainee_id)
+    FOREIGN KEY (class_id) REFERENCES classes (class_id) ON DELETE CASCADE,
+    FOREIGN KEY (trainee_id) REFERENCES trainees (trainee_id) ON DELETE CASCADE
 );
 
 -- Create indexes

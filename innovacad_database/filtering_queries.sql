@@ -10,20 +10,41 @@ SELECT UNIX_TIMESTAMP(DATE_ADD(NOW(), INTERVAL 1 YEAR));
 -- ==========================================================
 -- CORE TABLE LISTING
 -- ==========================================================
-SELECT * FROM user;
-SELECT * FROM account;
-SELECT * FROM trainers;
-SELECT * FROM trainees;
-SELECT * FROM courses;
-SELECT * FROM modules;
-SELECT * FROM classes;
-SELECT * FROM rooms;
-SELECT * FROM courses_modules; -- Course curriculum/structure
-SELECT * FROM classes_modules; -- Active modules assigned to specific classes
-SELECT * FROM schedules;       -- Individual lesson calendar
-SELECT * FROM availabilities;  -- Trainer time slots
-SELECT * FROM enrollments;     -- Trainee-Class relationship
-SELECT * FROM grades;          -- Academic performance
+SELECT *
+FROM user;
+
+SELECT t.*, u.name, u.image, u.role, u.username, u.email, u.createdAt
+from trainees t,
+     user u
+where t.user_id = u.id;
+
+SELECT *
+FROM account;
+SELECT *
+FROM trainers;
+SELECT *
+FROM trainees;
+SELECT *
+FROM courses;
+SELECT *
+FROM modules;
+SELECT *
+FROM classes;
+SELECT *
+FROM rooms;
+SELECT *
+FROM courses_modules; -- Course curriculum/structure
+SELECT *
+FROM classes_modules; -- Active modules assigned to specific classes
+SELECT *
+FROM schedules; -- Individual lesson calendar
+SELECT *
+FROM availabilities; -- Trainer time slots
+SELECT *
+FROM enrollments; -- Trainee-Class relationship
+SELECT *
+FROM grades;
+-- Academic performance
 
 -- ==========================================================
 -- OPERATIONAL & LOGIC QUERIES
@@ -32,38 +53,53 @@ SELECT * FROM grades;          -- Academic performance
 -- Get a course curriculum (List all modules belonging to a specific course identifier)
 SELECT c.identifier AS course, m.name AS module, m.duration
 FROM courses_modules cm
-JOIN courses c ON cm.course_id = c.course_id
-JOIN modules m ON cm.module_id = m.module_id
+         JOIN courses c ON cm.course_id = c.course_id
+         JOIN modules m ON cm.module_id = m.module_id
 WHERE c.identifier = 'TPSI';
 
 -- Get a specific trainer's lesson schedule
-SELECT * FROM schedules
+SELECT *
+FROM schedules
 WHERE trainer_id = '60dcc0e4-7935-4472-8c9d-0f739b1ce68e';
 
 -- Get a full class schedule (Lessons for all modules assigned to a specific class)
-SELECT s.* FROM schedules s
-JOIN classes_modules cm ON s.class_module_id = cm.classes_modules_id
+SELECT s.*
+FROM schedules s
+         JOIN classes_modules cm ON s.class_module_id = cm.classes_modules_id
 WHERE cm.class_id = '74a05d40-8e0d-4b52-9537-eb41dcb61100';
 
 -- Get academic report (Grades per trainee and module with student names)
 SELECT u.name AS trainee_name, g.grade, g.grade_type, m.name AS module_name
 FROM grades g
-JOIN trainees t ON g.trainee_id = t.trainee_id
-JOIN user u ON t.user_id = u.id
-JOIN classes_modules cm ON g.class_module_id = cm.classes_modules_id
-JOIN courses_modules com ON cm.courses_modules_id = com.courses_modules_id
-JOIN modules m ON com.module_id = m.module_id;
+         JOIN trainees t ON g.trainee_id = t.trainee_id
+         JOIN user u ON t.user_id = u.id
+         JOIN classes_modules cm ON g.class_module_id = cm.classes_modules_id
+         JOIN courses_modules com ON cm.courses_modules_id = com.courses_modules_id
+         JOIN modules m ON com.module_id = m.module_id;
 
 -- List all "Free" time slots from trainers (Availability not yet fully booked)
 SELECT u.name AS trainer_name, a.start_date_timestamp, a.end_date_timestamp
 FROM availabilities a
-JOIN trainers t ON a.trainer_id = t.trainer_id
-JOIN user u ON t.user_id = u.id
+         JOIN trainers t ON a.trainer_id = t.trainer_id
+         JOIN user u ON t.user_id = u.id
 WHERE a.status = 'free';
 
 -- Check room occupancy (Active or upcoming lessons for a specific room)
 SELECT s.*, r.room_name
 FROM schedules s
-JOIN rooms r ON s.room_id = r.room_id
+         JOIN rooms r ON s.room_id = r.room_id
 WHERE s.room_id = 1
-AND s.end_date_timestamp > NOW();
+  AND s.end_date_timestamp > NOW();
+
+SELECT t.*,
+       u.id,
+       u.name,
+       u.image,
+       u.role,
+       u.username,
+       u.email,
+       u.createdAt
+FROM `trainees` t,
+     `user` u
+WHERE `trainee_id` = 'b332fc2c-832a-4d33-8f2f-139d733be9f7'
+LIMIT 1;

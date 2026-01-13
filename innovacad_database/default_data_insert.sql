@@ -1,7 +1,10 @@
-INSERT INTO user (id, name, email, emailVerified)
-VALUES ('77ab8510-dc5c-11f0-bdbd-98eecb87bc27', 'pedroga', 'pedroga@trainers.innovacad.pt', true),
-       ('b7b1dc75-838d-476b-a4d0-28e5771f9f15', 'filipej', 'filipej@trainers.innovacad.pt', true),
-       ('68c8681a-ac3e-4e15-a590-0592cfc832b0', 'beatrizr', 'beatriz@trainees.innovacad.pt', false);
+INSERT INTO user (id, name, email, emailVerified, username, role)
+VALUES ('77ab8510-dc5c-11f0-bdbd-98eecb87bc27', 'Pedro Guerra', 'pedroga@trainers.innovacad.pt', true, 'pedroga',
+        'trainer'),
+       ('b7b1dc75-838d-476b-a4d0-28e5771f9f15', 'Filipe Junqueiro', 'filipej@trainers.innovacad.pt', true, 'filipej',
+        'trainer'),
+       ('68c8681a-ac3e-4e15-a590-0592cfc832b0', 'Beatriz Rodrigues', 'beatriz@trainees.innovacad.pt', false, 'beatrizr',
+        'trainee');
 
 INSERT INTO trainers (trainer_id, user_id, specialization)
 VALUES ('60dcc0e4-7935-4472-8c9d-0f739b1ce68e', '77ab8510-dc5c-11f0-bdbd-98eecb87bc27', 'Desenvolvimento SQL'),
