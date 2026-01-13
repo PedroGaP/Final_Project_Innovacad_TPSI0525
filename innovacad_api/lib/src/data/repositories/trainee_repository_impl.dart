@@ -65,7 +65,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
         table: traineeUserTable,
         where: {'trainee_id': id},
         fields: traineeUserFields,
-        debug: true,
       )).cast();
 
       print(tempTrainee);

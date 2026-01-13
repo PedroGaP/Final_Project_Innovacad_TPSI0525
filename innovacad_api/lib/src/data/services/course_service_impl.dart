@@ -1,13 +1,13 @@
-import 'package:innovacad_api/src/data/repositories/course_repository_impl.dart';
 import 'package:innovacad_api/src/domain/dtos/course/course_create_dto.dart';
 import 'package:innovacad_api/src/domain/dtos/course/course_update_dto.dart';
 import 'package:innovacad_api/src/domain/entities/course.dart';
+import 'package:innovacad_api/src/domain/repositories/course_repository.dart';
 import 'package:innovacad_api/src/domain/services/course_service.dart';
 import 'package:vaden/vaden.dart';
 
 @Service()
 class CourseServiceImpl implements ICourseService {
-  final CourseRepositoryImpl _repository;
+  final ICourseRepository _repository;
 
   CourseServiceImpl(this._repository);
 

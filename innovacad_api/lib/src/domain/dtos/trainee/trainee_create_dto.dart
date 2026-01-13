@@ -1,19 +1,21 @@
+import 'package:innovacad_api/src/domain/dtos/user/user_signup_dto.dart';
 import 'package:vaden/vaden.dart';
-import 'package:json_annotation/json_annotation.dart';
+import 'package:json_annotation/json_annotation.dart' as js;
 
 part 'trainee_create_dto.g.dart';
 
 @DTO()
-@JsonSerializable()
-class TraineeCreateDto {
-  String first_name;
-  String last_name;
-  DateTime birthday_date;
+@js.JsonSerializable()
+class TraineeCreateDto extends UserSignupDto {
+  @js.JsonKey(name: 'birthday_date')
+  DateTime birthdayDate;
 
   TraineeCreateDto({
-    required this.first_name,
-    required this.last_name,
-    required this.birthday_date,
+    required super.email,
+    required super.name,
+    required super.password,
+    required super.username,
+    required this.birthdayDate,
   });
 
   Map<String, dynamic> toJson() => _$TraineeCreateDtoToJson(this);

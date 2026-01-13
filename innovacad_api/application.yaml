@@ -23,8 +23,8 @@ server:
 
 security:
   secret: aV9sb3ZlX2lubm92YWNhZF9vX3BlZHJvX25hb19lX3NhbnRvX2Vfb19maWxpcGVfZV9hbmFv
-  tokenValidity: 3600
-  refreshTokenValidity: 604800
+  tokenValidity: 900
+  refreshTokenValidity: 3600
   issuer: "innovacad_tpsi0525"
   audiences:
     - "innovacad_tpsi0525"
@@ -32,3 +32,8 @@ security:
 env:
   base_url: http://localhost
   mode: debug
+
+auth:
+  protocol: "http"
+  host: "localhost"
+  port: 10000

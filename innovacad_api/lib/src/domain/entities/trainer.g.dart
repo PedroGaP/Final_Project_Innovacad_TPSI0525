@@ -1,26 +1,26 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'trainee.dart';
+part of 'trainer.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-Trainee _$TraineeFromJson(Map<String, dynamic> json) => Trainee(
+Trainer _$TrainerFromJson(Map<String, dynamic> json) => Trainer(
   id: json['id'] as String,
   username: json['username'] as String,
   name: json['name'] as String,
-  traineeId: json['trainee_id'] as String,
+  trainerId: json['trainer_id'] as String,
   birthdayDate: const DateTimeConverter().fromJson(
     json['birthday_date'] as Object,
   ),
 )..token = json['token'] as String?;
 
-Map<String, dynamic> _$TraineeToJson(Trainee instance) => <String, dynamic>{
+Map<String, dynamic> _$TrainerToJson(Trainer instance) => <String, dynamic>{
   'id': instance.id,
   'username': instance.username,
   'name': instance.name,
   'token': instance.token,
-  'trainee_id': instance.traineeId,
+  'trainer_id': instance.trainerId,
   'birthday_date': const DateTimeConverter().toJson(instance.birthdayDate),
 };

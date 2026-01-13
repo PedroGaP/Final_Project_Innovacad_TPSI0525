@@ -1,25 +1,23 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'trainee_create_dto.dart';
+part of 'user_signup_dto.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-TraineeCreateDto _$TraineeCreateDtoFromJson(Map<String, dynamic> json) =>
-    TraineeCreateDto(
-      email: json['email'] as String,
-      name: json['name'] as String,
-      password: json['password'] as String,
+UserSignupDto _$UserSignupDtoFromJson(Map<String, dynamic> json) =>
+    UserSignupDto(
       username: json['username'] as String,
-      birthdayDate: DateTime.parse(json['birthday_date'] as String),
+      name: json['name'] as String,
+      email: json['email'] as String,
+      password: json['password'] as String,
     );
 
-Map<String, dynamic> _$TraineeCreateDtoToJson(TraineeCreateDto instance) =>
+Map<String, dynamic> _$UserSignupDtoToJson(UserSignupDto instance) =>
     <String, dynamic>{
       'username': instance.username,
       'name': instance.name,
       'email': instance.email,
       'password': instance.password,
-      'birthday_date': instance.birthdayDate.toIso8601String(),
     };
