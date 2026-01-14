@@ -15,6 +15,7 @@ class SecurityConfiguration {
       RequestMatcher('/auth/**').permitAll(),
       RequestMatcher('/docs/**').permitAll(),
       RequestMatcher('/courses/**').authenticated(),
+      // RequestMatcher('/sign/up').hasRole("admin"),
       AnyRequest().permitAll(),
     ]);
   }

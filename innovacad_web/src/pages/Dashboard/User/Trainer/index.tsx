@@ -1,31 +1,38 @@
-import { createMemo, createSignal, For, Show } from "solid-js";
+import { createMemo, createResource, createSignal, For, Show } from "solid-js";
 import { Icon } from "@/components/Icon";
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-}
+import type { Trainer } from "@/types/user";
+import { fetchTrainers } from "@/api/api";
 
 const PAGE_SIZE = 10;
+const createEmptyTrainer = (): Trainer =>
+  ({
+    id: "",
+    name: "",
+    email: "",
+    role: "User",
+    trainerId: "",
+    username: "",
+    token: "",
+  } as Trainer);
 
-const UsersPage = () => {
-  const [users, setUsers] = createSignal<User[]>([]);
+const TrainerPage = () => {
+  const [usersData, { mutate, refetch }] =
+    createResource<Trainer[]>(fetchTrainers);
+
+  console.log(JSON.stringify(usersData()));
 
   const [page, setPage] = createSignal(1);
   const [search, setSearch] = createSignal("");
 
-  const [editingUser, setEditingUser] = createSignal<User | null>(null);
-  const [deletingUser, setDeletingUser] = createSignal<User | null>(null);
+  const [editingUser, setEditingUser] = createSignal<Trainer | null>(null);
+  const [deletingUser, setDeletingUser] = createSignal<Trainer | null>(null);
 
   const filteredUsers = createMemo(() => {
     const q = search().toLowerCase();
-    return users().filter(
-      (u) =>
-        u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        u.role.toLowerCase().includes(q)
+    const list = usersData() || [];
+    return list.filter(
+      (u: Trainer) =>
+        u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
     );
   });
 
@@ -38,18 +45,15 @@ const UsersPage = () => {
     return filteredUsers().slice(start, start + PAGE_SIZE);
   });
 
-  const saveUser = (user: User) => {
-    setUsers((prev) => {
-      const exists = prev.find((u) => u.id === user.id);
-      return exists
-        ? prev.map((u) => (u.id === user.id ? user : u))
-        : [...prev, { ...user, id: Date.now() }];
-    });
-    setEditingUser(null);
-  };
+  const confirmDelete = async () => {
+    const userToDelete = deletingUser();
+    if (!userToDelete) return;
 
-  const confirmDelete = () => {
-    setUsers(users().filter((u) => u.id !== deletingUser()?.id));
+    // Optional: Call API to delete
+    // await api.deleteTrainer(userToDelete.id);
+
+    // Update the UI immediately without refetching the whole list
+    mutate((prev) => prev?.filter((u) => u.id !== userToDelete.id) || []);
     setDeletingUser(null);
   };
 
@@ -58,23 +62,21 @@ const UsersPage = () => {
       <div class="card-body gap-4">
         {/* HEADER */}
         <div class="flex justify-between items-center">
-          <h2 class="card-title">Users</h2>
+          <h2 class="card-title">Trainers</h2>
 
           <button
             class="btn btn-primary btn-sm"
-            onClick={() =>
-              setEditingUser({ id: 0, name: "", email: "", role: "User" })
-            }
+            onClick={() => setEditingUser(createEmptyTrainer())}
           >
             <Icon name="Plus" size={16} />
-            Add User
+            Add Trainer
           </button>
         </div>
 
         {/* FILTER */}
         <input
           type="text"
-          placeholder="Search users..."
+          placeholder="Search trainers..."
           class="input input-bordered input-sm w-full max-w-xs"
           onInput={(e) => {
             setSearch(e.currentTarget.value);
@@ -84,42 +86,63 @@ const UsersPage = () => {
 
         {/* TABLE */}
         <div class="overflow-x-auto">
-          <table class="table table-zebra">
+          <table class="table table-zebra table-fixed w-full overflow-visible">
             <thead>
               <tr>
+                <th>Trainer ID</th>
+                <th>User ID</th>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Username</th>
                 <th>Role</th>
+
                 <th class="text-right">Actions</th>
               </tr>
             </thead>
 
             <tbody>
               <For each={paginatedUsers()}>
-                {(user) => (
-                  <tr>
-                    <td>{user.name}</td>
-                    <td>{user.email}</td>
-                    <td>
-                      <span class="badge badge-outline">{user.role}</span>
-                    </td>
-                    <td class="text-right space-x-2">
-                      <button
-                        class="btn btn-ghost btn-sm"
-                        onClick={() => setEditingUser(user)}
-                      >
-                        <Icon name="Pencil" size={16} />
-                      </button>
+                {(user) => {
+                  console.log(user);
+                  console.log(typeof user);
+                  return (
+                    <tr>
+                      <td class="w-32">
+                        <div class="overflow-x-auto whitespace-nowrap scrollbar-hide">
+                          {user.trainerId}
+                        </div>
+                      </td>
+                      <td class="w-32">
+                        <div class="overflow-x-auto whitespace-nowrap scrollbar-hide">
+                          {user.id}
+                        </div>
+                      </td>
+                      <td>{user.name}</td>
+                      <td>{user.email}</td>
+                      <td>{user.username}</td>
+                      <td>
+                        <span class="badge badge-outline">
+                          {user.role || "N/A"}
+                        </span>
+                      </td>
+                      <td class="text-right space-x-2">
+                        <button
+                          class="btn btn-ghost btn-sm"
+                          onClick={() => setEditingUser(user)}
+                        >
+                          <Icon name="Pencil" size={16} />
+                        </button>
 
-                      <button
-                        class="btn btn-ghost btn-sm text-error"
-                        onClick={() => setDeletingUser(user)}
-                      >
-                        <Icon name="Trash" size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                )}
+                        <button
+                          class="btn btn-ghost btn-sm text-error"
+                          onClick={() => setDeletingUser(user)}
+                        >
+                          <Icon name="Trash" size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                }}
               </For>
             </tbody>
           </table>
@@ -169,7 +192,7 @@ const UsersPage = () => {
           <dialog open class="modal">
             <div class="modal-box">
               <h3 class="font-bold text-lg">
-                {u().id ? "Edit User" : "Add User"}
+                {u().id ? "Edit Trainer" : "Add Trainer"}
               </h3>
 
               <div class="space-y-3 mt-4">
@@ -178,7 +201,10 @@ const UsersPage = () => {
                   placeholder="Name"
                   value={u().name}
                   onInput={(e) =>
-                    setEditingUser({ ...u(), name: e.currentTarget.value })
+                    setEditingUser({
+                      ...u(),
+                      name: e.currentTarget.value,
+                    } as Trainer)
                   }
                 />
 
@@ -187,7 +213,10 @@ const UsersPage = () => {
                   placeholder="Email"
                   value={u().email}
                   onInput={(e) =>
-                    setEditingUser({ ...u(), email: e.currentTarget.value })
+                    setEditingUser({
+                      ...u(),
+                      email: e.currentTarget.value,
+                    } as Trainer)
                   }
                 />
 
@@ -195,10 +224,14 @@ const UsersPage = () => {
                   class="select select-bordered w-full"
                   value={u().role}
                   onChange={(e) =>
-                    setEditingUser({ ...u(), role: e.currentTarget.value })
+                    setEditingUser({
+                      ...u(),
+                      role: e.currentTarget.value,
+                    } as Trainer)
                   }
                 >
-                  <option>User</option>
+                  <option>Trainer</option>
+                  <option>Trainer</option>
                   <option>Admin</option>
                 </select>
               </div>
@@ -207,9 +240,7 @@ const UsersPage = () => {
                 <button class="btn" onClick={() => setEditingUser(null)}>
                   Cancel
                 </button>
-                <button class="btn btn-primary" onClick={() => saveUser(u())}>
-                  Save
-                </button>
+                <button class="btn btn-primary">Save</button>
               </div>
             </div>
           </dialog>
@@ -221,7 +252,7 @@ const UsersPage = () => {
         {(u) => (
           <dialog open class="modal">
             <div class="modal-box">
-              <h3 class="font-bold text-lg">Delete User</h3>
+              <h3 class="font-bold text-lg">Delete Trainer</h3>
               <p class="py-4">
                 Are you sure you want to delete <strong>{u().name}</strong>?
               </p>
@@ -242,4 +273,4 @@ const UsersPage = () => {
   );
 };
 
-export default UsersPage;
+export default TrainerPage;

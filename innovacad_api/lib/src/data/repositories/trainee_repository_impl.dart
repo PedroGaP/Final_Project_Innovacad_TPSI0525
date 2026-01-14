@@ -7,7 +7,7 @@ import 'package:innovacad_api/src/api/utils/token_utils.dart';
 import 'package:innovacad_api/src/api/utils/update_utils.dart';
 import 'package:innovacad_api/src/core/result.dart';
 import 'package:innovacad_api/src/data/repositories/sign_repository_impl.dart';
-import 'package:innovacad_api/src/domain/daos/trainee_user_dao.dart';
+import 'package:innovacad_api/src/domain/daos/trainee/trainee_user_dao.dart';
 import 'package:innovacad_api/src/domain/dtos/trainee/trainee_create_dto.dart';
 import 'package:innovacad_api/src/domain/dtos/trainee/trainee_user_update_dto.dart';
 import 'package:innovacad_api/src/domain/dtos/user/user_signin_dto.dart';
@@ -139,8 +139,9 @@ class TraineeRepositoryImpl implements ITraineeRepository {
         "trainee_id": null,
         "createdAt": rawTraineeMap["createdAt"],
         "birthday_date": dto.birthdayDate,
-        "image": null,
         "token": token,
+        "role": null,
+        "image": null,
       };
 
       createdUserId = cleanedTraineeMap["id"];
@@ -149,11 +150,15 @@ class TraineeRepositoryImpl implements ITraineeRepository {
 
       // 3. Update the created user with the missing fields
 
+      final role = "trainee";
+
       final updateCount = await db.update(
         table: "user",
-        updateData: {"username": dto.username, "role": "trainee"},
+        updateData: {"username": dto.username, "role": role},
         where: {"id": createdUserId},
       );
+
+      cleanedTraineeMap["role"] = role;
 
       if (updateCount == BigInt.from(0))
         throw "Failed to update the missing fileds for the created user.";

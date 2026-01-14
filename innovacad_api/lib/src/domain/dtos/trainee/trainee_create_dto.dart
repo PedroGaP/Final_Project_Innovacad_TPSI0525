@@ -6,7 +6,7 @@ part 'trainee_create_dto.g.dart';
 
 @DTO()
 @js.JsonSerializable()
-class TraineeCreateDto extends UserSignupDto {
+class TraineeCreateDto extends UserSignupDto with Validator<TraineeCreateDto> {
   @js.JsonKey(name: 'birthday_date')
   DateTime birthdayDate;
 
@@ -17,6 +17,15 @@ class TraineeCreateDto extends UserSignupDto {
     required super.username,
     required this.birthdayDate,
   });
+
+  @override
+  LucidValidator<TraineeCreateDto> validate(
+    ValidatorBuilder<TraineeCreateDto> builder,
+  ) {
+    builder.ruleFor((c) => c.email, key: 'email').notEmpty().validEmail();
+    builder.ruleFor((c) => c.password, key: 'password').notEmpty().minLength(8);
+    return builder;
+  }
 
   Map<String, dynamic> toJson() => _$TraineeCreateDtoToJson(this);
 }

@@ -16,10 +16,14 @@ class User {
   @js.JsonKey(name: 'token')
   late String? token;
 
+  @js.JsonKey(name: 'role')
+  final String role;
+
   User({
     required this.id,
     required this.username,
     required this.name,
+    required this.role,
     this.token,
   });
 

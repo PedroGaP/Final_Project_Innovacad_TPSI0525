@@ -17,8 +17,10 @@ class Trainee extends User {
     required super.id,
     required super.username,
     required super.name,
+    required super.role,
     required this.traineeId,
     required this.birthdayDate,
+    super.token,
   });
 
   factory Trainee.fromJson(Map<String, dynamic> json) =>

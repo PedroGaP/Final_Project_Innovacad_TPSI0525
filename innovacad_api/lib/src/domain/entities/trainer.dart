@@ -19,8 +19,10 @@ class Trainer extends User {
     required super.id,
     required super.username,
     required super.name,
+    required super.role,
     required this.trainerId,
     required this.birthdayDate,
+    super.token,
   });
 
   Map<String, dynamic> toJson() => _$TrainerToJson(this);

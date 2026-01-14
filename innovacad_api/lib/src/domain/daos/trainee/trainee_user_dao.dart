@@ -30,11 +30,14 @@ class TraineeUserDao {
   @DateTimeConverter()
   final DateTime birthdayDate;
 
-  @js.JsonKey(name: 'image')
-  final String? image;
-
   @js.JsonKey(name: 'token')
   final String? token;
+
+  @js.JsonKey(name: 'role')
+  final String role;
+
+  @js.JsonKey(name: 'image')
+  final String? image;
 
   TraineeUserDao({
     required this.userId,
@@ -44,8 +47,9 @@ class TraineeUserDao {
     required this.name,
     required this.createdAt,
     required this.birthdayDate,
-    this.image,
+    required this.role,
     this.token,
+    this.image,
   });
 
   Map<String, dynamic> toJson() => _$TraineeUserDaoToJson(this);

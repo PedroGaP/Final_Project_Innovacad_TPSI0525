@@ -11,12 +11,14 @@
 	},
 	"dependencies": {
 		"@solidjs/router": "^0.15.4",
+		"js-cookie": "^3.0.5",
 		"lucide-solid": "^0.562.0",
 		"solid-js": "^1.9.10"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.11",
 		"@tailwindcss/vite": "^4.1.18",
+		"@types/js-cookie": "^3.0.6",
 		"@types/node": "^24.10.1",
 		"daisyui": "^5.5.14",
 		"solid-icons": "^1.1.0",

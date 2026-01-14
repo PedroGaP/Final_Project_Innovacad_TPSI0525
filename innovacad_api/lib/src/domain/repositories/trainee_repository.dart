@@ -1,4 +1,4 @@
-import 'package:innovacad_api/src/domain/daos/trainee_user_dao.dart';
+import 'package:innovacad_api/src/domain/daos/trainee/trainee_user_dao.dart';
 import 'package:innovacad_api/src/domain/dtos/trainee/trainee_create_dto.dart';
 import 'package:innovacad_api/src/core/result.dart';
 import 'package:innovacad_api/src/domain/dtos/trainee/trainee_user_update_dto.dart';
