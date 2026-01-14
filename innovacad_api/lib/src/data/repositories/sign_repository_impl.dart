@@ -3,7 +3,6 @@ import 'package:dio/dio.dart';
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
 import 'package:innovacad_api/src/api/utils/token_utils.dart';
 import 'package:innovacad_api/src/core/result.dart';
-import 'package:innovacad_api/src/domain/dtos/user/user_signup_dto.dart';
 import 'package:innovacad_api/src/domain/dtos/user/user_signin_dto.dart';
 import 'package:innovacad_api/src/domain/entities/trainee.dart';
 import 'package:innovacad_api/src/domain/entities/trainer.dart';
@@ -95,14 +94,8 @@ class SignRepositoryImpl extends ISignRepository {
       print(comb.toString());
       print(userId);
 
-      if (comb.isEmpty)
-        return Result.failure(
-          AppError(
-            AppErrorType.badRequest,
-            "No trainee nor trainer is associated with this account.",
-            details: response.data["user"],
-          ),
-        );
+      if (comb.isEmpty || (comb.first.isEmpty && comb[1].isEmpty))
+        return Result.success(User.fromJson(response.data["user"]));
 
       final data = <String, dynamic>{};
       data.addAll(

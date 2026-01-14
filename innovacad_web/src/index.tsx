@@ -8,9 +8,11 @@ import SignIn from "@/pages/SignIn";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import DashboardLayout from "./pages/Dashboard";
 import DashboardHome from "./pages/Dashboard/Home";
-import UsersPage from "./pages/Dashboard/User";
 import ClassesPage from "./pages/Dashboard/Class";
 import PublicLayout from "./components/PublicLayout";
+import TrainerPage from "./pages/Dashboard/User/Trainer";
+import TraineePage from "./pages/Dashboard/User/Trainee";
+import { UserDetailsProvider } from "./providers/UserDetailsProvider";
 
 const routes: RouteDefinition[] = [
   {
@@ -27,8 +29,18 @@ const routes: RouteDefinition[] = [
         component: DashboardHome,
       },
       {
-        path: "/users",
-        component: UsersPage,
+        path: "/user",
+        //component: UsersPage,
+        children: [
+          {
+            path: "/trainers",
+            component: TrainerPage,
+          },
+          {
+            path: "/trainees",
+            component: TraineePage,
+          },
+        ],
       },
       {
         path: "/classes",
@@ -42,9 +54,11 @@ const routes: RouteDefinition[] = [
 render(
   () => (
     <ThemeProvider>
-      <div class="min-h-screen bg-base-300 font-sans antialiased text-base-content">
-        <Router>{routes}</Router>
-      </div>
+      <UserDetailsProvider>
+        <div class="min-h-screen bg-base-300 font-sans antialiased text-base-content">
+          <Router>{routes}</Router>
+        </div>
+      </UserDetailsProvider>
     </ThemeProvider>
   ),
   document.getElementById("root")!

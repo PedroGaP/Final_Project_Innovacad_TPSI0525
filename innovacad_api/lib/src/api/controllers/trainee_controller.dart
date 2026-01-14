@@ -1,5 +1,4 @@
 import 'package:innovacad_api/src/core/http_mapper.dart';
-import 'package:innovacad_api/src/core/result.dart';
 import 'package:innovacad_api/src/domain/dtos/trainee/trainee_create_dto.dart';
 import 'package:innovacad_api/src/domain/dtos/trainee/trainee_user_update_dto.dart';
 import 'package:innovacad_api/src/domain/services/trainee_service.dart';
@@ -14,19 +13,19 @@ class TraineeController {
 
   @Get('/')
   Future<Response> getAll() async {
-    final Result<List<dynamic>> result = await _service.getAll();
+    final result = await _service.getAll();
     return resultToResponse(result);
   }
 
   @Get('/<id>')
   Future<Response> getById(@Query("id") String id) async {
-    final Result<dynamic> result = await _service.getById(id);
+    final result = await _service.getById(id);
     return resultToResponse(result);
   }
 
   @Post("/")
   Future<Response> create(@Body() TraineeCreateDto dto) async {
-    final Result<dynamic> result = await _service.create(dto);
+    final result = await _service.create(dto);
     return resultToResponse(result);
   }
 
@@ -35,13 +34,13 @@ class TraineeController {
     @Query('id') String id,
     @Body() TraineeUserUpdateDto dto,
   ) async {
-    final Result<dynamic> result = await _service.update(id, dto);
+    final result = await _service.update(id, dto);
     return resultToResponse(result);
   }
 
   @Delete("/<id>")
   Future<Response> delete(@Query('id') String id) async {
-    final Result<dynamic> result = await _service.delete(id);
+    final result = await _service.delete(id);
     return resultToResponse(result);
   }
 }

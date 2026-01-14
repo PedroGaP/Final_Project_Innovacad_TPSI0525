@@ -91,30 +91,3 @@ FROM schedules s
 WHERE s.room_id = 1
   AND s.end_date_timestamp > NOW();
 
-SELECT *
-FROM `trainees` ts,
-     `trainers` tr
-WHERE (ts.`user_id` = 'hRXqthVOVXzyRlqaIrHA85I13fLyrE6g' OR tr.`user_id` = 'hRXqthVOVXzyRlqaIrHA85I13fLyrE6g')
-LIMIT 1;
-
-SELECT
-    'trainee' AS role,
-    trainee_id AS trainee_id,
-    NULL AS trainer_id,
-    user_id,
-    birthday_date
-FROM trainees
-WHERE user_id = 'GCsbgO1BfkQVo4JvaBgHRO8wK0lJK9Jf'
-
-UNION
-
-SELECT
-    'trainer' AS role,
-    NULL AS trainee_id,
-    trainer_id AS trainer_id,
-    user_id,
-    birthday_date
-FROM trainers
-WHERE user_id = 'GCsbgO1BfkQVo4JvaBgHRO8wK0lJK9Jf'
-
-LIMIT 1;
