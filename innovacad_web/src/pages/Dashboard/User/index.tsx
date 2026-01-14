@@ -19,7 +19,7 @@ const UsersPage = () => {
   const [editingUser, setEditingUser] = createSignal<User | null>(null);
   const [deletingUser, setDeletingUser] = createSignal<User | null>(null);
 
-  const filteredUsers = createMemo(() => {
+  const filteredUsers = createMemo(() => {;
     const q = search().toLowerCase();
     return users().filter(
       (u) =>
