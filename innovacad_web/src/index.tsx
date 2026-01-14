@@ -1,22 +1,30 @@
 /* @refresh reload */
-import 'solid-devtools';
-import './index.css';
 
-import { render, Suspense } from 'solid-js/web';
+import { type RouteDefinition, Router } from "@solidjs/router";
+import { render } from "solid-js/web";
+import "@/index.css";
+import Footer from "@/components/Footer";
+import Header from "@/components/Header";
+import NotFound from "@/pages/NotFound";
+import SignIn from "@/pages/SignIn";
+import { ThemeProvider } from "@/providers/ThemeProvider";
 
-import App from './app';
-import { Router } from '@solidjs/router';
-import { routes } from './routes';
-
-const root = document.getElementById('root');
-
-if (import.meta.env.DEV && !(root instanceof HTMLElement)) {
-  throw new Error(
-    'Root element not found. Did you forget to add it to your index.html? Or maybe the id attribute got misspelled?',
-  );
-}
+const routes: RouteDefinition[] = [
+	{ path: "/", component: SignIn },
+	{ path: "**", component: NotFound },
+];
 
 render(
-  () => <Router root={(props) => <App>{props.children}</App>}>{routes}</Router>,
-  root,
+	() => (
+		<ThemeProvider>
+			<div class="flex flex-col min-h-screen bg-base-300 font-sans antialiased text-base-content">
+				<Header />
+				<main class="flex-grow flex flex-col items-center justify-center w-full">
+					<Router>{routes}</Router>
+				</main>
+				<Footer />
+			</div>
+		</ThemeProvider>
+	),
+	document.getElementById("root")!,
 );

@@ -1,25 +1,31 @@
 {
-  "name": "vite-template-solid",
-  "version": "0.0.0",
-  "description": "",
-  "type": "module",
-  "scripts": {
-    "start": "vite",
-    "dev": "vite",
-    "build": "vite build",
-    "serve": "vite preview"
-  },
-  "license": "MIT",
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.13",
-    "postcss": "^8.4.49",
-    "solid-devtools": "^0.34.3",
-    "tailwindcss": "^4.1.13",
-    "vite": "^7.1.4",
-    "vite-plugin-solid": "^2.11.8"
-  },
-  "dependencies": {
-    "@solidjs/router": "^0.15.1",
-    "solid-js": "^1.9.5"
-  }
+	"private": true,
+	"name": "innovacad_web",
+	"version": "1.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc -b && vite build",
+		"preview": "vite preview",
+		"lint": "bunx biome check --write"
+	},
+	"dependencies": {
+		"@solidjs/router": "^0.15.4",
+		"solid-js": "^1.9.10"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.3.11",
+		"@tailwindcss/vite": "^4.1.18",
+		"@types/node": "^24.10.1",
+		"daisyui": "^5.5.14",
+		"solid-icons": "^1.1.0",
+		"tailwindcss": "^4.1.18",
+		"typescript": "~5.9.3",
+		"vite": "npm:rolldown-vite@7.2.5",
+		"vite-plugin-solid": "^2.11.10",
+		"vite-tsconfig-paths": "^6.0.4"
+	},
+	"overrides": {
+		"vite": "npm:rolldown-vite@7.2.5"
+	}
 }
