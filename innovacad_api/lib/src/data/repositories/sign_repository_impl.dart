@@ -1,10 +1,15 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
 import 'package:innovacad_api/src/core/result.dart';
 import 'package:innovacad_api/src/domain/dtos/user/user_signup_dto.dart';
 import 'package:innovacad_api/src/domain/dtos/user/user_signin_dto.dart';
+import 'package:innovacad_api/src/domain/entities/trainee.dart';
+import 'package:innovacad_api/src/domain/entities/trainer.dart';
 import 'package:innovacad_api/src/domain/entities/user.dart';
 import 'package:innovacad_api/src/domain/repositories/sign_repository.dart';
+import 'package:mysql_utils/mysql_utils.dart';
 import 'package:vaden/vaden.dart' as v;
 
 @v.Repository()
@@ -37,6 +42,8 @@ class SignRepositoryImpl extends ISignRepository {
       path: "/api/auth/sign-in/$loginType",
     );
 
+    MysqlUtils? db;
+
     try {
       Response res = await _dio.postUri(
         uri,
@@ -54,7 +61,53 @@ class SignRepositoryImpl extends ISignRepository {
           ),
         );
 
-      final user = User.fromJson(res.data["user"]);
+      db = await MysqlConfiguration.connect();
+
+      final userId = res.data["user"]["id"];
+      final traineeResultFuture = db.getOne(
+        table: 'trainees',
+        fields: 'trainee_id, user_id, birthday_date',
+        where: {'user_id': userId},
+      );
+
+      final trainerResultFuture = db.getOne(
+        table: 'trainers',
+        fields: 'trainer_id, user_id, birthday_date, specialization',
+        where: {'user_id': userId},
+      );
+
+      final results = await Future.wait([
+        trainerResultFuture,
+        traineeResultFuture,
+      ]);
+
+      List<Map<String, dynamic>> comb = results
+          .map((r) => r.map((key, value) => MapEntry(key.toString(), value)))
+          .toList();
+
+      print(comb.toString());
+      print(userId);
+
+      if (comb.isEmpty)
+        return Result.failure(
+          AppError(
+            AppErrorType.badRequest,
+            "No trainee nor trainer is associated with this account.",
+            details: res.data["user"],
+          ),
+        );
+
+      final data = <String, dynamic>{};
+      data.addAll(
+        comb.firstWhere(
+          (e) => e.containsKey('trainee_id') || e.containsKey('trainer_id'),
+        ),
+      );
+      data.addAll(res.data["user"]);
+
+      final user = data.containsKey('trainee_id')
+          ? Trainee.fromJson(data)
+          : Trainer.fromJson(data);
       user.token = res.data['token'];
 
       final String cookie = res.headers['set-cookie']![1];
