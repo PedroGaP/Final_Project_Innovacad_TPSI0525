@@ -20,6 +20,7 @@ TraineeUserDao _$TraineeUserDaoFromJson(Map<String, dynamic> json) =>
         json['birthday_date'] as Object,
       ),
       image: json['image'] as String?,
+      token: json['token'] as String?,
     );
 
 Map<String, dynamic> _$TraineeUserDaoToJson(TraineeUserDao instance) =>
@@ -32,4 +33,5 @@ Map<String, dynamic> _$TraineeUserDaoToJson(TraineeUserDao instance) =>
       'createdAt': const DateTimeConverter().toJson(instance.createdAt),
       'birthday_date': const DateTimeConverter().toJson(instance.birthdayDate),
       'image': instance.image,
+      'token': instance.token,
     };

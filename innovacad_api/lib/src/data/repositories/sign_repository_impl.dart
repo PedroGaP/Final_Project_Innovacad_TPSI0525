@@ -1,7 +1,7 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
+import 'package:innovacad_api/src/api/utils/token_utils.dart';
 import 'package:innovacad_api/src/core/result.dart';
 import 'package:innovacad_api/src/domain/dtos/user/user_signup_dto.dart';
 import 'package:innovacad_api/src/domain/dtos/user/user_signin_dto.dart';
@@ -45,7 +45,7 @@ class SignRepositoryImpl extends ISignRepository {
     MysqlUtils? db;
 
     try {
-      Response res = await _dio.postUri(
+      Response response = await _dio.postUri(
         uri,
         data: {
           "$loginType": loginType.contains("email") ? dto.email : dto.username,
@@ -53,7 +53,7 @@ class SignRepositoryImpl extends ISignRepository {
         },
       );
 
-      if (res.statusCode != HttpStatus.ok)
+      if (response.statusCode != HttpStatus.ok)
         return Result.failure<User>(
           AppError(
             AppErrorType.badRequest,
@@ -63,7 +63,14 @@ class SignRepositoryImpl extends ISignRepository {
 
       db = await MysqlConfiguration.connect();
 
-      final userId = res.data["user"]["id"];
+      final token = TokenUtils.getUserToken(response.headers['set-cookie']![1]);
+
+      if (token == null)
+        return Result.failure(
+          AppError(AppErrorType.external, "Failed to grab the user token"),
+        );
+
+      final userId = response.data["user"]["id"];
       final traineeResultFuture = db.getOne(
         table: 'trainees',
         fields: 'trainee_id, user_id, birthday_date',
@@ -93,7 +100,7 @@ class SignRepositoryImpl extends ISignRepository {
           AppError(
             AppErrorType.badRequest,
             "No trainee nor trainer is associated with this account.",
-            details: res.data["user"],
+            details: response.data["user"],
           ),
         );
 
@@ -103,29 +110,12 @@ class SignRepositoryImpl extends ISignRepository {
           (e) => e.containsKey('trainee_id') || e.containsKey('trainer_id'),
         ),
       );
-      data.addAll(res.data["user"]);
+      data.addAll(response.data["user"]);
 
       final user = data.containsKey('trainee_id')
           ? Trainee.fromJson(data)
           : Trainer.fromJson(data);
-      user.token = res.data['token'];
-
-      final String cookie = res.headers['set-cookie']![1];
-      final regexp = RegExp(
-        '(?<=better-auth\.session_data=)(?<header>[^.]+)\.(?<payload>[^.]+)\.(?<signature>[^;]+)',
-      );
-      final parsedToken = regexp.firstMatch(cookie);
-
-      if (parsedToken == null)
-        return Result.failure<User>(
-          AppError(
-            AppErrorType.external,
-            'Received token is invalid on RegExp.',
-            details: {'string': cookie},
-          ),
-        );
-
-      user.token = parsedToken.group(0);
+      user.token = token;
 
       return Result.success<User>(user);
     } on DioException catch (e, s) {
@@ -135,43 +125,6 @@ class SignRepositoryImpl extends ISignRepository {
           AppErrorType.external,
           "Database Error",
           details: {"error": e.toString()},
-        ),
-      );
-    }
-  }
-
-  @override
-  Future<Result<User>> signup(UserSignupDto dto) async {
-    final uri = new Uri(
-      scheme: _settings["auth"]["protocol"],
-      host: _settings["auth"]["host"],
-      port: _settings["auth"]["port"],
-      path: "/api/auth/sign-up/email",
-    );
-
-    try {
-      Response res = await _dio.postUri(uri, data: {});
-
-      if (res.statusCode != HttpStatus.ok)
-        return Result.failure<User>(
-          AppError(
-            AppErrorType.badRequest,
-            'Error while creating user',
-            details: res.data,
-          ),
-        );
-
-      final user = User.fromJson(res.data["user"]);
-
-      return Result.success<User>(user);
-    } on DioException catch (e, s) {
-      print(e);
-      print(s);
-      return Result.failure<User>(
-        AppError(
-          AppErrorType.external,
-          'Database error',
-          details: {'error': e.toString()},
         ),
       );
     }

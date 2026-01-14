@@ -14,9 +14,4 @@ class SignController {
   Future<Response> signin(@Body() UserSigninDto dto) async {
     return resultToResponse(await this._service.signin(dto));
   }
-
-  @Post("/up")
-  Future<Response> signup(@Body() UserSignupDto dto) async {
-    return resultToResponse(await this._service.signup(dto));
-  }
 }

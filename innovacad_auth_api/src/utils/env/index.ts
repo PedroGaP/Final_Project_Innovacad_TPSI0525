@@ -18,7 +18,7 @@ export const API = {
 		SECRET: ENV.JWT_SECRET ?? "your_jwt_secret",
 	},
 	ADMIN: {
-		EMAIL: ENV.DEFAULT_ADMIN_NAME ?? "admin@email.com",
+		EMAIL: ENV.DEFAULT_ADMIN_EMAIL ?? "admin@email.com",
 		PASSWORD: ENV.DEFAULT_ADMIN_PASSWORD ?? "admin12345",
 		NAME: ENV.DEFAULT_ADMIN_NAME ?? "Default Admin",
 		USERNAME: ENV.DEFAULT_ADMIN_USERNAME ?? "admin",
