@@ -3,7 +3,12 @@
   "tasks": [
     {
       "label": "🚀 Run All Services",
-      "dependsOn": ["Run Auth API", "Run Dart Build Runner", "Run Dart Server"],
+      "dependsOn": [
+        "Run Auth API",
+        "Run Dart Build Runner",
+        "Run Dart Server",
+        "Run Web Server"
+      ],
       "group": {
         "kind": "build",
         "isDefault": true
@@ -41,6 +46,19 @@
       "command": "nodemon --watch bin --watch lib -e dart --exec dart ./bin/server.dart",
       "options": {
         "cwd": "${workspaceFolder}/innovacad_api"
+      },
+      "presentation": {
+        "group": "innovacad-group",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Web Server",
+      "type": "shell",
+      "command": "bun run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/innovacad_web"
       },
       "presentation": {
         "group": "innovacad-group",

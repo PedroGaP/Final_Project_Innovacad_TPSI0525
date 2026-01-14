@@ -6,6 +6,12 @@ VALUES ('77ab8510-dc5c-11f0-bdbd-98eecb87bc27', 'Pedro Guerra', 'pedroga@trainer
        ('68c8681a-ac3e-4e15-a590-0592cfc832b0', 'Beatriz Rodrigues', 'beatriz@trainees.innovacad.pt', false, 'beatrizr',
         'trainee');
 
+INSERT INTO trainers (trainer_id, user_id, birthday_date, specialization)
+VALUES (UUID(), 'hRXqthVOVXzyRlqaIrHA85I13fLyrE6g', NOW(), 'ADMIN');
+
+INSERT INTO trainees (trainee_id, user_id, birthday_date)
+VALUES (UUID(), 'GCsbgO1BfkQVo4JvaBgHRO8wK0lJK9Jf', NOW());
+
 INSERT INTO trainers (trainer_id, user_id, specialization)
 VALUES ('60dcc0e4-7935-4472-8c9d-0f739b1ce68e', '77ab8510-dc5c-11f0-bdbd-98eecb87bc27', 'Desenvolvimento SQL'),
        ('28793aef-c6db-413d-9adc-3d1375897cfa', 'b7b1dc75-838d-476b-a4d0-28e5771f9f15', 'Cibersegurança');
