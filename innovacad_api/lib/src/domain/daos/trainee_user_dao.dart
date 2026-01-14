@@ -33,6 +33,9 @@ class TraineeUserDao {
   @js.JsonKey(name: 'image')
   final String? image;
 
+  @js.JsonKey(name: 'token')
+  final String? token;
+
   TraineeUserDao({
     required this.userId,
     required this.traineeId,
@@ -42,6 +45,7 @@ class TraineeUserDao {
     required this.createdAt,
     required this.birthdayDate,
     this.image,
+    this.token,
   });
 
   Map<String, dynamic> toJson() => _$TraineeUserDaoToJson(this);

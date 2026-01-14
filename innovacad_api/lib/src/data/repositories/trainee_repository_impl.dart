@@ -1,21 +1,31 @@
 import 'dart:developer';
+import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
+import 'package:innovacad_api/src/api/utils/token_utils.dart';
 import 'package:innovacad_api/src/api/utils/update_utils.dart';
 import 'package:innovacad_api/src/core/result.dart';
+import 'package:innovacad_api/src/data/repositories/sign_repository_impl.dart';
 import 'package:innovacad_api/src/domain/daos/trainee_user_dao.dart';
 import 'package:innovacad_api/src/domain/dtos/trainee/trainee_create_dto.dart';
 import 'package:innovacad_api/src/domain/dtos/trainee/trainee_user_update_dto.dart';
+import 'package:innovacad_api/src/domain/dtos/user/user_signin_dto.dart';
+import 'package:innovacad_api/src/domain/entities/trainee.dart';
 import 'package:innovacad_api/src/domain/repositories/trainee_repository.dart';
 import 'package:mysql_utils/mysql_utils.dart';
-import 'package:vaden/vaden.dart';
+import 'package:vaden/vaden.dart' as v;
 
-@Repository()
+@v.Repository()
 class TraineeRepositoryImpl implements ITraineeRepository {
   final String table = "trainees";
   final String traineeUserTable = "trainees t,user u";
   final String traineeUserFields =
       "t.*, u.id, u.name, u.image, u.role, u.username, u.email, u.createdAt";
+  final v.ApplicationSettings _settings;
+  final Dio _dio;
+
+  TraineeRepositoryImpl(this._settings, this._dio);
 
   @override
   Future<Result<List<TraineeUserDao>>> getAll() async {
@@ -92,42 +102,144 @@ class TraineeRepositoryImpl implements ITraineeRepository {
   @override
   Future<Result<TraineeUserDao>> create(TraineeCreateDto dto) async {
     MysqlUtils? db;
+
+    String? createdUserId;
+
     try {
+      // 1. Create the user in the auth api
+
+      final uri = Uri(
+        scheme: _settings["auth"]["protocol"],
+        host: _settings["auth"]["host"],
+        port: _settings["auth"]["port"],
+        path: "/api/auth/sign-up/email",
+      );
+
+      final response = await _dio.postUri(
+        uri,
+        data: {"email": dto.email, "name": dto.name, "password": dto.password},
+      );
+
+      if (response.statusCode != HttpStatus.ok)
+        throw "Auth API failed with status ${response.statusCode}";
+
+      // 2. Get the created user token
+
+      final token = TokenUtils.getUserToken(response.headers["set-cookie"]![1]);
+      if (token == null) throw "Failed to fetch the user token.";
+
+      // 3. Add missing fields for the create user
+
+      var rawTraineeMap = response.data["user"];
+      var cleanedTraineeMap = {
+        "id": rawTraineeMap["id"],
+        "email": rawTraineeMap["email"] ?? dto.email,
+        "username": rawTraineeMap["username"] ?? dto.username,
+        "name": rawTraineeMap["name"] ?? dto.name,
+        "trainee_id": null,
+        "createdAt": rawTraineeMap["createdAt"],
+        "birthday_date": dto.birthdayDate,
+        "image": null,
+        "token": token,
+      };
+
+      createdUserId = cleanedTraineeMap["id"];
+
       db = await MysqlConfiguration.connect();
 
-      BigInt insert = await db.insert(table: table, insertData: dto.toJson());
+      // 3. Update the created user with the missing fields
 
-      if (insert < BigInt.from(1))
-        return Result.failure<TraineeUserDao>(
-          AppError(AppErrorType.internal, 'Insert failed'),
-        );
+      final updateCount = await db.update(
+        table: "user",
+        updateData: {"username": dto.username, "role": "trainee"},
+        where: {"id": createdUserId},
+      );
 
-      final fetched = await getById(insert.toString());
-      if (fetched.isFailure) {
-        return Result.failure<TraineeUserDao>(
-          AppError(
-            AppErrorType.internal,
-            'Insert succeeded but could not fetch created trainee',
-            details: {
-              'insertId': insert.toString(),
-              'error': fetched.error?.message,
-            },
+      if (updateCount == BigInt.from(0))
+        throw "Failed to update the missing fileds for the created user.";
+
+      // 4. Start the transaction that will commit the trainee changes
+
+      await db.startTrans();
+
+      // 5. Create the trainee for the created user
+
+      await db.insert(
+        table: table,
+        insertData: {
+          "user_id": createdUserId,
+          "birthday_date": cleanedTraineeMap["birthday_date"],
+        },
+      );
+
+      // 6. Verify if the trainee was successfully created
+
+      final dbRawTrainee =
+          await db.getOne(table: table, where: {"user_id": createdUserId})
+              as Map<String, dynamic>;
+      cleanedTraineeMap["trainee_id"] = dbRawTrainee["trainee_id"];
+
+      Trainee.fromJson(
+        cleanedTraineeMap,
+      ); // This throws an error if it fails its all good :)
+
+      // 8. Commit the trainee changes
+
+      await db.commit();
+
+      // 9. Return the trainee dao
+
+      return Result.success(TraineeUserDao.fromJson(cleanedTraineeMap));
+    } catch (error, st) {
+      try {
+        if (db != null) {
+          await db.rollback();
+          await db.close();
+        }
+
+        // 1. Delete the user that was created
+
+        final repository = SignRepositoryImpl(_settings, _dio);
+
+        final user = await repository.signin(
+          UserSigninDto(
+            email: _settings["auth"]["admin_name"],
+            password: _settings["auth"]["admin_password"],
           ),
         );
-      }
 
-      return Result.success<TraineeUserDao>(fetched.data!);
-    } catch (e, s) {
-      log(e.toString());
-      log(s.toString());
-      return Result.failure<TraineeUserDao>(
-        AppError(
-          AppErrorType.external,
-          'Database error',
-          details: {'error': e.toString()},
-        ),
-      );
+        final uriRemoveUser = Uri(
+          scheme: _settings["auth"]["protocol"],
+          host: _settings["auth"]["host"],
+          port: _settings["auth"]["port"],
+          path: "/api/auth/admin/remove-user",
+        );
+
+        String? token = user.data!.token;
+
+        final response = await _dio.postUri(
+          uriRemoveUser,
+          data: {"userId": createdUserId},
+          options: Options(headers: {"Authorization": "Bearer $token"}),
+        );
+
+        if (response.statusCode != HttpStatus.ok)
+          return Result.failure(
+            AppError(
+              AppErrorType.external,
+              "The trainee wasn't created correctly, and we also encountered an error when trying to delete the associated user account.",
+            ),
+          );
+      } catch (error) {
+        return Result.failure(
+          AppError(AppErrorType.internal, error.toString()),
+        );
+      } finally {
+        print("[ERROR]: ${error.toString()}\n[STACK TRACE]: $st");
+      }
     }
+
+    return Result.failure(AppError(AppErrorType.internal, ""));
   }
 
   @override

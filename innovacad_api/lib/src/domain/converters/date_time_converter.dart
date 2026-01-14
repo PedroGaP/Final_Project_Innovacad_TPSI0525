@@ -7,10 +7,21 @@ class DateTimeConverter implements JsonConverter<DateTime, Object> {
   @override
   DateTime fromJson(Object json) {
     if (json is DateTime) return json;
-    if (json is String)
-      return DateTime.fromMillisecondsSinceEpoch(int.parse(json));
 
-    throw ArgumentError('Expected String or DateTime, got ${json.runtimeType}');
+    if (json is String) {
+      final timestamp = int.tryParse(json);
+
+      if (timestamp != null)
+        return DateTime.fromMillisecondsSinceEpoch(timestamp);
+
+      return DateTime.parse(json);
+    }
+
+    if (json is int) return DateTime.fromMillisecondsSinceEpoch(json);
+
+    throw ArgumentError(
+      'Expected String, int, or DateTime, got ${json.runtimeType}',
+    );
   }
 
   @override

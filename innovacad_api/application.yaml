@@ -37,3 +37,5 @@ auth:
   protocol: "http"
   host: "localhost"
   port: 10000
+  admin_name: "admin@email.com"
+  admin_password: "admin12345"
