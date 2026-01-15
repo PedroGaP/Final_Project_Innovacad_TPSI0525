@@ -8,11 +8,7 @@ part of 'output_trainee_dao.dart';
 
 OutputTraineeDao _$OutputTraineeDaoFromJson(Map<String, dynamic> json) =>
     OutputTraineeDao(
-      traineeId: json['trainee_id'] as String,
-      userId: json['user_id'] as String,
-      birthdayDate: const DateTimeConverter().fromJson(
-        json['birthday_date'] as Object,
-      ),
+      id: json['id'] as String,
       username: json['username'] as String,
       name: json['name'] as String,
       email: json['email'] as String,
@@ -22,10 +18,15 @@ OutputTraineeDao _$OutputTraineeDaoFromJson(Map<String, dynamic> json) =>
       ),
       token: json['token'] as String?,
       image: json['image'] as String?,
+      traineeId: json['trainee_id'] as String,
+      birthdayDate: const DateTimeConverter().fromJson(
+        json['birthday_date'] as Object,
+      ),
     );
 
 Map<String, dynamic> _$OutputTraineeDaoToJson(OutputTraineeDao instance) =>
     <String, dynamic>{
+      'id': instance.id,
       'name': instance.name,
       'email': instance.email,
       'username': instance.username,
@@ -34,6 +35,5 @@ Map<String, dynamic> _$OutputTraineeDaoToJson(OutputTraineeDao instance) =>
       'image': instance.image,
       'token': instance.token,
       'trainee_id': instance.traineeId,
-      'user_id': instance.userId,
       'birthday_date': const DateTimeConverter().toJson(instance.birthdayDate),
     };

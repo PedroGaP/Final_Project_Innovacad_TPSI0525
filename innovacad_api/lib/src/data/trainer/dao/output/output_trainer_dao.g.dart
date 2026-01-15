@@ -8,25 +8,26 @@ part of 'output_trainer_dao.dart';
 
 OutputTrainerDao _$OutputTrainerDaoFromJson(Map<String, dynamic> json) =>
     OutputTrainerDao(
+      id: json['id'] as String,
+      createdAt: const DateTimeConverter().fromJson(
+        json['createdAt'] as Object,
+      ),
+      email: json['email'] as String,
+      name: json['name'] as String,
+      username: json['username'] as String,
+      role: json['role'] as String,
+      image: json['image'] as String?,
+      token: json['token'] as String?,
       trainerId: json['trainer_id'] as String,
-      userId: json['user_id'] as String,
       birthdayDate: const DateTimeConverter().fromJson(
         json['birthday_date'] as Object,
       ),
       specialization: json['specialization'] as String,
-      name: json['name'] as String,
-      email: json['email'] as String,
-      username: json['username'] as String,
-      role: json['role'] as String,
-      createdAt: const DateTimeConverter().fromJson(
-        json['createdAt'] as Object,
-      ),
-      token: json['token'] as String?,
-      image: json['image'] as String?,
     );
 
 Map<String, dynamic> _$OutputTrainerDaoToJson(OutputTrainerDao instance) =>
     <String, dynamic>{
+      'id': instance.id,
       'name': instance.name,
       'email': instance.email,
       'username': instance.username,
@@ -35,7 +36,6 @@ Map<String, dynamic> _$OutputTrainerDaoToJson(OutputTrainerDao instance) =>
       'image': instance.image,
       'token': instance.token,
       'trainer_id': instance.trainerId,
-      'user_id': instance.userId,
       'birthday_date': const DateTimeConverter().toJson(instance.birthdayDate),
       'specialization': instance.specialization,
     };

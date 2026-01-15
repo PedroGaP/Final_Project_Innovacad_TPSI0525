@@ -133,10 +133,10 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       var traineeExists = false;
 
       for (var trainee in updatedResult.data!) {
-        if (trainee.userId == createdUserId) {
+        if (trainee.id == createdUserId) {
           traineeExists = true;
           userData["trainee_id"] = trainee.traineeId;
-          userData["user_id"] = trainee.userId;
+          userData["user_id"] = trainee.id;
           userData["birthday_date"] = trainee.birthdayDate;
           break;
         }
@@ -177,7 +177,7 @@ class TraineeRepositoryImpl implements ITraineeRepository {
         await db.update(
           table: userTable,
           updateData: userUpdates,
-          where: {"id": existing.userId},
+          where: {"id": existing.id},
         );
       }
 
@@ -216,7 +216,7 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       final existing = existingRes.data!;
 
       final deleteAuthRes = await _remoteUserService.deleteUserAsAdmin(
-        existing.userId,
+        existing.id,
       );
 
       if (deleteAuthRes.isFailure) return Result.failure(deleteAuthRes.error!);
@@ -226,7 +226,7 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       await db.startTrans();
 
       await db.delete(table: table, where: {"trainee_id": id});
-      await db.delete(table: userTable, where: {"id": existing.userId});
+      await db.delete(table: userTable, where: {"id": existing.id});
 
       await db.commit();
 

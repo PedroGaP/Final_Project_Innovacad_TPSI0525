@@ -12,10 +12,18 @@ class UpdateUserDto {
   @annotation.JsonKey(name: 'name')
   final String? name;
 
+  @annotation.JsonKey(name: 'username')
+  final String? username;
+
   @annotation.JsonKey(name: 'password')
   final String? password;
 
-  UpdateUserDto({required this.id, this.name, this.password});
+  UpdateUserDto({
+    required this.id,
+    this.name,
+    this.username,
+    this.password,
+  });
 
   Map<String, dynamic> toJson() => _$UpdateUserDtoToJson(this);
 

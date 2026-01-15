@@ -7,7 +7,7 @@ part 'create_trainer_dto.g.dart';
 
 @DTO()
 @annotation.JsonSerializable()
-class CreateTrainerDto extends CreateUserDto {
+class CreateTrainerDto extends CreateUserDto with Validator<CreateTrainerDto> {
   @annotation.JsonKey(name: 'birthday_date')
   @DateTimeConverter()
   final DateTime birthdayDate;
@@ -16,16 +16,34 @@ class CreateTrainerDto extends CreateUserDto {
   final String specialization;
 
   CreateTrainerDto({
-    required this.birthdayDate,
-    required this.specialization,
     required super.name,
     required super.email,
     required super.username,
     required super.password,
+    required this.birthdayDate,
+    required this.specialization,
   });
 
   Map<String, dynamic> toJson() => _$CreateTrainerDtoToJson(this);
 
   factory CreateTrainerDto.fromJson(Map<String, dynamic> json) =>
       _$CreateTrainerDtoFromJson(json);
+
+  @override
+  LucidValidator<CreateTrainerDto> validate(
+    ValidatorBuilder<CreateTrainerDto> builder,
+  ) {
+    builder.ruleFor((e) => e.email, key: 'email').notEmptyOrNull().validEmail();
+    builder
+        .ruleFor((e) => e.password, key: 'password')
+        .notEmptyOrNull()
+        .mustHaveSpecialCharacter()
+        .mustHaveUppercase()
+        .minLength(8);
+    builder
+        .ruleFor((e) => e.username, key: 'username')
+        .notEmptyOrNull()
+        .minLength(4);
+    return builder;
+  }
 }

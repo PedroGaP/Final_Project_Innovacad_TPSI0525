@@ -1,4 +1,5 @@
 import 'package:innovacad_api/src/core/core.dart';
+import 'package:innovacad_api/src/data/data.dart';
 import 'package:vaden/vaden.dart';
 import 'package:json_annotation/json_annotation.dart' as annotation;
 
@@ -6,18 +7,28 @@ part 'update_trainee_dto.g.dart';
 
 @DTO()
 @annotation.JsonSerializable()
-class UpdateTraineeDto {
-  @annotation.JsonKey(name: 'name')
-  final String? name;
-
-  @annotation.JsonKey(name: 'username')
-  final String? username;
-
+class UpdateTraineeDto extends UpdateUserDto with Validator<UpdateTraineeDto> {
   @annotation.JsonKey(name: 'birthday_date')
   @DateTimeConverter()
   final DateTime? birthdayDate;
 
-  UpdateTraineeDto({this.name, this.username, this.birthdayDate});
+  @annotation.JsonKey(name: 'trainer_id')
+  final String trainerId;
+
+  UpdateTraineeDto({
+    required super.id,
+    super.name,
+    super.username,
+    required this.trainerId,
+    this.birthdayDate,
+  });
+
+  @override
+  LucidValidator<UpdateTraineeDto> validate(
+    ValidatorBuilder<UpdateTraineeDto> builder,
+  ) {
+    return builder;
+  }
 
   Map<String, dynamic> toJson() => _$UpdateTraineeDtoToJson(this);
 
