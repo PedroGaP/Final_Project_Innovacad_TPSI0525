@@ -135,10 +135,10 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       var trainerExists = false;
 
       for (var trainer in updatedResult.data!) {
-        if (trainer.userId == createdUserId) {
+        if (trainer.id == createdUserId) {
           trainerExists = true;
           userData["trainer_id"] = trainer.trainerId;
-          userData["user_id"] = trainer.userId;
+          userData["user_id"] = trainer.id;
           userData["birthday_date"] = trainer.birthdayDate;
           userData["specialization"] = trainer.specialization;
           break;
@@ -176,7 +176,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
         await db.update(
           table: "user",
           updateData: userData,
-          where: {"id": dto.userId},
+          where: {"id": dto.id},
         );
       }
 
@@ -222,7 +222,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
 
       final existing = existingRes.data!;
       final deleteAuthRes = await _remoteUserService.deleteUserAsAdmin(
-        existing.userId,
+        existing.id,
       );
 
       if (deleteAuthRes.isFailure) return Result.failure(deleteAuthRes.error!);
@@ -232,7 +232,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       await db.startTrans();
 
       await db.delete(table: table, where: {"trainer_id": id});
-      await db.delete(table: "user", where: {"id": existing.userId});
+      await db.delete(table: "user", where: {"id": existing.id});
 
       await db.commit();
 

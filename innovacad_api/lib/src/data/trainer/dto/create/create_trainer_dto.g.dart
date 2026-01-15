@@ -8,14 +8,14 @@ part of 'create_trainer_dto.dart';
 
 CreateTrainerDto _$CreateTrainerDtoFromJson(Map<String, dynamic> json) =>
     CreateTrainerDto(
-      birthdayDate: const DateTimeConverter().fromJson(
-        json['birthday_date'] as Object,
-      ),
-      specialization: json['specialization'] as String,
       name: json['name'] as String,
       email: json['email'] as String,
       username: json['username'] as String,
       password: json['password'] as String,
+      birthdayDate: const DateTimeConverter().fromJson(
+        json['birthday_date'] as Object,
+      ),
+      specialization: json['specialization'] as String,
     );
 
 Map<String, dynamic> _$CreateTrainerDtoToJson(CreateTrainerDto instance) =>

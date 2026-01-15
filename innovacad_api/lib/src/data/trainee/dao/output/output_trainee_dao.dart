@@ -11,17 +11,12 @@ class OutputTraineeDao extends OutputUserDao {
   @annotation.JsonKey(name: 'trainee_id')
   final String traineeId;
 
-  @annotation.JsonKey(name: 'user_id')
-  final String userId;
-
   @annotation.JsonKey(name: 'birthday_date')
   @DateTimeConverter()
   final DateTime birthdayDate;
 
   OutputTraineeDao({
-    required this.traineeId,
-    required this.userId,
-    required this.birthdayDate,
+    required super.id,
     required super.username,
     required super.name,
     required super.email,
@@ -29,7 +24,9 @@ class OutputTraineeDao extends OutputUserDao {
     required super.createdAt,
     super.token,
     super.image,
-  }) : super(id: userId);
+    required this.traineeId,
+    required this.birthdayDate,
+  });
 
   Map<String, dynamic> toJson() => _$OutputTraineeDaoToJson(this);
 
