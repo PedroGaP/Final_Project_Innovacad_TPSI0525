@@ -1,8 +1,10 @@
 import { createMemo, createResource, createSignal, For, Show } from "solid-js";
 import { Icon } from "@/components/Icon";
 import type { Trainee } from "@/types/user";
-import { fetchTrainees } from "@/api/api";
 import CopyToClipboard from "@/components/CopyToClipboard";
+import capitalize from "@/utils/capitalize";
+import { useApi } from "@/hooks/useApi";
+import { Toaster } from "solid-toast";
 
 const PAGE_SIZE = 10;
 const createEmptyTrainee = (): Trainee =>
@@ -17,8 +19,11 @@ const createEmptyTrainee = (): Trainee =>
   } as Trainee);
 
 const TraineePage = () => {
-  const [usersData, { mutate, refetch }] =
-    createResource<Trainee[]>(fetchTrainees);
+  const api = useApi();
+
+  const [usersData, { mutate, refetch }] = createResource<Trainee[]>(
+    api.fetchTrainees
+  );
 
   console.log(JSON.stringify(usersData()));
 
@@ -60,6 +65,7 @@ const TraineePage = () => {
 
   return (
     <div class="card bg-base-100 shadow">
+      <Toaster />
       <div class="card-body gap-4">
         {/* HEADER */}
         <div class="flex justify-between items-center">
@@ -90,35 +96,35 @@ const TraineePage = () => {
           <table class="table table-zebra table-fixed w-full">
             <thead>
               <tr>
-                <th class="w-48">Trainer ID</th>
-                <th class="w-48">User ID</th>
-                <th>Name</th>
-                <th>Email</th>
+                <th class="w-52">Trainer ID</th>
+                <th class="w-52">User ID</th>
+                <th class="w-32">Name</th>
+                <th class="w-48">Email</th>
                 <th class="w-32">Username</th>
                 <th class="w-24">Role</th>
-                <th class="w-24 text-right">Actions</th>
+                <th class="w-28 text-right">Actions</th>
               </tr>
             </thead>
 
-            <tbody>
+            <tbody class="overflow-scroll">
               <For each={paginatedUsers()}>
                 {(user) => {
                   console.log(user);
                   console.log(typeof user);
                   return (
                     <tr>
-                      <td class="w-40">
+                      <td class="w-52">
                         <CopyToClipboard val={user.traineeId}>
-                          <div class="overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 pb-1 text-xs font-mono max-w-30">
+                          <div class="overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 pb-1 text-xs font-mono max-w-52">
                             {user.traineeId}
                           </div>
                         </CopyToClipboard>
                       </td>
 
                       {/* Coluna User ID */}
-                      <td class="w-40">
+                      <td class="w-52">
                         <CopyToClipboard val={user.id}>
-                          <div class="overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 pb-1 text-xs font-mono max-w-30">
+                          <div class="overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 pb-1 text-xs font-mono max-w-52">
                             {user.id}
                           </div>
                         </CopyToClipboard>
@@ -129,7 +135,7 @@ const TraineePage = () => {
                       <td>{user.username}</td>
                       <td>
                         <span class="badge badge-outline">
-                          {user.role || "N/A"}
+                          {!!user.role ? capitalize(user.role) : "N/A"}
                         </span>
                       </td>
                       <td class="text-right space-x-2">

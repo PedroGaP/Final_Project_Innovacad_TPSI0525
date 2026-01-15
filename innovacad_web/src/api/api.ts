@@ -1,13 +1,4 @@
-import type { SignInData } from "@/types/auth";
-import { Trainee, Trainer, User, type UserResponseData } from "@/types/user";
-
-const headers = {
-  "Content-Type": "application/json",
-};
-
-const baseUrl = "http://localhost:8080";
-
-enum AppErrorType {
+export enum AppErrorType {
   NOT_FOUND,
   VALIDATION,
   CONFLICT,
@@ -18,7 +9,7 @@ enum AppErrorType {
   INTERNAL,
 }
 
-class AppError {
+export class AppError {
   type: AppErrorType;
   message: string;
   details?: Record<string, any>[];
@@ -45,7 +36,7 @@ class AppError {
   }
 }
 
-class Result<T> {
+export class Result<T> {
   data?: T;
   error?: AppError;
   isError: boolean = false;
@@ -58,7 +49,7 @@ class Result<T> {
   }
 }
 
-function statusToErrorType(status: number): AppErrorType {
+export function statusToErrorType(status: number): AppErrorType {
   switch (status) {
     case 404:
       return AppErrorType.NOT_FOUND;
@@ -79,118 +70,14 @@ function statusToErrorType(status: number): AppErrorType {
   return AppErrorType.INTERNAL;
 }
 
-class Failure<T> extends Result<T> {
+export class Failure<T> extends Result<T> {
   constructor(error: AppError) {
     super(undefined, error);
   }
 }
 
-class Success<T> extends Result<T> {
+export class Success<T> extends Result<T> {
   constructor(data: T) {
     super(data, undefined);
   }
 }
-
-async function fetchApi<T>(
-  path: string,
-  method: string,
-  body?: Object
-): Promise<Result<T>> {
-  try {
-    const res = await fetch(`${baseUrl}${path}`, {
-      headers,
-      method,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      console.log(data);
-      return new Failure(
-        new AppError(
-          statusToErrorType(res.status),
-          data.error.message || "Unknown Error",
-          data.error.details
-        )
-      );
-    }
-
-    return new Success(data as T);
-  } catch (e) {
-    return new Failure(
-      new AppError(AppErrorType.INTERNAL, "Network or Parsing Error")
-    );
-  }
-}
-
-export const signIn = async (data: SignInData): Promise<User | undefined> => {
-  if (data.email === undefined && data.username === undefined)
-    throw new Error("Parâmetros inválidos.");
-
-  const res = await fetchApi<UserResponseData>("/sign/in", "POST", {
-    email: data.email,
-    username: data.username,
-    password: data.password,
-  });
-
-  if (res.isError || !res.data) {
-    throw new Error(
-      `[SIGN IN] > Failure while signing in user: ${JSON.stringify(res.error)}`
-    );
-  }
-
-  const resData = res.data;
-
-  let user: User;
-
-  if (resData.trainer_id) {
-    user = new Trainer(resData, resData.trainer_id);
-  } else if (resData.trainee_id) {
-    user = new Trainee(resData, resData.trainee_id);
-  } else {
-    user = new User(resData);
-  }
-
-  return user;
-};
-
-export const fetchTrainees = async () => {
-  const res = await fetchApi<UserResponseData[]>("/trainees", "GET");
-
-  if (res.isError || !res.data) {
-    throw new Error(
-      `[FETCH TRAINEES] > Failure while fetching trainees: ${JSON.stringify(
-        res.error
-      )} `
-    );
-  }
-
-  const resData = res.data;
-
-  console.log(`[DATA] >> ${JSON.stringify(resData)}`);
-
-  return resData.map((item) => {
-    return new Trainee(item, item.trainee_id || "");
-  });
-};
-
-export const fetchTrainers = async () => {
-  const res = await fetchApi<UserResponseData[]>("/trainers", "GET");
-
-  if (res.isError || !res.data) {
-    throw new Error(
-      `[FETCH TRAINERS] > Failure while fetching trainers: ${JSON.stringify(
-        res.error
-      )} `
-    );
-  }
-
-  const resData = res.data;
-
-  console.log(`[DATA] >> ${JSON.stringify(resData)}`);
-
-  return resData.map((item) => {
-    return new Trainer(item, item.trainer_id || "");
-  });
-};

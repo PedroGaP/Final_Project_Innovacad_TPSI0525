@@ -1,7 +1,9 @@
 import { createMemo, createResource, createSignal, For, Show } from "solid-js";
 import { Icon } from "@/components/Icon";
 import type { Trainer } from "@/types/user";
-import { fetchTrainers } from "@/api/api";
+import capitalize from "@/utils/capitalize";
+import CopyToClipboard from "@/components/CopyToClipboard";
+import { useApi } from "@/hooks/useApi";
 
 const PAGE_SIZE = 10;
 const createEmptyTrainer = (): Trainer =>
@@ -16,8 +18,11 @@ const createEmptyTrainer = (): Trainer =>
   } as Trainer);
 
 const TrainerPage = () => {
-  const [usersData, { mutate, refetch }] =
-    createResource<Trainer[]>(fetchTrainers);
+  const api = useApi();
+
+  const [usersData, { mutate, refetch }] = createResource<Trainer[]>(
+    api.fetchTrainers
+  );
 
   console.log(JSON.stringify(usersData()));
 
@@ -89,14 +94,13 @@ const TrainerPage = () => {
           <table class="table table-zebra table-fixed w-full overflow-visible">
             <thead>
               <tr>
-                <th>Trainer ID</th>
-                <th>User ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Username</th>
-                <th>Role</th>
-
-                <th class="text-right">Actions</th>
+                <th class="w-52">Trainer ID</th>
+                <th class="w-52">User ID</th>
+                <th class="w-32">Name</th>
+                <th class="w-48">Email</th>
+                <th class="w-32">Username</th>
+                <th class="w-24">Role</th>
+                <th class="w-28 text-right">Actions</th>
               </tr>
             </thead>
 
@@ -107,22 +111,26 @@ const TrainerPage = () => {
                   console.log(typeof user);
                   return (
                     <tr>
-                      <td class="w-32">
-                        <div class="overflow-x-auto whitespace-nowrap scrollbar-hide">
-                          {user.trainerId}
-                        </div>
+                      <td class="w-52">
+                        <CopyToClipboard val={user.trainerId}>
+                          <div class="overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 pb-1 text-xs font-mono max-w-52">
+                            {user.trainerId}
+                          </div>
+                        </CopyToClipboard>
                       </td>
-                      <td class="w-32">
-                        <div class="overflow-x-auto whitespace-nowrap scrollbar-hide">
-                          {user.id}
-                        </div>
+                      <td class="w-52">
+                        <CopyToClipboard val={user.id}>
+                          <div class="overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 pb-1 text-xs font-mono max-w-52">
+                            {user.id}
+                          </div>
+                        </CopyToClipboard>
                       </td>
                       <td>{user.name}</td>
                       <td>{user.email}</td>
                       <td>{user.username}</td>
                       <td>
                         <span class="badge badge-outline">
-                          {user.role || "N/A"}
+                          {!!user.role ? capitalize(user.role) : "N/A"}
                         </span>
                       </td>
                       <td class="text-right space-x-2">

@@ -7,12 +7,15 @@ export type UserResponseData = {
   role: string | undefined;
   trainer_id?: string | undefined;
   trainee_id?: string | undefined;
+  image?: string | undefined;
+  birthday_date?: number | undefined;
 };
 
 class User {
   id: string | undefined;
   email: string | undefined;
   name: string | undefined;
+  image: string | undefined;
   username: string | undefined;
   token: string | undefined;
   role: string | undefined;
@@ -24,6 +27,7 @@ class User {
     this.username = data.username;
     this.token = data.token;
     this.role = data.role;
+    this.image = data.image;
   }
 
   toJson(): string {
@@ -33,19 +37,31 @@ class User {
 
 class Trainee extends User {
   traineeId: string | undefined;
+  birthdayDate: number | undefined;
 
-  constructor(data: UserResponseData, traineeId: string) {
+  constructor(
+    data: UserResponseData,
+    traineeId: string,
+    birthdayDate?: number | undefined
+  ) {
     super(data);
     this.traineeId = traineeId || data.trainee_id;
+    this.birthdayDate = birthdayDate || data.birthday_date;
   }
 }
 
 class Trainer extends User {
   trainerId: string | undefined;
+  birthdayDate: number | undefined;
 
-  constructor(data: UserResponseData, trainerId: string) {
+  constructor(
+    data: UserResponseData,
+    trainerId: string,
+    birthdayDate?: number | undefined
+  ) {
     super(data);
     this.trainerId = trainerId || data.trainer_id;
+    this.birthdayDate = birthdayDate || data.birthday_date;
   }
 }
 

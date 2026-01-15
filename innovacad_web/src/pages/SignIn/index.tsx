@@ -1,14 +1,15 @@
 import { A, useNavigate } from "@solidjs/router";
 import { TbLogin } from "solid-icons/tb";
 import { createStore } from "solid-js/store";
-import { signIn } from "@/api/api";
-import GoogleLogo from "@/assets/google.svg";
+import MicrosoftLogo from "@/assets/microsoft.svg";
 import type { SignInData } from "@/types/auth";
 import type { User } from "@/types/user";
 import debounce from "@/utils/debounce";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
+import { useApi } from "@/hooks/useApi";
 
 const SignIn = () => {
+  const api = useApi();
   const { setUser } = useUserDetails();
   const [signInStore, setSignInStore] = createStore<SignInData>({
     password: "",
@@ -17,13 +18,13 @@ const SignIn = () => {
   });
   const navigate = useNavigate();
 
-  const handleGoogleSignIn = () => {
+  const handleSocialLogin = () => {
     // TODO: hook up Google auth (Firebase, Auth0, etc.)
     console.log("Google sign in");
   };
 
   const handleEmailSignIn = async () => {
-    const user: User | undefined = await signIn({
+    const user: User | undefined = await api.signIn({
       email: signInStore.email,
       password: signInStore.password,
     });
@@ -91,16 +92,14 @@ const SignIn = () => {
               Login
             </button>
 
-            <div class="divider text-xs uppercase opacity-50 font-bold">
-              Social Login
-            </div>
+            <div class="divider text-xs uppercase opacity-50 font-bold">Or</div>
 
             <button
-              class="btn btn-outline btn-block border-base-300 hover:bg-base-200"
-              onClick={handleGoogleSignIn}
+              class="btn btn-outline btn-block border-base-300 hover:bg-base-200  uppercase"
+              onClick={handleSocialLogin}
             >
-              <img src={GoogleLogo} alt="Google" class="w-5 h-5 mr-2" />
-              Google
+              <img src={MicrosoftLogo} alt="Microsoft" class="w-5 h-5 mr-2" />
+              Sign In with Microsoft
             </button>
           </div>
         </div>

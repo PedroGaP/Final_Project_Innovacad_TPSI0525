@@ -13,6 +13,8 @@ import PublicLayout from "./components/PublicLayout";
 import TrainerPage from "./pages/Dashboard/User/Trainer";
 import TraineePage from "./pages/Dashboard/User/Trainee";
 import { UserDetailsProvider } from "./providers/UserDetailsProvider";
+import SettingsPage from "./pages/Dashboard/Settings";
+import { Toaster } from "solid-toast";
 
 const routes: RouteDefinition[] = [
   {
@@ -27,6 +29,10 @@ const routes: RouteDefinition[] = [
       {
         path: "/",
         component: DashboardHome,
+      },
+      {
+        path: "/settings",
+        component: SettingsPage,
       },
       {
         path: "/user",
@@ -55,6 +61,7 @@ render(
   () => (
     <ThemeProvider>
       <UserDetailsProvider>
+        <Toaster position="bottom-right" gutter={8} />
         <div class="min-h-screen bg-base-300 font-sans antialiased text-base-content">
           <Router>{routes}</Router>
         </div>
