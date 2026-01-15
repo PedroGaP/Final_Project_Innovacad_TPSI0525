@@ -10,4 +10,7 @@ new Elysia()
   .mount(auth.handler)
   .listen(API.PORT);
 
-await seedAdmin();
+(async () => {
+  await seedAdmin();
+})();
+
