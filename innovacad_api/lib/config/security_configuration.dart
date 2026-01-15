@@ -1,4 +1,5 @@
-import 'package:innovacad_api/src/data/services/auth_service.dart';
+
+import 'package:innovacad_api/src/core/auth/auth_service.dart';
 import 'package:vaden/vaden.dart';
 import 'package:vaden_security/vaden_security.dart';
 

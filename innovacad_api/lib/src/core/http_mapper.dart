@@ -1,7 +1,7 @@
 import 'dart:convert';
 
+import 'package:innovacad_api/src/core/core.dart';
 import 'package:vaden/vaden.dart';
-import 'result.dart';
 
 Response resultToResponse<T>(Result<T> result) {
   if (result.isSuccess) {

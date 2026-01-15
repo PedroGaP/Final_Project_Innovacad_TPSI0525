@@ -9,4 +9,13 @@ class TokenUtils {
 
     return parsedToken.group(0);
   }
+
+  static String? getUserSessionToken(String cookie) {
+    final regexp = RegExp('(?<=better-auth\.session_token=)([^;]+)');
+    final parsedToken = regexp.firstMatch(cookie);
+
+    if (parsedToken == null) return null;
+
+    return parsedToken.group(0);
+  }
 }
