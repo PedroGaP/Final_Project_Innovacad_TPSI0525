@@ -12,7 +12,14 @@ const pool = createPool({
 
 export const auth = betterAuth({
   secret: API.JWT.SECRET,
-  trustedOrigins: ["https://localhost:10000", "https://localhost:8080"],
+  trustedOrigins: [
+    "https://localhost:10000",
+    "http://localhost:10000",
+    "https://localhost:8080",
+    "http://localhost:8080",
+    "https://localhost:5000",
+    "http://localhost:5000"
+  ],
   session: {
     cookieCache: {
       enabled: true,
@@ -33,7 +40,7 @@ export const auth = betterAuth({
   account: {
     accountLinking: {
       enabled: true,
-      trustedProviders: ["microsoft"],
+      trustedProviders: ["google", "facebook"],
     },
   },
   emailAndPassword: {
@@ -41,12 +48,17 @@ export const auth = betterAuth({
     disableSignUp: false,
   },
   socialProviders: {
-    microsoft: {
-      clientId: API.MICROSOFT.CLIENT_ID as string,
-      clientSecret: API.MICROSOFT.CLIENT_SECRET as string,
-      disableSignUp: true,
-      disableImplicitSignUp: true,
+    google: {
+      prompt: "select_account consent",
+      clientId: API.GOOGLE.CLIENT_ID as string,
+      clientSecret: API.GOOGLE.CLIENT_SECRET as string,
+      disableSignUp: false,
     },
+    facebook: {
+      clientId: API.FACEBOOK.CLIENT_ID as string,
+      clientSecret: API.FACEBOOK.CLIENT_SECRET as string,
+      disableSignUp: false,
+    }
   },
   user: {
     additionalFields: {
