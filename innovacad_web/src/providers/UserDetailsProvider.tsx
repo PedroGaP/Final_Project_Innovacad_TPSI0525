@@ -17,7 +17,8 @@ const hydrateUser = (
 ): User | Trainee | Trainer | null => {
   if (!data) return null;
   if (data.trainer_id) return new Trainer(data, data.trainer_id);
-  if (data.trainee_id) return new Trainee(data, data.trainee_id);
+  if (data.trainee_id)
+    return new Trainee(data, data.trainee_id, data.birthday_date);
   return new User(data);
 };
 
