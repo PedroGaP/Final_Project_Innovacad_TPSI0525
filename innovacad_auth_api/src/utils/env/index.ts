@@ -2,7 +2,11 @@ const ENV = process.env;
 
 export const API = {
 	PORT: ENV.API_PORT ?? "3000",
-	MICROSOFT: {
+	GOOGLE: {
+		CLIENT_ID: ENV.MICROSOFT_CLIENT_ID ?? "your_client_id",
+		CLIENT_SECRET: ENV.MICROSOFT_CLIENT_SECRET ?? "your_client_secret",
+	},
+	FACEBOOK: {
 		CLIENT_ID: ENV.MICROSOFT_CLIENT_ID ?? "your_client_id",
 		CLIENT_SECRET: ENV.MICROSOFT_CLIENT_SECRET ?? "your_client_secret",
 	},
