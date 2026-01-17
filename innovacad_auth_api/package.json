@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "bun run --watch ./src/index.ts",
-    "build": "bun build --compile --minify --bytecode ./src/index.ts --outfile ./build/api",
+    "build": "bun build --compile --minify --target=bun ./src/index.ts --outfile ./build/api",
     "migrate": "bunx @better-auth/cli migrate --config ./src/modules/auth/index.ts"
   },
   "dependencies": {
