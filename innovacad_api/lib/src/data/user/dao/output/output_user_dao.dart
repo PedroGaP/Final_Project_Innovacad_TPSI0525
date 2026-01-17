@@ -31,6 +31,9 @@ class OutputUserDao {
   @annotation.JsonKey(name: 'token')
   final String? token;
 
+  @annotation.JsonKey(name: 'emailVerified')
+  final bool verified;
+
   OutputUserDao({
     required this.id,
     required this.username,
@@ -38,6 +41,7 @@ class OutputUserDao {
     required this.name,
     required this.createdAt,
     required this.role,
+    required this.verified,
     this.image,
     this.token,
   });

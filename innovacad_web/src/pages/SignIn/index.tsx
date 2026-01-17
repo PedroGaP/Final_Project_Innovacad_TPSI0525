@@ -32,6 +32,12 @@ const SignIn = () => {
     setUser(user!);
 
     console.log(`[USER] > ${JSON.stringify(user)}`);
+
+    if (!user?.verified) {
+      navigate("/verify-email");
+      return;
+    }
+
     navigate("/dashboard");
   };
 

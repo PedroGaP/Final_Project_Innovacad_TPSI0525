@@ -15,12 +15,17 @@ import TraineePage from "./pages/Dashboard/User/Trainee";
 import { UserDetailsProvider } from "./providers/UserDetailsProvider";
 import SettingsPage from "./pages/Dashboard/Settings";
 import { Toaster } from "solid-toast";
+import VerifyEmail from "./pages/VerifyEmail";
 
 const routes: RouteDefinition[] = [
   {
     path: "/",
     component: PublicLayout,
     children: [{ path: "/", component: SignIn }],
+  },
+  {
+    path: "/verify-email",
+    component: VerifyEmail,
   },
   {
     path: "/dashboard",

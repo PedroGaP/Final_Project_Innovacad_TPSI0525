@@ -11,10 +11,12 @@
     "@elysiajs/cors": "^1.4.0",
     "better-auth": "^1.4.7",
     "elysia": "latest",
-    "mysql2": "^3.16.0"
+    "mysql2": "^3.16.0",
+    "nodemailer": "^7.0.12"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.11",
+    "@types/nodemailer": "^7.0.5",
     "bun-types": "latest"
   },
   "module": "src/index.js"

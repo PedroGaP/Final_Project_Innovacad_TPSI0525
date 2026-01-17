@@ -91,3 +91,12 @@ FROM schedules s
 WHERE s.room_id = 1
   AND s.end_date_timestamp > NOW();
 
+select *
+from verification;
+select *
+from user;
+
+Insert into trainers(trainer_id, user_id, birthday_date, specialization)
+VALUES (UUID(), '1aV01zChJh8dgs8FTgGjRjVSLItuSVvj', NOW(), 'ginecologista');
+
+SELECT trainer_id, birthday_date, specialization FROM trainers WHERE user_id = '1aV01zChJh8dgs8FTgGjRjVSLItuSVvj';

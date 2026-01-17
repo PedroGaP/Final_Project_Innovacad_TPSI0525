@@ -23,7 +23,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       db = await MysqlConfiguration.connect();
 
       final query =
-          "SELECT t.trainer_id, t.user_id, t.birthday_date, t.specialization, u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt FROM `trainers` t JOIN `user` u ON t.user_id = u.id";
+          "SELECT t.trainer_id, t.user_id, t.birthday_date, t.specialization, u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt, u.emailVerified FROM `trainers` t JOIN `user` u ON t.user_id = u.id";
       final results = await db.query(query);
 
       for (var row in results.rows) {
@@ -44,7 +44,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       db = await MysqlConfiguration.connect();
 
       final results = await db.query(
-        "SELECT t.trainer_id, t.user_id, t.birthday_date, t.specialization, u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt "
+        "SELECT t.trainer_id, t.user_id, t.birthday_date, t.specialization, u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt, u.emailVerified "
         "FROM `trainers` t JOIN `user` u ON t.user_id = u.id WHERE t.trainer_id = ? LIMIT 1",
         whereValues: [id],
         isStmt: true,

@@ -16,13 +16,14 @@ OutputTrainerDao _$OutputTrainerDaoFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String,
       username: json['username'] as String,
       role: json['role'] as String,
-      image: json['image'] as String?,
-      token: json['token'] as String?,
+      verified: json['emailVerified'] as bool,
       trainerId: json['trainer_id'] as String,
       birthdayDate: const DateTimeConverter().fromJson(
         json['birthday_date'] as Object,
       ),
       specialization: json['specialization'] as String,
+      image: json['image'] as String?,
+      token: json['token'] as String?,
     );
 
 Map<String, dynamic> _$OutputTrainerDaoToJson(OutputTrainerDao instance) =>
@@ -35,6 +36,7 @@ Map<String, dynamic> _$OutputTrainerDaoToJson(OutputTrainerDao instance) =>
       'createdAt': const DateTimeConverter().toJson(instance.createdAt),
       'image': instance.image,
       'token': instance.token,
+      'emailVerified': instance.verified,
       'trainer_id': instance.trainerId,
       'birthday_date': const DateTimeConverter().toJson(instance.birthdayDate),
       'specialization': instance.specialization,

@@ -1,3 +1,4 @@
+import 'package:innovacad_api/src/core/middleware/cors_middleware.dart';
 import 'package:vaden/vaden.dart';
 
 @Configuration()
@@ -10,7 +11,7 @@ class AppConfiguration {
   @Bean()
   Pipeline globalMiddleware(ApplicationSettings settings) {
     return Pipeline() //
-        .addMiddleware(cors(allowedOrigins: ['*']))
+        .addMiddleware(corsMiddleware())
         .addVadenMiddleware(EnforceJsonContentType())
         .addMiddleware(logRequests());
   }

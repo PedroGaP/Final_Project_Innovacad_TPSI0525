@@ -1,31 +1,27 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'output_trainee_dao.dart';
+part of 'user_signin_dao.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-OutputTraineeDao _$OutputTraineeDaoFromJson(Map<String, dynamic> json) =>
-    OutputTraineeDao(
+UserSigninDao _$UserSigninDaoFromJson(Map<String, dynamic> json) =>
+    UserSigninDao(
       id: json['id'] as String,
       username: json['username'] as String,
-      name: json['name'] as String,
       email: json['email'] as String,
-      role: json['role'] as String,
+      name: json['name'] as String,
       createdAt: const DateTimeConverter().fromJson(
         json['createdAt'] as Object,
       ),
+      role: json['role'] as String,
       verified: json['emailVerified'] as bool,
-      traineeId: json['trainee_id'] as String,
-      birthdayDate: const DateTimeConverter().fromJson(
-        json['birthday_date'] as Object,
-      ),
-      token: json['token'] as String?,
       image: json['image'] as String?,
+      token: json['token'] as String?,
     );
 
-Map<String, dynamic> _$OutputTraineeDaoToJson(OutputTraineeDao instance) =>
+Map<String, dynamic> _$UserSigninDaoToJson(UserSigninDao instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
@@ -36,6 +32,4 @@ Map<String, dynamic> _$OutputTraineeDaoToJson(OutputTraineeDao instance) =>
       'image': instance.image,
       'token': instance.token,
       'emailVerified': instance.verified,
-      'trainee_id': instance.traineeId,
-      'birthday_date': const DateTimeConverter().toJson(instance.birthdayDate),
     };

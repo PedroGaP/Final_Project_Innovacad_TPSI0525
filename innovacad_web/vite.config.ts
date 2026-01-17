@@ -8,11 +8,17 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 5000,
-    proxy: {
-      "/sign": "http://localhost:8080", // Forward login requests
-      "/trainees": "http://localhost:8080", // Forward trainee requests
-      "/trainers": "http://localhost:8080", // Forward trainer requests
-    },
+    cors: true,
+    /*proxy: {
+      "/sign": "https://api.innovacad.grod.ovh",
+      "/trainees": "https://api.innovacad.grod.ovh",
+      "/trainers": "https://api.innovacad.grod.ovh",
+    },*/
+    /*proxy: {
+      "/sign": "https://localhost:8080",
+      "/trainees": "https://localhost:8080",
+      "/trainers": "https://localhost:8080",
+    },*/
   },
   build: {
     outDir: "build",

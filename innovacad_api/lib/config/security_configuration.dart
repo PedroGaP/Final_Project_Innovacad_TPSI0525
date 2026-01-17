@@ -1,4 +1,3 @@
-
 import 'package:innovacad_api/src/core/auth/auth_service.dart';
 import 'package:vaden/vaden.dart';
 import 'package:vaden_security/vaden_security.dart';
@@ -13,7 +12,7 @@ class SecurityConfiguration {
   @Bean()
   HttpSecurity httpSecurity() {
     return HttpSecurity([
-      RequestMatcher('/auth/**').permitAll(),
+      RequestMatcher('/auth/**').denyAll(),
       RequestMatcher('/docs/**').permitAll(),
       RequestMatcher('/courses/**').authenticated(),
       // RequestMatcher('/sign/up').hasRole("admin"),

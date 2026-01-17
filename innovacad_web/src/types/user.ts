@@ -9,6 +9,7 @@ export type UserResponseData = {
   trainee_id?: string | undefined;
   image?: string | undefined;
   birthday_date?: number | undefined;
+  verified: boolean | undefined;
 };
 
 class User {
@@ -19,6 +20,7 @@ class User {
   username: string | undefined;
   token: string | undefined;
   role: string | undefined;
+  verified: boolean | undefined;
 
   constructor(data: UserResponseData) {
     this.id = data.id;
@@ -28,6 +30,7 @@ class User {
     this.token = data.token;
     this.role = data.role;
     this.image = data.image;
+    this.verified = data.verified;
   }
 
   toJson(): string {

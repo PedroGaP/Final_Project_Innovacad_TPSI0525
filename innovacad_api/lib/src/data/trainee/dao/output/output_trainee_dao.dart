@@ -22,10 +22,11 @@ class OutputTraineeDao extends OutputUserDao {
     required super.email,
     required super.role,
     required super.createdAt,
-    super.token,
-    super.image,
+    required super.verified,
     required this.traineeId,
     required this.birthdayDate,
+    super.token,
+    super.image,
   });
 
   Map<String, dynamic> toJson() => _$OutputTraineeDaoToJson(this);

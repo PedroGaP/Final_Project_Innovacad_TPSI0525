@@ -3,22 +3,49 @@ import 'dart:convert';
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:vaden/vaden.dart';
 
-Response resultToResponse<T>(Result<T> result) {
+const _corsHeaders = {
+  'Access-Control-Allow-Origin': 'http://localhost:5000',
+  'Access-Control-Allow-Credentials': 'true',
+  'Access-Control-Allow-Headers':
+      'Origin, Content-Type, Authorization, Cookie, X-Requested-With',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+};
+
+Response resultToResponse<T>(
+  Result<T> result, {
+  Map<String, dynamic>? headers,
+}) {
+  final finalHeaders = <String, Object>{
+    'Content-Type': 'application/json',
+    ..._corsHeaders,
+    if (headers != null) ...headers,
+  }.cast<String, Object>();
+
   if (result.isSuccess) {
     final body = result.data;
-    if (body is Response) return body;
+    print(body);
+    print(body.runtimeType);
+
+    if (body is Response) {
+      return body.change(headers: finalHeaders);
+    }
 
     final encoded = jsonEncode(body);
 
-    return Response.ok(encoded, headers: {'Content-Type': 'application/json'});
+    if (headers != null) {
+      print("entrou com headers extra");
+    }
+
+    return Response.ok(encoded, headers: finalHeaders);
   }
 
   final err = result.error!;
   final status = _statusFromErrorType(err.type);
+
   return Response(
     status,
     body: jsonEncode({'error': err.toJson()}),
-    headers: {'Content-Type': 'application/json'},
+    headers: finalHeaders,
   );
 }
 
