@@ -1,14 +1,18 @@
 import { Check } from "lucide-solid";
 import { Show } from "solid-js";
+import { useApi } from "@/hooks/useApi";
 
 interface Props {
   logo: string;
   logo_alt: string;
   title: string;
   is_linked: boolean;
+  provider: string;
 }
 
 export default function SocialAuthCard(props: Props) {
+  const { linkSocial } = useApi();
+
   return (
     <>
       <div class="flex items-center justify-between p-4 rounded-lg border border-base-300 bg-base-200 hover:bg-base-200/80 transition-colors">
@@ -30,7 +34,14 @@ export default function SocialAuthCard(props: Props) {
         <Show
           when={props.is_linked}
           fallback={
-            <button class="btn btn-sm btn-neutral min-w-25">Connect</button>
+            <button
+              class="btn btn-sm btn-neutral min-w-25"
+              onClick={async () =>
+                await linkSocial(props.provider, "/dashboard/settings")
+              }
+            >
+              Connect
+            </button>
           }
         >
           <div class="rounded-box bg-accent p-1.5 ">

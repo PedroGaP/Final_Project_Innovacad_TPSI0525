@@ -16,6 +16,7 @@ OutputUserDao _$OutputUserDaoFromJson(Map<String, dynamic> json) =>
         json['createdAt'] as Object,
       ),
       role: json['role'] as String,
+      verified: json['emailVerified'] as bool,
       image: json['image'] as String?,
       token: json['token'] as String?,
     );
@@ -30,4 +31,5 @@ Map<String, dynamic> _$OutputUserDaoToJson(OutputUserDao instance) =>
       'createdAt': const DateTimeConverter().toJson(instance.createdAt),
       'image': instance.image,
       'token': instance.token,
+      'emailVerified': instance.verified,
     };

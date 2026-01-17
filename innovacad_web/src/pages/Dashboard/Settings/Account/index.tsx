@@ -32,7 +32,7 @@ const AccountSettingsPage = () => {
     <>
       {/* 2. Conteúdo Central (Formulário) */}
 
-      <div class="w-full flex-1 min-h-full border-base-300 bg-base-100">    
+      <div class="w-full flex-1 min-h-full border-base-300 bg-base-100">
         {/* Header do Formulário */}
         <div class="flex justify-between items-center p-6 border-b border-base-200">
           <div>
@@ -151,12 +151,14 @@ const AccountSettingsPage = () => {
                 logo_alt="Google Logo"
                 title="Google"
                 is_linked={false}
+                provider="google"
               />
               <SocialAuthCard
                 logo={FacebookLogo}
                 logo_alt="Facebook Logo"
                 title="Facebook"
                 is_linked={false}
+                provider="facebook"
               />
             </div>
           </div>

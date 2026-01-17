@@ -1,5 +1,10 @@
 /* User */
 
+export "user/dto/link/user_link_account_dto.dart";
+export "user/dto/signin_social/signin_social_dto.dart";
+export "user/dto/send_verify_email/send_verify_email_dto.dart";
+export "user/dto/validity/check_email_validity_dto.dart";
+export "user/dto/verify_email/verify_email_dto.dart";
 export "user/dto/create/create_user_dto.dart";
 export "user/dto/update/update_user_dto.dart";
 export "user/dao/output/output_user_dao.dart";

@@ -1,5 +1,6 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
+import 'package:innovacad_api/src/data/user/dto/link/user_link_account_dto.dart';
 import 'package:innovacad_api/src/domain/domain.dart';
 import 'package:vaden/vaden.dart';
 
@@ -35,5 +36,11 @@ class TrainerServiceImpl implements ITrainerService {
   @override
   Future<Result<OutputTrainerDao>> delete(String id) async {
     return await _repository.delete(id);
+  }
+
+  @override
+  Future<Result<OutputTrainerDao>> linkAccount(UserLinkAccountDto dto) {
+    // TODO: implement linkAccount
+    throw UnimplementedError();
   }
 }

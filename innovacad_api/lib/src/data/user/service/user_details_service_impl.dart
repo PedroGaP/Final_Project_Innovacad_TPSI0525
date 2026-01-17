@@ -3,12 +3,23 @@ import 'package:mysql_utils/mysql_utils.dart';
 import 'package:vaden/vaden.dart';
 import 'package:vaden_security/vaden_security.dart';
 
+class ExtendedUserDetails extends UserDetails {
+  final String? token;
+
+  ExtendedUserDetails({
+    this.token,
+    required super.username,
+    required super.password,
+    required super.roles,
+  });
+}
+
 @Service()
 class UserDetailsServiceImpl implements UserDetailsService {
   final String table = 'user';
 
   @override
-  Future<UserDetails?> loadUserByUsername(String userId) async {
+  Future<ExtendedUserDetails?> loadUserByUsername(String userId) async {
     MysqlUtils? db;
     try {
       db = await MysqlConfiguration.connect();
@@ -23,15 +34,15 @@ class UserDetailsServiceImpl implements UserDetailsService {
         return null;
       }
 
-      final details = UserDetails(
+      final details = ExtendedUserDetails(
         username: user["username"],
-        password: "", // Password not needed for simple verification if token is trusted
+        password: "",
         roles: [user["role"]],
+        token: "",
       );
-      
+
       await db.close();
       return details;
-      
     } catch (e, s) {
       if (db != null) await db.close();
       print(e);

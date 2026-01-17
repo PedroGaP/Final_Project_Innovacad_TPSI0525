@@ -1,15 +1,20 @@
 class Result<T> {
   final T? data;
   final AppError? error;
+  final Map<String, dynamic>? headers;
 
-  const Result._({this.data, this.error});
+  const Result._({this.data, this.error, this.headers});
 
   bool get isSuccess => error == null;
   bool get isFailure => error != null;
 
-  static Result<T> success<T>(T data) => Result._(data: data);
+  static Result<T> success<T>(T data, {Map<String, dynamic>? headers}) =>
+      Result._(data: data, headers: headers);
 
-  static Result<T> failure<T>(AppError error) => Result._(error: error);
+  static Result<T> failure<T>(
+    AppError error, {
+    Map<String, dynamic>? headers,
+  }) => Result._(error: error, headers: headers);
 }
 
 class AppError {

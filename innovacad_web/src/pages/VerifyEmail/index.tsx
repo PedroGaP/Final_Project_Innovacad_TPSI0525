@@ -1,0 +1,190 @@
+import { createSignal, onCleanup, onMount, Show } from "solid-js";
+import { Mail, ArrowLeft } from "lucide-solid";
+import { useUserDetails } from "@/providers/UserDetailsProvider";
+import { useNavigate } from "@solidjs/router";
+import VerifiedEmail from "./Verified";
+import { useApi } from "@/hooks/useApi";
+import toast from "solid-toast";
+
+const VerifyEmail = () => {
+  const { user } = useUserDetails();
+  const { sendVerificationEmail, verifyEmail, checkUserEmailValidity } =
+    useApi();
+  const navigate = useNavigate();
+
+  if (!user() || user()?.verified) {
+    navigate("/verify-email?status=verified");
+  }
+
+  if (user()?.verified) {
+    return <VerifiedEmail />;
+  }
+
+  const [code, setCode] = createSignal("");
+  const [seconds, setSeconds] = createSignal<number>(0);
+  const [loading, setLoading] = createSignal(false);
+  let timerInterval: any;
+
+  const countdown = () => {
+    setSeconds(30);
+
+    if (timerInterval) clearInterval(timerInterval);
+
+    timerInterval = setInterval(() => {
+      setSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerInterval);
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const runEmailValidityCheck = async () => {
+    try {
+      const res = await checkUserEmailValidity(user()!.id!);
+
+      if (res?.status) {
+        console.log("a");
+        toast.success("The email was verified!");
+        navigate("/dashboard");
+        return;
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  onCleanup(() => {
+    if (timerInterval) clearInterval(timerInterval);
+  });
+
+  onMount(async () => {
+    await runEmailValidityCheck();
+  });
+
+  const handleResend = async () => {
+    if (seconds() > 0) return;
+
+    countdown();
+    try {
+      if (!user()?.email) return;
+
+      const res = await sendVerificationEmail(user()!.email!, user()!.token!);
+
+      if (!res?.status) {
+        toast.error("Failed to send email");
+        return;
+      }
+      toast.success("Verification email sent!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Error sending email");
+    }
+  };
+
+  // Lógica para colar o código (Paste)
+  const handlePaste = (e: ClipboardEvent) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData?.getData("text");
+    console.log(pasteData);
+    setCode(pasteData ?? "");
+  };
+
+  const handleVerify = async (e: Event) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      // Simulação de chamada API
+      const res = await verifyEmail(code());
+
+      if (!res?.status) {
+        toast.error("Failed to verify email, try again later.");
+        return;
+      }
+
+      toast.success("The email was verified!");
+    } catch (e) {
+      toast.error("Failed to verify email, try again later.");
+    } finally {
+      setLoading(false);
+      countdown();
+    }
+  };
+
+  window.onfocus = async () => {
+    await runEmailValidityCheck();
+  };
+
+  return (
+    <div class="hero min-h-screen bg-base-200">
+      <div class="hero-content text-center">
+        <div class="card w-full max-w-md shadow-2xl bg-base-100 p-12 items-center text-center">
+          {/* Logo / Ícone Dinâmico */}
+          <div class="bg-primary/10 p-4 rounded-2xl mb-6">
+            <Mail size={40} class="text-primary" />
+          </div>
+
+          <h1 class="text-3xl font-bold mb-2">Verify your account </h1>
+          <p class="text-base-content/70 mb-8">
+            We sent a code to{" "}
+            <span class="font-semibold text-base-content">{user()?.email}</span>
+          </p>
+
+          <form onSubmit={handleVerify} class="w-full">
+            <div class="flex justify-between gap-2 mb-8" onPaste={handlePaste}>
+              <input
+                class="input input-primary w-full"
+                placeholder="Paste the token here..."
+                value={code()}
+                onchange={(e) => {
+                  e.preventDefault();
+                  setCode(e.target.value);
+                }}
+              ></input>
+            </div>
+
+            <button
+              type="submit"
+              class="btn btn-primary w-full text-lg mb-6"
+              disabled={code().length < 1 || loading()}
+              //disabled={code().some((d) => d === "") || loading()}
+            >
+              {loading() ? (
+                <span class="loading loading-spinner"></span>
+              ) : (
+                "Verify"
+              )}
+            </button>
+          </form>
+
+          <div class="flex flex-col gap-4 items-center">
+            <p class="text-sm">
+              Did you not receive the token?{" "}
+              <button
+                class="link link-primary font-bold no-underline hover:underline"
+                onclick={() => handleResend()}
+              >
+                <Show
+                  when={seconds() == 0}
+                  fallback={`Wait for ${seconds()} seconds...`}
+                >
+                  Resend
+                </Show>
+              </button>
+            </p>
+
+            <button class="btn btn-ghost btn-sm gap-2">
+              <ArrowLeft size={16} />
+              Back to Sign In
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default VerifyEmail;

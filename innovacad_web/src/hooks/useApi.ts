@@ -7,21 +7,25 @@ import {
   type Result,
 } from "@/api/api";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
-import type { SignInData } from "@/types/auth";
+import type {
+  SendVerificationData,
+  SignInData,
+  VerifyEmailData,
+} from "@/types/auth";
 import { Trainee, Trainer, User, type UserResponseData } from "@/types/user";
 import { useNavigate } from "@solidjs/router";
 import toast from "solid-toast";
 
 const headers = {
   "Content-Type": "application/json",
-  Access: "a",
 };
 
-//const baseUrl = "http://localhost:8080";
-const baseUrl = "";
+//const baseUrl = "https://api.innovacad.grod.ovh";
+const baseUrl = "http://localhost:8080";
+//const baseUrl = "";
 
 export const useApi = () => {
-  const { user, logout } = useUserDetails();
+  const { user, logout, setUser } = useUserDetails();
   const navigate = useNavigate();
 
   const fetchApi = async <T>(
@@ -49,6 +53,7 @@ export const useApi = () => {
       const res = await fetch(`${baseUrl}${path}`, {
         headers: reqHeaders,
         method,
+        credentials: "include",
         body: body ? JSON.stringify(body) : undefined,
       });
 
@@ -158,10 +163,147 @@ export const useApi = () => {
     });
   };
 
-  // Return the functions to the component
+  const sendVerificationEmail = async (email: string, token: string) => {
+    try {
+      const res = await fetchApi<SendVerificationData>(
+        "/sign/send/verify",
+        "POST",
+        {
+          token,
+          email,
+        }
+      );
+
+      if (res.isError || !res.data) {
+        throw new Error(
+          `[SEND VERIFICATION] > Failure while sending verification email: ${JSON.stringify(
+            res.error
+          )} `
+        );
+      }
+
+      const resData = res.data;
+      console.log(`[DATA] >> ${JSON.stringify(resData)}`);
+
+      console.log(resData);
+
+      return { status: resData };
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const verifyEmail = async (token: string) => {
+    try {
+      const res = await fetchApi<VerifyEmailData>("/sign/verify", "POST", {
+        verifyToken: token,
+        authToken: user()!.token!,
+        callback: `${baseUrl}/verify-email?status=verified`,
+      });
+
+      if (res.isError || !res.data) {
+        throw new Error(
+          `[VERIFICATION] > Failure while verifying email: ${JSON.stringify(
+            res.error
+          )} `
+        );
+      }
+
+      const resData = res.data;
+
+      return { status: resData };
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const checkUserEmailValidity = async (userId: string) => {
+    try {
+      const res = await fetchApi<boolean>("/sign/validity", "POST", {
+        userId,
+      });
+
+      if (res.isError || !res.data) {
+        throw new Error(
+          `[VERIFICATION] > Failure while verifying email: ${JSON.stringify(
+            res.error
+          )} `
+        );
+      }
+
+      const resData = res.data;
+
+      return { status: resData };
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const getSession = async () => {
+    try {
+      const res = await fetchApi<UserResponseData>("/sign/session", "GET");
+
+      console.log(res);
+
+      if (res.isError || !res.data) {
+        throw new Error(
+          `[VERIFICATION] > Failure while verifying email: ${JSON.stringify(
+            res.error
+          )} `
+        );
+      }
+
+      const resData = res.data;
+      let user: User;
+
+      if ("trainer_id" in resData) {
+        user = new Trainer(resData, resData.trainer_id!, resData.birthday_date);
+      } else if ("trainee_id" in resData) {
+        user = new Trainer(resData, resData.trainee_id!, resData.birthday_date);
+      } else {
+        user = new User(resData);
+      }
+
+      setUser(user);
+
+      return { status: resData };
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const linkSocial = async (provider: string, callback: string) => {
+    try {
+      const formatedCallback = `${baseUrl}${callback}`;
+      const res = await fetchApi<UserResponseData>(
+        "/sign/link-social",
+        "POST",
+        { provider, formatedCallback }
+      );
+
+      if (res.isError || !res.data)
+        throw new Error(
+          `[SOCIAL LINKING] > Failure while linking your social account to your user: ${res.error}`
+        );
+
+      const resData = res.data;
+
+      console.log(resData);
+
+      return { status: resData };
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
   return {
     signIn,
     fetchTrainees,
     fetchTrainers,
+    sendVerificationEmail,
+    verifyEmail,
+    checkUserEmailValidity,
+    getSession,
+    linkSocial,
   };
 };
