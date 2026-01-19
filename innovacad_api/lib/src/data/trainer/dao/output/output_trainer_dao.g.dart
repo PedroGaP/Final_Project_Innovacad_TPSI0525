@@ -24,6 +24,7 @@ OutputTrainerDao _$OutputTrainerDaoFromJson(Map<String, dynamic> json) =>
       specialization: json['specialization'] as String,
       image: json['image'] as String?,
       token: json['token'] as String?,
+      sessionToken: json['session_token'] as String?,
     );
 
 Map<String, dynamic> _$OutputTrainerDaoToJson(OutputTrainerDao instance) =>
@@ -36,6 +37,7 @@ Map<String, dynamic> _$OutputTrainerDaoToJson(OutputTrainerDao instance) =>
       'createdAt': const DateTimeConverter().toJson(instance.createdAt),
       'image': instance.image,
       'token': instance.token,
+      'session_token': instance.sessionToken,
       'emailVerified': instance.verified,
       'trainer_id': instance.trainerId,
       'birthday_date': const DateTimeConverter().toJson(instance.birthdayDate),

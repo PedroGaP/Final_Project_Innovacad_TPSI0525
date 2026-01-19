@@ -8,16 +8,20 @@ part of 'update_user_dto.dart';
 
 UpdateUserDto _$UpdateUserDtoFromJson(Map<String, dynamic> json) =>
     UpdateUserDto(
-      id: json['id'] as String,
       name: json['name'] as String?,
       username: json['username'] as String?,
-      password: json['password'] as String?,
+      oldPassword: json['old_password'] as String?,
+      newPassword: json['new_password'] as String?,
+      image: json['image'] as String?,
+      sessionToken: json['session_token'] as String?,
     );
 
 Map<String, dynamic> _$UpdateUserDtoToJson(UpdateUserDto instance) =>
     <String, dynamic>{
-      'id': instance.id,
       'name': instance.name,
       'username': instance.username,
-      'password': instance.password,
+      'old_password': instance.oldPassword,
+      'new_password': instance.newPassword,
+      'image': instance.image,
+      'session_token': instance.sessionToken,
     };

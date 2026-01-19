@@ -6,23 +6,31 @@ part 'update_user_dto.g.dart';
 @DTO()
 @annotation.JsonSerializable()
 class UpdateUserDto {
-  @annotation.JsonKey(name: 'id')
-  final String id;
-
   @annotation.JsonKey(name: 'name')
   final String? name;
 
   @annotation.JsonKey(name: 'username')
   final String? username;
 
-  @annotation.JsonKey(name: 'password')
-  final String? password;
+  @annotation.JsonKey(name: 'old_password')
+  final String? oldPassword;
+
+  @annotation.JsonKey(name: 'new_password')
+  final String? newPassword;
+
+  @annotation.JsonKey(name: 'image')
+  final String? image;
+
+  @annotation.JsonKey(name: 'session_token')
+  final String? sessionToken;
 
   UpdateUserDto({
-    required this.id,
     this.name,
     this.username,
-    this.password,
+    this.oldPassword,
+    this.newPassword,
+    this.image,
+    this.sessionToken,
   });
 
   Map<String, dynamic> toJson() => _$UpdateUserDtoToJson(this);

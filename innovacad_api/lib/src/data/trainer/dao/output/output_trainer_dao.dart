@@ -31,6 +31,7 @@ class OutputTrainerDao extends OutputUserDao {
     required this.specialization,
     super.image,
     super.token,
+    super.sessionToken,
   });
 
   Map<String, dynamic> toJson() => _$OutputTrainerDaoToJson(this);

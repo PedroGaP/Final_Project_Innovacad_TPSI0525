@@ -1,12 +1,15 @@
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import { Upload } from "lucide-solid";
-import { Show } from "solid-js";
+import { createEffect, createResource, Show } from "solid-js";
 import GoogleLogo from "@/assets/google.svg";
 import SocialAuthCard from "@/components/SocialAuthCard";
 import FacebookLogo from "@/assets/facebook.svg";
+import { useApi } from "@/hooks/useApi";
 
 const AccountSettingsPage = () => {
   const { user } = useUserDetails();
+  const { listAccounts } = useApi();
+  const [accounts, { refetch }] = createResource(async () => listAccounts());
 
   const formatDateForInput = (epoch: number | undefined | null) => {
     if (!epoch) return "";
@@ -150,14 +153,18 @@ const AccountSettingsPage = () => {
                 logo={GoogleLogo}
                 logo_alt="Google Logo"
                 title="Google"
-                is_linked={false}
+                is_linked={
+                  accounts()?.find((a) => a.providerId == "google") != null
+                } 
                 provider="google"
               />
               <SocialAuthCard
                 logo={FacebookLogo}
                 logo_alt="Facebook Logo"
                 title="Facebook"
-                is_linked={false}
+                is_linked={
+                  accounts()?.find((a) => a.providerId == "facebook") != null
+                }
                 provider="facebook"
               />
             </div>

@@ -1,23 +1,27 @@
-import { createSignal, onCleanup, onMount, Show } from "solid-js";
+import {
+  createResource,
+  createSignal,
+  onCleanup,
+  onMount,
+  Show,
+} from "solid-js";
 import { Mail, ArrowLeft } from "lucide-solid";
-import { useUserDetails } from "@/providers/UserDetailsProvider";
 import { useNavigate } from "@solidjs/router";
-import VerifiedEmail from "./Verified";
 import { useApi } from "@/hooks/useApi";
 import toast from "solid-toast";
 
 const VerifyEmail = () => {
-  const { user } = useUserDetails();
-  const { sendVerificationEmail, verifyEmail, checkUserEmailValidity } =
-    useApi();
+  const { getSession } = useApi();
+  const [session, { refetch }] = createResource(async () => {
+    const data = await getSession();
+    return data;
+  });
+  const { sendVerificationEmail, verifyEmail } = useApi();
   const navigate = useNavigate();
 
-  if (!user() || user()?.verified) {
-    navigate("/verify-email?status=verified");
-  }
-
-  if (user()?.verified) {
-    return <VerifiedEmail />;
+  if (!session() || session()?.verified) {
+    navigate("/dashboard/");
+    return;
   }
 
   const [code, setCode] = createSignal("");
@@ -42,27 +46,20 @@ const VerifyEmail = () => {
     }, 1000);
   };
 
-  const runEmailValidityCheck = async () => {
-    try {
-      const res = await checkUserEmailValidity(user()!.id!);
-
-      if (res?.status) {
-        console.log("a");
-        toast.success("The email was verified!");
-        navigate("/dashboard");
-        return;
-      }
-    } catch (e) {
-      console.log(e);
-    }
+  const handleFocus = () => {
+    console.log("Windows is focused!");
+    refetch();
   };
 
   onCleanup(() => {
     if (timerInterval) clearInterval(timerInterval);
+    window.removeEventListener("focus", handleFocus);
+    document.removeEventListener("visibilitychange", handleFocus);
   });
 
   onMount(async () => {
-    await runEmailValidityCheck();
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
   });
 
   const handleResend = async () => {
@@ -70,9 +67,12 @@ const VerifyEmail = () => {
 
     countdown();
     try {
-      if (!user()?.email) return;
+      if (!session()?.email) return;
 
-      const res = await sendVerificationEmail(user()!.email!, user()!.token!);
+      const res = await sendVerificationEmail(
+        session()!.email!,
+        session()!.token!,
+      );
 
       if (!res?.status) {
         toast.error("Failed to send email");
@@ -97,10 +97,9 @@ const VerifyEmail = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Simulação de chamada API
       const res = await verifyEmail(code());
 
-      if (!res?.status) {
+      if (!res) {
         toast.error("Failed to verify email, try again later.");
         return;
       }
@@ -112,10 +111,6 @@ const VerifyEmail = () => {
       setLoading(false);
       countdown();
     }
-  };
-
-  window.onfocus = async () => {
-    await runEmailValidityCheck();
   };
 
   return (
@@ -130,7 +125,9 @@ const VerifyEmail = () => {
           <h1 class="text-3xl font-bold mb-2">Verify your account </h1>
           <p class="text-base-content/70 mb-8">
             We sent a code to{" "}
-            <span class="font-semibold text-base-content">{user()?.email}</span>
+            <span class="font-semibold text-base-content">
+              {session()?.email}
+            </span>
           </p>
 
           <form onSubmit={handleVerify} class="w-full">
@@ -139,9 +136,9 @@ const VerifyEmail = () => {
                 class="input input-primary w-full"
                 placeholder="Paste the token here..."
                 value={code()}
-                onchange={(e) => {
+                onInput={(e) => {
                   e.preventDefault();
-                  setCode(e.target.value);
+                  setCode(e.currentTarget.value);
                 }}
               ></input>
             </div>

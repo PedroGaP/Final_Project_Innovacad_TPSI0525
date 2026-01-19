@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/user/service/sign_service_impl.dart';
 import 'package:innovacad_api/src/data/data.dart';
@@ -15,7 +14,7 @@ class SignController {
   //@Get('/session/<session-token>')
   @Get('/session')
   Future<Response> getSession(
-    //@Query('session-token') String sessionCookie,
+    @Query('session-token') String sessionCookie,
   ) async {
     final result = await _service.getSession("sessionCookie");
     print(jsonEncode(result.data?.toJson()));
@@ -27,8 +26,6 @@ class SignController {
   Future<Response> signin(@Body() UserSigninDto dto) async {
     final result = await _service.signin(dto);
 
-    print(jsonEncode(result.data?.toJson()));
-    print(result.headers);
     return resultToResponse(result, headers: result.headers);
   }
 
@@ -60,6 +57,33 @@ class SignController {
 
   @Post("/link-social")
   Future<Response> linkSocial(@Body() UserLinkAccountDto dto) async {
-    return resultToResponse(await _service.linkSocial(dto));
+    final result = await _service.linkSocial(dto);
+    return resultToResponse(result, headers: result.headers);
+  }
+
+  @Get("/accounts")
+  Future<Response> listAccounts(
+    @Query("session-token") String sessionToken,
+  ) async {
+    final result = await _service.listAccounts(sessionToken);
+    return resultToResponse(result);
+  }
+
+  @Post("/send-otp")
+  Future<Response> sendOTP(@Header('cookie') dynamic cookieHeader) async {
+    print(cookieHeader);
+    final result = await _service.sendOTP(cookieHeader);
+
+    return resultToResponse(result, headers: result.headers);
+  }
+
+  @Post("/verify-otp")
+  Future<Response> verifyOTP(
+    @Header('cookie') dynamic twoFactorCookie,
+    @Query('otp') String otp,
+  ) async {
+    final result = await _service.verifyOTP(twoFactorCookie, otp);
+
+    return resultToResponse(result, headers: result.headers);
   }
 }

@@ -31,6 +31,9 @@ class OutputUserDao {
   @annotation.JsonKey(name: 'token')
   final String? token;
 
+  @annotation.JsonKey(name: 'session_token')
+  final String? sessionToken;
+
   @annotation.JsonKey(name: 'emailVerified')
   final bool verified;
 
@@ -44,6 +47,7 @@ class OutputUserDao {
     required this.verified,
     this.image,
     this.token,
+    this.sessionToken,
   });
 
   Map<String, dynamic> toJson() => _$OutputUserDaoToJson(this);

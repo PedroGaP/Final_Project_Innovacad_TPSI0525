@@ -18,7 +18,6 @@ dependencies:
   mysql_utils: ^2.1.12
   jose: ^0.3.5
   mysql_client_plus: ^0.1.2
-  better_auth_client: ^0.12.1
   json_annotation: ^4.9.0
   dart_jsonwebtoken: ^3.3.1
 

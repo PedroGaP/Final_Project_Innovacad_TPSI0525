@@ -15,14 +15,12 @@ class UpdateTrainerDto extends UpdateUserDto with Validator<UpdateTraineeDto> {
   @annotation.JsonKey(name: 'specialization')
   final String? specialization;
 
-  @annotation.JsonKey(name: 'trainer_id')
-  final String trainerId;
-
   UpdateTrainerDto({
-    required this.trainerId,
-    required super.id,
     super.name,
-    super.password,
+    super.oldPassword,
+    super.newPassword,
+    super.image,
+    super.sessionToken,
     this.birthdayDate,
     this.specialization,
   });

@@ -13,7 +13,7 @@ const UserDetailsContext = createContext<UserDetailsContextType>();
 
 // Função auxiliar para transformar JSON em Classe
 const hydrateUser = (
-  data: UserResponseData | null
+  data: UserResponseData | null,
 ): User | Trainee | Trainer | null => {
   if (!data) return null;
   if (data.trainer_id) return new Trainer(data, data.trainer_id);
@@ -28,7 +28,7 @@ export const UserDetailsProvider = (props: { children: JSX.Element }) => {
   const initialData = saved ? JSON.parse(saved) : null;
 
   const [user, setUser] = createSignal<User | Trainee | Trainer | null>(
-    hydrateUser(initialData)
+    hydrateUser(initialData),
   );
 
   // 2. Persistência automática
@@ -44,6 +44,7 @@ export const UserDetailsProvider = (props: { children: JSX.Element }) => {
 
   const logout = () => {
     setUser(null);
+    Cookies.remove("better-auth.session_data");
     window.location.href = "/";
   };
 
@@ -60,7 +61,7 @@ export const useUserDetails = () => {
   const context = useContext(UserDetailsContext);
   if (!context) {
     throw new Error(
-      "useUserDetails deve ser usado dentro de um UserDetailsProvider"
+      "useUserDetails deve ser usado dentro de um UserDetailsProvider",
     );
   }
   return context;
