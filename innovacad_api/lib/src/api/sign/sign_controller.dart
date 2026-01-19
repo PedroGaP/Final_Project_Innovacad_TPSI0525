@@ -15,7 +15,7 @@ class SignController {
   //@Get('/session/<session-token>')
   @Get('/session')
   Future<Response> getSession(
-    //@Query('session-token') String sessionCookie,
+    @Query('session-token') String sessionCookie,
   ) async {
     final result = await _service.getSession("sessionCookie");
     print(jsonEncode(result.data?.toJson()));

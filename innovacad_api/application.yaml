@@ -15,7 +15,7 @@ redis:
   host: redis.grod.ovh
 
 server:
-  port: 10001
+  port: 8080
   host: 0.0.0.0
   cors:
     enabled: true

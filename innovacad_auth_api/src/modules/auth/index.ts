@@ -29,6 +29,7 @@ export const auth = betterAuth({
     "http://localhost:5000",
   ],
   session: {
+    expiresIn: 900,
     cookieCache: {
       enabled: true,
       strategy: "jwt",
@@ -58,7 +59,7 @@ export const auth = betterAuth({
       if (currUser.role === "trainer") {
         const [rows] = await pool.execute(
           "SELECT trainer_id, birthday_date, specialization FROM trainers WHERE user_id = ?",
-          [currUser.id]
+          [currUser.id],
         );
         const trainerData = (rows as any[])[0];
 
@@ -74,7 +75,7 @@ export const auth = betterAuth({
       if (currUser.role === "trainee") {
         const [rows] = await pool.execute(
           "SELECT trainee_id, birthday_date FROM trainees WHERE user_id = ?",
-          [currUser.id]
+          [currUser.id],
         );
         console.log(rows);
         const traineedata = (rows as any[])[0];
@@ -234,7 +235,7 @@ export const auth = betterAuth({
 export const seedAdmin = async () => {
   const [rows] = await pool.execute(
     "SELECT id FROM user WHERE username = ? OR email = ? LIMIT 1",
-    [API.ADMIN.USERNAME, API.ADMIN.EMAIL]
+    [API.ADMIN.USERNAME, API.ADMIN.EMAIL],
   );
 
   if ((rows as object[]).length > 0) return;

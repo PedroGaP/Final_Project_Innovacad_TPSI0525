@@ -14,6 +14,7 @@ import type {
 } from "@/types/auth";
 import { Trainee, Trainer, User, type UserResponseData } from "@/types/user";
 import { useNavigate } from "@solidjs/router";
+import Cookies from "js-cookie";
 import toast from "solid-toast";
 
 const headers = {
@@ -31,7 +32,7 @@ export const useApi = () => {
   const fetchApi = async <T>(
     path: string,
     method: string,
-    body?: Object
+    body?: Object,
   ): Promise<Result<T>> => {
     try {
       //toast("Your session expired. You'll be redirected to sign in page.");
@@ -40,7 +41,7 @@ export const useApi = () => {
         console.log(path);
         if (!user() || !user()?.token) {
           return new Failure(
-            new AppError(AppErrorType.FORBIDDEN, "No token was provided.")
+            new AppError(AppErrorType.FORBIDDEN, "No token was provided."),
           );
         }
       }
@@ -82,8 +83,8 @@ export const useApi = () => {
           new AppError(
             statusToErrorType(res.status),
             data?.error?.message || "Unknown error",
-            data?.error?.details
-          )
+            data?.error?.details,
+          ),
         );
       }
 
@@ -91,7 +92,7 @@ export const useApi = () => {
     } catch (e) {
       console.log(e);
       return new Failure(
-        new AppError(AppErrorType.INTERNAL, "Network or parsing error.")
+        new AppError(AppErrorType.INTERNAL, "Network or parsing error."),
       );
     }
   };
@@ -129,8 +130,8 @@ export const useApi = () => {
     if (res.isError || !res.data) {
       throw new Error(
         `[FETCH TRAINEES] > Failure while fetching trainees: ${JSON.stringify(
-          res.error
-        )} `
+          res.error,
+        )} `,
       );
     }
 
@@ -149,8 +150,8 @@ export const useApi = () => {
     if (res.isError || !res.data) {
       throw new Error(
         `[FETCH TRAINERS] > Failure while fetching trainers: ${JSON.stringify(
-          res.error
-        )} `
+          res.error,
+        )} `,
       );
     }
 
@@ -171,14 +172,14 @@ export const useApi = () => {
         {
           token,
           email,
-        }
+        },
       );
 
       if (res.isError || !res.data) {
         throw new Error(
           `[SEND VERIFICATION] > Failure while sending verification email: ${JSON.stringify(
-            res.error
-          )} `
+            res.error,
+          )} `,
         );
       }
 
@@ -204,8 +205,8 @@ export const useApi = () => {
       if (res.isError || !res.data) {
         throw new Error(
           `[VERIFICATION] > Failure while verifying email: ${JSON.stringify(
-            res.error
-          )} `
+            res.error,
+          )} `,
         );
       }
 
@@ -226,8 +227,8 @@ export const useApi = () => {
       if (res.isError || !res.data) {
         throw new Error(
           `[VERIFICATION] > Failure while verifying email: ${JSON.stringify(
-            res.error
-          )} `
+            res.error,
+          )} `,
         );
       }
 
@@ -241,15 +242,22 @@ export const useApi = () => {
 
   const getSession = async () => {
     try {
-      const res = await fetchApi<UserResponseData>("/sign/session", "GET");
+      const token: string = Cookies.get("better-auth.session_data") ?? "";
+
+      if (token.length < 1) return null;
+
+      const res = await fetchApi<UserResponseData>(
+        `/sign/session?session-token=$token`,
+        "GET",
+      );
 
       console.log(res);
 
       if (res.isError || !res.data) {
         throw new Error(
           `[VERIFICATION] > Failure while verifying email: ${JSON.stringify(
-            res.error
-          )} `
+            res.error,
+          )} `,
         );
       }
 
@@ -278,12 +286,12 @@ export const useApi = () => {
       const res = await fetchApi<UserResponseData>(
         "/sign/link-social",
         "POST",
-        { provider, formatedCallback }
+        { provider, callback: formatedCallback },
       );
 
       if (res.isError || !res.data)
         throw new Error(
-          `[SOCIAL LINKING] > Failure while linking your social account to your user: ${res.error}`
+          `[SOCIAL LINKING] > Failure while linking your social account to your user: ${res.error}`,
         );
 
       const resData = res.data;
