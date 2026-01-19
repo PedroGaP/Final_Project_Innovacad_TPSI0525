@@ -34,6 +34,7 @@ const SignIn = () => {
     console.log(`[USER] > ${JSON.stringify(user)}`);
 
     if (!user?.verified) {
+      console.log("Navegou aqui!");
       navigate("/verify-email");
       return;
     }

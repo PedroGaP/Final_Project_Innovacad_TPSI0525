@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
 import 'package:innovacad_api/src/api/utils/token_utils.dart';
 import 'package:innovacad_api/src/core/core.dart';
+import 'package:innovacad_api/src/data/account/dao/output_account_dao.dart';
 import 'package:innovacad_api/src/data/data.dart';
 import 'package:mysql_utils/mysql_utils.dart';
 import 'package:vaden/vaden.dart' as v;
@@ -44,6 +45,7 @@ class RemoteUserService {
           AppError(AppErrorType.external, "Admin sign-in failed"),
         );
       }
+
       final cookie = response.headers['set-cookie']!.toString();
       final token = TokenUtils.getUserToken(cookie);
       final sessionToken = TokenUtils.getUserSessionToken(cookie);
@@ -174,7 +176,19 @@ class RemoteUserService {
 
       if (response.statusCode != HttpStatus.ok) {
         return Result.failure(
-          AppError(AppErrorType.badRequest, "Sign-in failed"),
+          AppError(
+            AppErrorType.badRequest,
+            "Sign-in failed",
+            details: response.data,
+          ),
+        );
+      }
+
+      if (response.data is Map &&
+          response.data.containsKey("twoFactorRedirect")) {
+        return Result.success(
+          response.data,
+          headers: {"set-cookie": response.headers['set-cookie']},
         );
       }
 
@@ -192,12 +206,20 @@ class RemoteUserService {
         ),
       );
 
-      if (res.statusCode != 200)
+      if (res.statusCode != HttpStatus.ok || res.data == null)
         return Result.failure(
-          AppError(AppErrorType.notFound, "No session found?"),
+          AppError(
+            AppErrorType.notFound,
+            "No session found for user",
+            details: response.data,
+          ),
         );
 
+      print(res.data);
+
       final userData = res.data["user"] as Map<String, dynamic>;
+      print(res.data);
+      userData["session_token"] = res.data["session"]["token"];
       userData["token"] = token;
       userData["headers"] = {"set-cookie": res.headers["set-cookie"]![0]};
 
@@ -205,7 +227,11 @@ class RemoteUserService {
     } catch (e, s) {
       print(s);
       return Result.failure(
-        AppError(AppErrorType.external, "SignIn error: $e"),
+        AppError(
+          AppErrorType.external,
+          "SignIn error: $e",
+          details: {"error": s.toString()},
+        ),
       );
     }
   }
@@ -270,7 +296,9 @@ class RemoteUserService {
     }
   }
 
-  Future<Result<bool>> linkSocial(UserLinkAccountDto dto) async {
+  Future<Result<Map<String, dynamic>>> linkSocial(
+    UserLinkAccountDto dto,
+  ) async {
     try {
       final uri = Uri(
         scheme: _settings["auth"]["protocol"],
@@ -281,8 +309,14 @@ class RemoteUserService {
 
       final response = await _dio.postUri(
         uri,
+        options: Options(headers: {"Authorization": 'Bearer ${dto.token}'}),
         data: {"provider": dto.provider, "callbackURL": dto.callback},
       );
+
+      print(response.statusCode);
+      print(response.data);
+      print(response.requestOptions.data);
+      print(response.requestOptions.headers);
 
       if (response.statusCode != HttpStatus.ok)
         return Result.failure(
@@ -293,8 +327,14 @@ class RemoteUserService {
           ),
         );
 
-      return Result.success(true);
-    } catch (e) {
+      print(response.headers["set-cookie"]![0]);
+
+      return Result.success(
+        response.data,
+        headers: {"set-cookie": response.headers["set-cookie"]![0]},
+      );
+    } catch (e, s) {
+      print(s);
       return Result.failure(
         AppError(
           AppErrorType.internal,
@@ -429,20 +469,255 @@ class RemoteUserService {
 
   Future<Result<OutputUserDao>> getSession(String sessionCookie) async {
     try {
-      final res = await _dio.get("http://localhost:10000/api/auth/get-session");
+      final res = await _dio.get(
+        "http://localhost:10000/api/auth/get-session",
+        options: Options(headers: {"cookie": sessionCookie}),
+      );
 
       if (res.statusCode != 200 || res.data == null)
         return Result.failure(
           AppError(
             AppErrorType.notFound,
             "No session found, sign in and try again later.",
+            details: res.data,
           ),
         );
 
-      return Result.success(res.data);
+      print(res.headers);
+
+      final userData = res.data["user"];
+      final cookies = res.headers["set-cookie"].toString();
+      userData["session_token"] = res.data["session"]["token"];
+      userData["token"] = TokenUtils.getUserToken(cookies);
+
+      print(userData);
+
+      if (userData.containsKey("trainer_id") && userData["trainer_id"] != null)
+        return Result.success(OutputTrainerDao.fromJson(userData));
+      if (userData.containsKey("trainee_id") && userData["trainee_id"] != null)
+        return Result.success(OutputTraineeDao.fromJson(userData));
+
+      return Result.success(OutputUserDao.fromJson(userData));
     } catch (e, s) {
       print(s);
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    }
+  }
+
+  Future<Result<bool>> updateUser(UpdateUserDto dto) async {
+    try {
+      if (dto.sessionToken == null)
+        return Result.failure(
+          AppError(AppErrorType.forbidden, "You must provide a token"),
+        );
+
+      final updateUri = Uri(
+        scheme: _settings["auth"]["protocol"],
+        host: _settings["auth"]["host"],
+        port: _settings["auth"]["port"],
+        path: "/api/auth/update-user",
+      );
+
+      var data = {};
+
+      if (dto.name != null) data["name"] = dto.name;
+      if (dto.image != null) data["image"] = dto.image;
+
+      final updateResponse = await _dio.postUri(
+        updateUri,
+        options: Options(
+          headers: {"Authorization": "Bearer ${dto.sessionToken}"},
+        ),
+        data: data,
+      );
+
+      if (updateResponse.statusCode != HttpStatus.ok) {
+        return Result.success(false);
+      }
+
+      final passwordUri = Uri(
+        scheme: _settings["auth"]["protocol"],
+        host: _settings["auth"]["host"],
+        port: _settings["auth"]["port"],
+        path: "/api/auth/update-user",
+      );
+
+      if (dto.newPassword != null && dto.oldPassword != null) {
+        final passwordResponse = await _dio.postUri(
+          passwordUri,
+          options: Options(
+            headers: {"Authorization": "Bearer ${dto.sessionToken}"},
+          ),
+          data: {
+            "newPassword": dto.newPassword,
+            "currentPassword": dto.oldPassword,
+          },
+        );
+
+        if (passwordResponse.statusCode != HttpStatus.ok)
+          return Result.success(false);
+      }
+
+      return Result.success(true);
+    } catch (e) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Failed to update the user",
+          details: {"error": e.toString()},
+        ),
+      );
+    }
+  }
+
+  Future<Result<List<Map<String, dynamic>>>> listAccounts(
+    String sessionToken,
+  ) async {
+    try {
+      final uri = Uri(
+        scheme: _settings["auth"]["protocol"],
+        host: _settings["auth"]["host"],
+        port: _settings["auth"]["port"],
+        path: "/api/auth/list-accounts",
+      );
+      final response = await _dio.getUri(
+        uri,
+        options: Options(headers: {'Authorization': 'Bearer $sessionToken'}),
+      );
+
+      if (response.statusCode != HttpStatus.ok) {
+        return Result.failure(
+          AppError(
+            AppErrorType.badRequest,
+            "Failed to list user accounts.",
+            details: {"status": response.statusCode, "message": response.data},
+          ),
+        );
+      }
+
+      List<dynamic> resData = response.data!;
+
+      List<Map<String, dynamic>> accounts = resData
+          .map((e) => OutputAccountDao.fromJson(e).toJson())
+          .toList();
+
+      return Result.success(accounts);
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          e.toString(),
+          details: {"error": s.toString()},
+        ),
+      );
+    }
+  }
+
+  Future<Result<bool>> sendOTP(dynamic cookies) async {
+    try {
+      final uri = Uri(
+        scheme: _settings["auth"]["protocol"],
+        host: _settings["auth"]["host"],
+        port: _settings["auth"]["port"],
+        path: "/api/auth/two-factor/send-otp",
+      );
+      final response = await _dio.postUri(
+        uri,
+        options: Options(
+          headers: {
+            'cookie': cookies is List ? cookies.join(";") : cookies,
+            "origin": "http://localhost:8080",
+          },
+        ),
+      );
+
+      if (response.statusCode != HttpStatus.ok) {
+        return Result.failure(
+          AppError(
+            AppErrorType.badRequest,
+            "Failed to send email OTP.",
+            details: {"status": response.statusCode, "message": response.data},
+          ),
+        );
+      }
+
+      final newCookies = response.headers["set-cookie"] ?? cookies;
+
+      return Result.success(
+        response.data["status"],
+        headers: {"set-cookie": newCookies},
+      );
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          e.toString(),
+          details: {"error": s.toString()},
+        ),
+      );
+    }
+  }
+
+  Future<Result<Map<String, dynamic>>> verifyOTP(
+    dynamic twoFactorCookie,
+    String otp,
+  ) async {
+    try {
+      final uri = Uri(
+        scheme: _settings["auth"]["protocol"],
+        host: _settings["auth"]["host"],
+        port: _settings["auth"]["port"],
+        path: "/api/auth/two-factor/verify-otp",
+      );
+      final response = await _dio.postUri(
+        uri,
+        data: {"code": otp},
+        options: Options(
+          headers: {
+            "origin": "http://localhost:8080",
+            "cookie": twoFactorCookie is List
+                ? twoFactorCookie.join(";")
+                : twoFactorCookie,
+          },
+        ),
+      );
+
+      if (response.statusCode != HttpStatus.ok) {
+        return Result.failure(
+          AppError(
+            AppErrorType.badRequest,
+            "Failed to send email OTP.",
+            details: {"status": response.statusCode, "message": response.data},
+          ),
+        );
+      }
+
+      final sessionResponse = await getSession(
+        response.headers["set-cookie"]![0],
+      );
+
+      if (sessionResponse.isFailure || sessionResponse.data == null) {
+        return Result.failure(
+          AppError(
+            AppErrorType.notFound,
+            "No session found for user",
+            details: {"data": sessionResponse.data},
+          ),
+        );
+      }
+
+      return Result.success(
+        sessionResponse.data!.toJson(),
+        headers: {"set-cookie": response.headers["set-cookie"]},
+      );
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          e.toString(),
+          details: {"error": s.toString()},
+        ),
+      );
     }
   }
 }

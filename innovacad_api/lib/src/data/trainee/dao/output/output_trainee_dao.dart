@@ -27,6 +27,7 @@ class OutputTraineeDao extends OutputUserDao {
     required this.birthdayDate,
     super.token,
     super.image,
+    super.sessionToken,
   });
 
   Map<String, dynamic> toJson() => _$OutputTraineeDaoToJson(this);

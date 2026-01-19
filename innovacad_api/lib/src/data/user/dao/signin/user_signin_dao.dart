@@ -18,6 +18,7 @@ class UserSigninDao extends OutputUserDao {
     required super.verified,
     super.image,
     super.token,
+    super.sessionToken,
   });
 
   factory UserSigninDao.fromJson(Map<String, dynamic> json) =>

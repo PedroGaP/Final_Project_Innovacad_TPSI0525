@@ -156,52 +156,52 @@ class TraineeRepositoryImpl implements ITraineeRepository {
 
   @override
   Future<Result<OutputTraineeDao>> update(
-    String id,
+    String traineeId,
     UpdateTraineeDto dto,
   ) async {
     MysqlUtils? db;
     try {
-      final existingRes = await getById(id);
-      if (existingRes.isFailure) return existingRes;
-      final existing = existingRes.data!;
+      print("UPDATE S_TOKEN: ${dto.sessionToken}");
+
+      // 1. User Details
+      final isUserUpdated = await _remoteUserService.updateUser(dto);
+
+      if (isUserUpdated.isFailure)
+        return Result.failure(
+          AppError(
+            AppErrorType.internal,
+            "Failed to update trainee user data",
+            details: {"error": isUserUpdated.error},
+          ),
+        );
 
       db = await MysqlConfiguration.connect();
       await db.startTrans();
 
-      // Update User fields
-      final userUpdates = <String, dynamic>{};
-      if (dto.name != null) userUpdates["name"] = dto.name;
-      if (dto.username != null) userUpdates["username"] = dto.username;
-
-      if (userUpdates.isNotEmpty) {
-        await db.update(
-          table: userTable,
-          updateData: userUpdates,
-          where: {"id": existing.id},
-        );
-      }
-
-      // Update Trainee fields
-      final traineeUpdates = <String, dynamic>{};
+      // Update Trainee table
+      final traineeData = <String, dynamic>{};
       if (dto.birthdayDate != null)
-        traineeUpdates["birthday_date"] = dto.birthdayDate!.toIso8601String();
+        traineeData["birthday_date"] = dto.birthdayDate;
 
-      if (traineeUpdates.isNotEmpty) {
+      if (traineeData.isNotEmpty) {
         await db.update(
           table: table,
-          updateData: traineeUpdates,
-          where: {"trainee_id": id},
+          updateData: traineeData,
+          where: {"trainee_id": traineeId},
         );
       }
 
       await db.commit();
-      await db.close();
-      return getById(id);
-    } catch (e) {
+
+      return await getById(traineeId);
+    } catch (e, s) {
       if (db != null) {
-        await db.rollback();
-        await db.close();
+        try {
+          await db.rollback();
+          await db.close();
+        } catch (_) {}
       }
+      print("[ERROR] Update Trainer: $e\n$s");
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }

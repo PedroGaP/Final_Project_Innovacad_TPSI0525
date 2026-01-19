@@ -50,8 +50,6 @@ const DashboardLayout = (props: any) => {
     },
   ];
 
-  toast("aaa");
-
   return (
     <>
       <ProtectedRoute>
@@ -168,7 +166,7 @@ const DashboardLayout = (props: any) => {
                       </a>
                     </li>
                     <li>
-                      <a>
+                      <a href="/dashboard/settings">
                         <Icon name="Settings" size={16} />
                         Settings
                       </a>

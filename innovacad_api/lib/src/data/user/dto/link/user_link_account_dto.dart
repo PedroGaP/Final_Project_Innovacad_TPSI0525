@@ -7,6 +7,11 @@ class UserLinkAccountDto {
   // @annotation.JsonKey(name: "id")
   final String provider;
   final String callback;
+  final String token;
 
-  UserLinkAccountDto({required this.provider, required this.callback});
+  UserLinkAccountDto({
+    required this.provider,
+    required this.callback,
+    required this.token,
+  });
 }

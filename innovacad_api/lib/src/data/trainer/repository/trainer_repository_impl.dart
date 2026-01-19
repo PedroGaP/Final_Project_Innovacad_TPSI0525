@@ -37,7 +37,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
   }
 
   @override
-  Future<Result<OutputTrainerDao>> getById(String id) async {
+  Future<Result<OutputTrainerDao>> getById(String trainerId) async {
     MysqlUtils? db;
 
     try {
@@ -46,7 +46,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       final results = await db.query(
         "SELECT t.trainer_id, t.user_id, t.birthday_date, t.specialization, u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt, u.emailVerified "
         "FROM `trainers` t JOIN `user` u ON t.user_id = u.id WHERE t.trainer_id = ? LIMIT 1",
-        whereValues: [id],
+        whereValues: [trainerId],
         isStmt: true,
       );
 
@@ -159,26 +159,29 @@ class TrainerRepositoryImpl implements ITrainerRepository {
 
   @override
   Future<Result<OutputTrainerDao>> update(
-    String id,
+    String trainerId,
     UpdateTrainerDto dto,
   ) async {
     MysqlUtils? db;
     try {
+      print("UPDATE S_TOKEN: ${dto.sessionToken}");
+
+      // 1. User Details
+      final isUserUpdated = await _remoteUserService.updateUser(
+        dto
+      );
+
+      if (isUserUpdated.isFailure)
+        return Result.failure(
+          AppError(
+            AppErrorType.internal,
+            "Failed to update trainer user data",
+            details: {"error": isUserUpdated.error},
+          ),
+        );
+
       db = await MysqlConfiguration.connect();
       await db.startTrans();
-
-      // Update User table if name/password provided
-      if (dto.name != null || dto.password != null) {
-        final userData = <String, dynamic>{};
-        if (dto.name != null) userData["name"] = dto.name;
-        // if (dto.password != null) userData["password"] = dto.password;
-
-        await db.update(
-          table: "user",
-          updateData: userData,
-          where: {"id": dto.id},
-        );
-      }
 
       // Update Trainer table
       final trainerData = <String, dynamic>{};
@@ -191,15 +194,13 @@ class TrainerRepositoryImpl implements ITrainerRepository {
         await db.update(
           table: table,
           updateData: trainerData,
-          where: {"id": dto.trainerId},
+          where: {"trainer_id": trainerId},
         );
       }
 
       await db.commit();
 
-      // Fetch updated
-      final res = await getById(dto.trainerId);
-      return res;
+      return await getById(trainerId);
     } catch (e, s) {
       if (db != null) {
         try {

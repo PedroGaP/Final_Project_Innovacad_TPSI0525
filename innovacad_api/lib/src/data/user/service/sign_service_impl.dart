@@ -3,13 +3,19 @@ import 'package:innovacad_api/src/data/data.dart';
 import 'package:vaden/vaden.dart' as v;
 
 abstract class ISignService {
-  Future<Result<OutputUserDao>> signin(UserSigninDto dto);
+  Future<Result<dynamic>> signin(UserSigninDto dto);
   Future<Result<Map<String, dynamic>>> signinWithSocials(SigninSocialDto dto);
   Future<Result<bool>> verifyEmail(VerifyEmailDto dto);
   Future<Result<bool>> sendVerifyEmail(SendVerifyEmailDto dto);
   Future<Result<bool>> checkEmailValidity(CheckEmailValidityDto dto);
-  Future<Result<bool>> linkSocial(UserLinkAccountDto dto);
-  Future<Result<OutputUserDao>> getSession(String sessionCookie);
+  Future<Result<Map<String, dynamic>>> linkSocial(UserLinkAccountDto dto);
+  Future<Result<OutputUserDao>> getSession(String sessionToken);
+  Future<Result<List<Map<String, dynamic>>>> listAccounts(String sessionToken);
+  Future<Result<bool>> sendOTP(dynamic twoFactorCode);
+  Future<Result<Map<String, dynamic>>> verifyOTP(
+    dynamic twoFactorCookie,
+    String otp,
+  );
 }
 
 @v.Service()
@@ -19,9 +25,13 @@ class SignServiceImpl implements ISignService {
   SignServiceImpl(this._remoteUserService);
 
   @override
-  Future<Result<OutputUserDao>> signin(UserSigninDto dto) async {
+  Future<Result<dynamic>> signin(UserSigninDto dto) async {
     final authResult = await _remoteUserService.signInUser(dto);
     if (authResult.isFailure) return Result.failure(authResult.error!);
+
+    if (authResult.data!.containsKey('twoFactorRedirect')) {
+      return authResult;
+    }
 
     final role = authResult.data!["role"];
 
@@ -115,13 +125,41 @@ class SignServiceImpl implements ISignService {
   }
 
   @override
-  Future<Result<bool>> linkSocial(UserLinkAccountDto dto) async {
+  Future<Result<Map<String, dynamic>>> linkSocial(
+    UserLinkAccountDto dto,
+  ) async {
     return await _remoteUserService.linkSocial(dto);
   }
 
   @override
   Future<Result<OutputUserDao>> getSession(String sessionCookie) async {
     final result = await _remoteUserService.getSession(sessionCookie);
+
+    return result;
+  }
+
+  @override
+  Future<Result<List<Map<String, dynamic>>>> listAccounts(
+    String sessionToken,
+  ) async {
+    final result = await _remoteUserService.listAccounts(sessionToken);
+
+    return result;
+  }
+
+  @override
+  Future<Result<bool>> sendOTP(dynamic twoFactorCode) async {
+    final result = await _remoteUserService.sendOTP(twoFactorCode);
+
+    return result;
+  }
+
+  @override
+  Future<Result<Map<String, dynamic>>> verifyOTP(
+    dynamic twoFactorCookie,
+    String otp,
+  ) async {
+    final result = await _remoteUserService.verifyOTP(twoFactorCookie, otp);
 
     return result;
   }

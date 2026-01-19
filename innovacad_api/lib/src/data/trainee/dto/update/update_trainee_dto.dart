@@ -12,16 +12,7 @@ class UpdateTraineeDto extends UpdateUserDto with Validator<UpdateTraineeDto> {
   @DateTimeConverter()
   final DateTime? birthdayDate;
 
-  @annotation.JsonKey(name: 'trainer_id')
-  final String trainerId;
-
-  UpdateTraineeDto({
-    required super.id,
-    super.name,
-    super.username,
-    required this.trainerId,
-    this.birthdayDate,
-  });
+  UpdateTraineeDto({super.name, super.username, this.birthdayDate});
 
   @override
   LucidValidator<UpdateTraineeDto> validate(

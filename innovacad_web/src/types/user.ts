@@ -9,7 +9,8 @@ export type UserResponseData = {
   trainee_id?: string | undefined;
   image?: string | undefined;
   birthday_date?: number | undefined;
-  verified: boolean | undefined;
+  emailVerified: boolean | undefined;
+  session_token: string | undefined;
 };
 
 class User {
@@ -21,6 +22,7 @@ class User {
   token: string | undefined;
   role: string | undefined;
   verified: boolean | undefined;
+  session_token: string | undefined;
 
   constructor(data: UserResponseData) {
     this.id = data.id;
@@ -30,7 +32,8 @@ class User {
     this.token = data.token;
     this.role = data.role;
     this.image = data.image;
-    this.verified = data.verified;
+    this.verified = data.emailVerified;
+    this.session_token = data.session_token;
   }
 
   toJson(): string {
@@ -45,7 +48,7 @@ class Trainee extends User {
   constructor(
     data: UserResponseData,
     traineeId: string,
-    birthdayDate?: number | undefined
+    birthdayDate?: number | undefined,
   ) {
     super(data);
     this.traineeId = traineeId || data.trainee_id;
@@ -60,7 +63,7 @@ class Trainer extends User {
   constructor(
     data: UserResponseData,
     trainerId: string,
-    birthdayDate?: number | undefined
+    birthdayDate?: number | undefined,
   ) {
     super(data);
     this.trainerId = trainerId || data.trainer_id;
@@ -68,4 +71,20 @@ class Trainer extends User {
   }
 }
 
-export { User, Trainer, Trainee };
+class Account {
+  id: string | undefined;
+  providerId: string | undefined;
+  DateTime: string | undefined;
+  updatedAt: string | undefined;
+  accountId: string | undefined;
+  userId: string | undefined;
+  scopes: string[] | undefined;
+}
+
+class LinkSocialData {
+  url: string | undefined;
+  redirect: boolean | undefined;
+  status: boolean | undefined;
+}
+
+export { User, Trainer, Trainee, LinkSocialData, Account };
