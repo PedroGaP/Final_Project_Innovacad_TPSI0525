@@ -39,6 +39,8 @@ export const API_ENDPOINTS = {
     IS_2FA_ENABLED: "/sign/is-otp-enabled",
     ENABLE_2FA: "/sign/enable-otp",
     DISABLE_2FA: "/sign/disable-otp",
+    RESET_PASSWORD: "/sign/reset-password",
+    REQUEST_RESET_PASSWORD: "/sign/request-password-reset",
   },
   USERS: {
     TRAINEES: "/trainees",
@@ -85,7 +87,9 @@ export const useApi = () => {
       !path.includes(API_ENDPOINTS.AUTH.SESSION) &&
       !path.includes(API_ENDPOINTS.AUTH.SIGN_IN_SOCIAL) &&
       !path.includes(API_ENDPOINTS.AUTH.SEND_2FA) &&
-      !path.includes(API_ENDPOINTS.AUTH.VERIFY_2FA)
+      !path.includes(API_ENDPOINTS.AUTH.VERIFY_2FA) &&
+      !path.includes(API_ENDPOINTS.AUTH.RESET_PASSWORD) &&
+      !path.includes(API_ENDPOINTS.AUTH.REQUEST_RESET_PASSWORD)
     );
   };
 
@@ -754,6 +758,43 @@ export const useApi = () => {
     return user;
   };
 
+  const requestPasswordReset = async (email: string) => {
+    const res = await fetchApi(
+      `${API_ENDPOINTS.AUTH.REQUEST_RESET_PASSWORD}`,
+      "POST",
+      {
+        email,
+        redirectTo: `${baseWebUrl}/reset-password`,
+      },
+    );
+
+    if (res.isError || !res.data) {
+      console.log(res.error);
+      throw new Error(
+        `Failed to request password reset: ${res.error?.message}`,
+      );
+    }
+
+    toast.success("Password reset email sent! Check your inbox.", {
+      duration: 2000,
+    });
+  };
+
+  const resetPassword = async (token: string, newPassword: string) => {
+    const res = await fetchApi(`${API_ENDPOINTS.AUTH.RESET_PASSWORD}`, "POST", {
+      token,
+      newPassword,
+    });
+
+    if (res.isError || !res.data) {
+      throw new Error(
+        `Failed to request password reset: ${res.error?.message}`,
+      );
+    }
+
+    return res.data;
+  };
+
   return {
     signIn,
     signUp,
@@ -779,5 +820,7 @@ export const useApi = () => {
     disable2FA,
     send2FA,
     verify2FA,
+    requestPasswordReset,
+    resetPassword,
   };
 };

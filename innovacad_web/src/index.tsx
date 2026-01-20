@@ -17,12 +17,22 @@ import SettingsPage from "./pages/Dashboard/Settings";
 import { Toaster } from "solid-toast";
 import VerifyEmail from "./pages/VerifyEmail";
 import Verify2FA from "./pages/Verify2FA";
+import ResetPasswordPage from "./pages/ResetPassword";
+import ForgotPasswordPage from "./pages/ForgotPassword";
 
 const routes: RouteDefinition[] = [
   {
     path: "/",
     component: PublicLayout,
     children: [{ path: "/", component: SignIn }],
+  },
+  {
+    path: "/reset-password",
+    component: ResetPasswordPage,
+  },
+  {
+    path: "/forgot-password",
+    component: ForgotPasswordPage,
   },
   {
     path: "/verify-email",

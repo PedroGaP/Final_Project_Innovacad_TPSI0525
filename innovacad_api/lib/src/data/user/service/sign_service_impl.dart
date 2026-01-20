@@ -1,5 +1,7 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
+import 'package:innovacad_api/src/data/user/dto/reset_password/request_reset_password_dto.dart';
+import 'package:innovacad_api/src/data/user/dto/reset_password/reset_password_dto.dart';
 import 'package:vaden/vaden.dart' as v;
 
 abstract class ISignService {
@@ -19,6 +21,8 @@ abstract class ISignService {
   Future<Result<bool>> enableOTP(dynamic cookies, String password);
   Future<Result<bool>> disableOTP(dynamic cookies, String password);
   Future<Result<bool>> isOTPEnabled(String userId);
+  Future<Result<bool>> requestPasswordReset(RequestResetPasswordDto dto);
+  Future<Result<bool>> resetPassword(ResetPasswordDto dto);
 }
 
 @v.Service()
@@ -149,5 +153,21 @@ class SignServiceImpl implements ISignService {
   @override
   Future<Result<bool>> isOTPEnabled(String userId) async {
     return await _remoteUserService.isOTPEnabled(userId);
+  }
+
+  @override
+  Future<Result<bool>> requestPasswordReset(RequestResetPasswordDto dto) async {
+    final result = await _remoteUserService.requestPasswordReset(dto);
+    if (result.isFailure) return Result.failure(result.error!);
+    return Result.success(result.data!);
+  }
+
+  @override
+  Future<Result<bool>> resetPassword(ResetPasswordDto dto) async {
+    final result = await _remoteUserService.resetPassword(dto);
+
+    if (result.isFailure) return Result.failure(result.error!);
+
+    return Result.success(result.data!);
   }
 }
