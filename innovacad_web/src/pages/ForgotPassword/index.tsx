@@ -12,7 +12,6 @@ const ForgotPasswordPage = () => {
     <div class="min-h-screen bg-base-200 flex items-center justify-center p-4">
       <div class="card w-full max-w-sm bg-base-100 shadow-xl">
         <div class="card-body items-center text-center p-8">
-          {/* Animated/Styled Icon */}
           <div class="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-4 text-primary animate-in zoom-in duration-300">
             <Mail size={40} />
           </div>
@@ -24,7 +23,6 @@ const ForgotPasswordPage = () => {
             Please click on the link in that email to reset your password.
           </p>
 
-          {/* Primary Action: Open Mail App */}
           <div class="form-control w-full">
             <label class="input input-bordered flex items-center gap-2">
               <Mail size={16} class="opacity-70" />
@@ -53,10 +51,8 @@ const ForgotPasswordPage = () => {
             Send
           </button>
 
-          {/* Divider if they want to enter code manually (optional flow) */}
           <div class="divider my-4 text-xs text-base-content/30">OR</div>
 
-          {/* Footer Link */}
           <div class="mt-2">
             <A
               href="/"

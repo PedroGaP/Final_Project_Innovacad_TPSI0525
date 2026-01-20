@@ -57,7 +57,6 @@ const UsersPage = () => {
   return (
     <div class="card bg-base-100 shadow">
       <div class="card-body gap-4">
-        {/* HEADER */}
         <div class="flex justify-between items-center">
           <h2 class="card-title">Users</h2>
 
@@ -72,7 +71,6 @@ const UsersPage = () => {
           </button>
         </div>
 
-        {/* FILTER */}
         <input
           type="text"
           placeholder="Search users..."
@@ -83,7 +81,6 @@ const UsersPage = () => {
           }}
         />
 
-        {/* TABLE */}
         <div class="overflow-x-auto">
           <table class="table table-zebra">
             <thead>
@@ -126,7 +123,6 @@ const UsersPage = () => {
           </table>
         </div>
 
-        {/* PAGINATION */}
         <div class="flex justify-between items-center">
           <span class="text-sm opacity-60">
             Page {page()} of {totalPages()}
@@ -164,7 +160,6 @@ const UsersPage = () => {
         </div>
       </div>
 
-      {/* ADD / EDIT MODAL */}
       <Show when={editingUser()}>
         {(u) => (
           <dialog open class="modal">
@@ -217,7 +212,6 @@ const UsersPage = () => {
         )}
       </Show>
 
-      {/* DELETE MODAL */}
       <Show when={deletingUser()}>
         {(u) => (
           <dialog open class="modal">

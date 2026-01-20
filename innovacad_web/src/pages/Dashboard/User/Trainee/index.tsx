@@ -27,18 +27,12 @@ const createEmptyTrainee = (): Trainee =>
     session_token: "",
   }) as unknown as Trainee;
 
-/**
- * Convert epoch timestamp (milliseconds) to date string (YYYY-MM-DD)
- */
 const epochToDate = (epoch: number | string): string => {
   if (!epoch) return "";
   const date = new Date(Number(epoch));
   return date.toISOString().split("T")[0];
 };
 
-/**
- * Validates if a trainee has all required fields filled
- */
 const validateTrainee = (
   trainee: Trainee,
 ): { valid: boolean; errors: string[] } => {
@@ -74,9 +68,6 @@ const validateTrainee = (
   };
 };
 
-/**
- * Get only the fields that have changed between old and new trainee
- */
 const getChangedFields = (
   oldTrainee: Trainee,
   newTrainee: Trainee,
@@ -84,7 +75,7 @@ const getChangedFields = (
   name?: string;
   email?: string;
   username?: string;
-  birthdayDate?: string; // Change return type to string if your API expects string
+  birthdayDate?: string;
 } => {
   const changes: any = {};
 
@@ -100,7 +91,6 @@ const getChangedFields = (
     changes.username = String(newTrainee.username);
   }
 
-  // Compare strings directly and send the date string
   if (String(oldTrainee.birthdayDate) !== String(newTrainee.birthdayDate)) {
     changes.birthdayDate = String(newTrainee.birthdayDate);
   }
@@ -143,7 +133,6 @@ const TraineePage = () => {
 
   const handleSaveTrainee = async (trainee: Trainee) => {
     try {
-      // Validate trainee data
       const validation = validateTrainee(trainee);
       if (!validation.valid) {
         validation.errors.forEach((error) => toast.error(error));
@@ -154,7 +143,6 @@ const TraineePage = () => {
         trainee.traineeId && String(trainee.traineeId).length > 0;
 
       if (isEditing) {
-        // Update existing trainee - only send changed fields
         const original = originalTrainee();
         if (!original) {
           throw new Error("Original trainee data not found");
@@ -162,7 +150,6 @@ const TraineePage = () => {
 
         const changedFields = getChangedFields(original, trainee);
 
-        // If no fields changed, just close the modal
         if (Object.keys(changedFields).length === 0) {
           toast.success("No changes detected");
           setEditingUser(null);
@@ -181,7 +168,6 @@ const TraineePage = () => {
         const changedFieldNames = Object.keys(changedFields).join(", ");
         toast.success(`Trainee updated successfully (${changedFieldNames})`);
       } else {
-        // Create new trainee
         const tempPassword = "T" + Math.random().toString(36).slice(-10) + "1@";
 
         const newTrainee = await api.createTrainee({
@@ -214,7 +200,6 @@ const TraineePage = () => {
       setEditingUser(null);
       setOriginalTrainee(null);
     } catch (error) {
-      // Only show error toast if it's not from validation
       if (error instanceof Error && error.message !== "Validation failed") {
         toast.error(error.message || "Failed to save trainee");
       }
@@ -283,7 +268,6 @@ const TraineePage = () => {
           />
         </div>
 
-        {/* TABLE */}
         <div class="overflow-auto flex-1 border border-base-200 rounded-lg">
           <table class="table table-zebra table-pin-rows table-fixed w-full">
             <thead>
@@ -302,8 +286,6 @@ const TraineePage = () => {
               <For each={paginatedUsers()}>
                 {(user) => (
                   <tr>
-                    {/* ... your existing table cells ... */}
-                    {/* (Keep content exactly as you had it) */}
                     <td class="w-52">
                       <CopyToClipboard val={String(user.traineeId)}>
                         <div class="overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 pb-1 text-xs font-mono max-w-52">
@@ -352,7 +334,6 @@ const TraineePage = () => {
             Page {page()} of {totalPages()}
           </span>
           <div class="join">
-            {/* ... your existing pagination buttons ... */}
             <button
               class="join-item btn btn-sm"
               disabled={page() === 1}
@@ -382,7 +363,6 @@ const TraineePage = () => {
         </div>
       </div>
 
-      {/* ADD / EDIT MODAL */}
       <Show when={editingUser()}>
         {(u) => (
           <ModalEdit<Trainee>
@@ -399,7 +379,6 @@ const TraineePage = () => {
         )}
       </Show>
 
-      {/* DELETE MODAL */}
       <Show when={deletingUser()}>
         {(u) => (
           <ModalDelete<Trainee>

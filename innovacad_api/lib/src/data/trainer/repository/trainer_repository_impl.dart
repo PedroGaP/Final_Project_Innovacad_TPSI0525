@@ -188,7 +188,6 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       db = await MysqlConfiguration.connect();
       await db.startTrans();
 
-      // Update Trainer table
       final trainerData = <String, dynamic>{};
       if (dto.specialization != null)
         trainerData["specialization"] = dto.specialization;

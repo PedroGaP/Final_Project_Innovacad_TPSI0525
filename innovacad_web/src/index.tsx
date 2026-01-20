@@ -56,7 +56,6 @@ const routes: RouteDefinition[] = [
       },
       {
         path: "/user",
-        //component: UsersPage,
         children: [
           {
             path: "/trainers",

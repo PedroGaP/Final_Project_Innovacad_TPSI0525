@@ -14,7 +14,6 @@ const Indicator = (props: { label: string; value: number }) => (
 const DashboardHome = () => {
   return (
     <div class="space-y-8">
-      {/* INDICATORS */}
       <section>
         <h2 class="text-lg font-semibold mb-4">Indicadores</h2>
 
@@ -30,7 +29,6 @@ const DashboardHome = () => {
         </div>
       </section>
 
-      {/* BILLING */}
       <section>
         <h2 class="text-lg font-semibold mb-4">Faturação & Custos</h2>
 

@@ -28,8 +28,8 @@ export default function CopyToClipboard(props: CopyToClipboardProps) {
     if (!ref) return;
     const rect = ref.getBoundingClientRect();
     setPos({
-      x: rect.left + rect.width / 2, // Center horizontally
-      y: rect.top - 8, // Position slightly above the element
+      x: rect.left + rect.width / 2,
+      y: rect.top - 8,
     });
   };
 
@@ -48,7 +48,6 @@ export default function CopyToClipboard(props: CopyToClipboardProps) {
         {props.children}
       </div>
 
-      {/* Portal Tooltip */}
       <Show when={pos()}>
         <Portal>
           <div
@@ -58,14 +57,12 @@ export default function CopyToClipboard(props: CopyToClipboardProps) {
               left: `${pos()?.x}px`,
             }}
             classList={{
-              // Gray for normal, Green (Success) for copied
               "bg-neutral text-neutral-content": !isCopied(),
               "bg-success text-success-content": isCopied(),
             }}
           >
             {isCopied() ? "Copied!" : "Copy to clipboard"}
 
-            {/* Tiny triangle arrow pointing down */}
             <div
               class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent"
               classList={{

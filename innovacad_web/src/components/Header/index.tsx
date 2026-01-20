@@ -7,7 +7,7 @@ export default function Header() {
   return (
     <header class="sticky top-0 z-50 w-full border-b border-base-200 bg-base-100/80 backdrop-blur-lg">
       <div class="navbar mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
-        {/* Navbar Start */}
+
         <div class="navbar-start">
           <div class="dropdown">
             <label tabIndex={0} class="btn btn-ghost btn-circle lg:hidden">
@@ -36,7 +36,6 @@ export default function Header() {
           </a>
         </div>
 
-        {/* Navbar Center */}
         <div class="navbar-center hidden lg:flex">
           <ul class="menu menu-horizontal px-1 font-medium gap-1">
             <li>
@@ -65,7 +64,6 @@ export default function Header() {
           </ul>
         </div>
 
-        {/* Navbar End */}
         <div class="navbar-end gap-3">
           <label class="btn btn-ghost btn-circle swap swap-rotate">
             <input

@@ -1,6 +1,6 @@
 import { useApi } from "@/hooks/useApi";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
-import { createEffect, createSignal, Show } from "solid-js";
+import { createEffect, createSignal } from "solid-js";
 import { Icon } from "../Icon";
 import toast from "solid-toast";
 
@@ -8,12 +8,10 @@ const TwoFactorCard = () => {
   const { user } = useUserDetails();
   const { enable2FA, disable2FA, is2FAEnabled } = useApi();
   
-  // State
   const [is2FA, setIs2FA] = createSignal<boolean>(false);
   const [password, setPassword] = createSignal<string>("");
   const [isLoading, setIsLoading] = createSignal<boolean>(false);
 
-  // 1. Fetch Status on Mount or User Change
   createEffect(async () => {
     const userId = user()?.id;
     if (!userId) return;
@@ -35,17 +33,15 @@ const TwoFactorCard = () => {
     setIsLoading(true);
 
     try {
-      // 2. Logic: If it IS enabled, we want to DISABLE it.
       if (is2FA()) {
         await disable2FA(password());
-        setIs2FA(false); // Update UI state on success
+        setIs2FA(false);
         toast.success("2FA Disabled!");
       } else {
         await enable2FA(password());
-        setIs2FA(true); // Update UI state on success
+        setIs2FA(true);
         toast.success("2FA Enabled!");
       }
-      // Clear password after success for security
       setPassword(""); 
     } catch (error) {
       console.log(password())
@@ -71,12 +67,11 @@ const TwoFactorCard = () => {
           </div>
         </div>
 
-        {/* 3. The Toggle is now purely visual (disabled pointer events) */}
         <input
           type="checkbox"
           class="toggle toggle-primary cursor-default"
           checked={is2FA()}
-          disabled // Visual only, prevents the "Toggle Trap"
+          disabled
         />
       </div>
 
@@ -84,7 +79,6 @@ const TwoFactorCard = () => {
         <div class="flex flex-col gap-3">
           <div class="text-sm">
             <span class="opacity-70">Please enter your password to </span>
-            {/* 4. Corrected Logic Labels */}
             <span class={`font-bold ${is2FA() ? 'text-error' : 'text-primary'}`}>
               {is2FA() ? 'disable' : 'enable'}
             </span>
@@ -114,7 +108,6 @@ const TwoFactorCard = () => {
               {isLoading() ? (
                 <span class="loading loading-spinner loading-xs"></span>
               ) : (
-                // 5. Corrected Button Text
                 is2FA() ? 'Disable' : 'Enable'
               )}
             </button>

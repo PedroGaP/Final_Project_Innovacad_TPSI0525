@@ -7,7 +7,6 @@ const SettingsPage = () => {
       <input id="my-drawer-3" type="checkbox" class="drawer-toggle" />
 
       <div class="drawer-content flex flex-col h-full overflow-hidden bg-base-200">
-        {/* Navbar Mobile */}
         <div class="w-full navbar bg-base-100 lg:hidden border-b border-base-300">
           <div class="flex-none">
             <label for="my-drawer-3" class="btn btn-square btn-ghost">
@@ -17,9 +16,7 @@ const SettingsPage = () => {
           <div class="flex-1 px-2 mx-2 font-bold">Settings</div>
         </div>
 
-        {/* Settings Menu */}
         <div class="flex flex-1 overflow-hidden">
-          {/* Sidebar Menu Settings */}
           <div class="w-64 border-r border-base-300 hidden md:flex flex-col pt-6 pb-4 overflow-y-auto bg-base-100">
             <div class="px-6 mb-6 flex justify-between items-center">
               <h2 class="text-xl font-bold">Settings</h2>

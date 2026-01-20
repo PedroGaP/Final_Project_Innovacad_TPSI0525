@@ -339,7 +339,7 @@ class RemoteUserService {
           AppError(
             AppErrorType.external,
             "Failed to link your social account...",
-            details: {"status": response.statusCode},
+            details: {"status": response.statusCode, "data": response.data},
           ),
         );
 
@@ -378,9 +378,6 @@ class RemoteUserService {
         ),
       );
 
-      // print(response.data);
-      // print(dto.email);
-      // print(dto.token);
 
       if (response.statusCode != HttpStatus.ok)
         return Result.failure(
@@ -878,7 +875,6 @@ class RemoteUserService {
         path: "/api/auth/reset-password",
       );
 
-      // Note: Typically the token is passed in the body for reset-password
       final data = {"newPassword": dto.newPassword, "token": dto.token};
 
       final response = await _dio.postUri(uri, data: data);

@@ -84,7 +84,6 @@ export const NavbarLink = (props: NavProps) => {
         </button>
       </div>
 
-      {/* Submenu with height transition */}
       <Show
         when={
           props.children &&

@@ -56,6 +56,7 @@ class SignController {
 
   @Post("/link-social")
   Future<Response> linkSocial(@Body() UserLinkAccountDto dto) async {
+    print(dto.token);
     final result = await _service.linkSocial(dto);
     return resultToResponse(result, headers: result.headers);
   }

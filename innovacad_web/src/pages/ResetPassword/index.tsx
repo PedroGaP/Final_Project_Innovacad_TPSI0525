@@ -3,7 +3,7 @@ import { A, useNavigate, useSearchParams } from "@solidjs/router";
 import { Mail, ArrowLeft } from "lucide-solid";
 import { Toaster } from "solid-toast";
 import toast from "solid-toast";
-import { useApi } from "@/hooks/useApi"; // Assuming you have this hook
+import { useApi } from "@/hooks/useApi";
 
 const ResetPasswordPage = () => {
   const api = useApi();
@@ -49,10 +49,8 @@ const ResetPasswordPage = () => {
       <Toaster position="top-center" />
 
       <div class="card w-full max-w-md bg-base-100 shadow-xl overflow-hidden">
-        {/* Header Design */}
 
         <div class="card-body pt-4">
-          {/* --- STEP 1: REQUEST FORM --- */}
           <form onSubmit={handleResetPassword} class="flex flex-col gap-4">
             <div class="text-center mb-2">
               <h2 class="text-2xl font-bold">Reset Password</h2>
@@ -90,7 +88,6 @@ const ResetPasswordPage = () => {
             </button>
           </form>
 
-          {/* Footer Link */}
           <div class="divider my-4"></div>
           <div class="text-center">
             <A

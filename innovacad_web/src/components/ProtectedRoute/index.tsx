@@ -9,12 +9,10 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = (props: ProtectedRouteProps) => {
-  // 1. Destructure setUser so we can update the state after fetching
   const { user, setUser } = useUserDetails();
   const api = useApi();
   const navigate = useNavigate();
 
-  // 2. Add a loading signal, default to true
   const [isLoading, setIsLoading] = createSignal(true);
 
   const isAuthorized = () => {
@@ -29,26 +27,21 @@ export const ProtectedRoute = (props: ProtectedRouteProps) => {
       console.log("Checking session...");
       const res = await api.getSession();
 
-      // 3. CRITICAL: Update the user provider with the fetched data
-      // If your API returns the user object directly in 'res' or 'res.data':
       if (res) {
-        setUser(res); // Ensure your Provider exposes this setter
+        setUser(res);
       }
     } catch (error) {
       console.error("Failed to validate session:", error);
     } finally {
-      // 4. Once finished (success or fail), stop loading to allow checks to run
       setIsLoading(false);
     }
   });
 
   createEffect(() => {
-    // 5. BLOCK redirects while loading
     if (isLoading()) return;
 
     const currentUser = user();
 
-    // Now this only runs AFTER the session check is done
     if (!currentUser) {
       navigate("/", { replace: true });
       return;
@@ -62,7 +55,6 @@ export const ProtectedRoute = (props: ProtectedRouteProps) => {
     }
   });
 
-  // 6. Show a loader or nothing while checking session
   return (
     <Show
       when={!isLoading()}

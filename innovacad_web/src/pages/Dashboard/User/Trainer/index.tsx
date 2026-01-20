@@ -12,9 +12,6 @@ import { newPasswordEmail } from "@/components/NewPasswordEmail";
 
 const PAGE_SIZE = 10;
 
-/**
- * Convert epoch timestamp (milliseconds) to date string (YYYY-MM-DD)
- */
 const epochToDate = (epoch: number | string): string => {
   if (!epoch) return "";
   const date = new Date(Number(epoch));
@@ -26,7 +23,7 @@ const createEmptyTrainer = (): Trainer =>
     id: "",
     name: "",
     email: "",
-    role: "trainer", // Set default role
+    role: "trainer",
     trainerId: "",
     username: "",
     token: "",
@@ -37,9 +34,6 @@ const createEmptyTrainer = (): Trainer =>
     session_token: "",
   }) as Trainer;
 
-/**
- * Validates if a trainer has all required fields filled
- */
 const validateTrainer = (
   trainer: Trainer,
 ): { valid: boolean; errors: string[] } => {
@@ -70,9 +64,6 @@ const validateTrainer = (
   };
 };
 
-/**
- * Get only the fields that have changed between old and new trainer
- */
 const getChangedFields = (
   oldTrainer: Trainer,
   newTrainer: Trainer,
@@ -142,7 +133,6 @@ const TrainerPage = () => {
 
   const handleSaveTrainer = async (trainer: Trainer) => {
     try {
-      // Validate trainer data
       const validation = validateTrainer(trainer);
       if (!validation.valid) {
         validation.errors.forEach((error) => toast.error(error));
@@ -153,7 +143,6 @@ const TrainerPage = () => {
         trainer.trainerId && String(trainer.trainerId).length > 0;
 
       if (isEditing) {
-        // Update existing trainer - only send changed fields
         const original = originalTrainer();
         if (!original) {
           throw new Error("Original trainer data not found");
@@ -161,7 +150,6 @@ const TrainerPage = () => {
 
         const changedFields = getChangedFields(original, trainer);
 
-        // If no fields changed, just close the modal
         if (Object.keys(changedFields).length === 0) {
           toast.success("No changes detected");
           setEditingUser(null);
@@ -180,7 +168,6 @@ const TrainerPage = () => {
         const changedFieldNames = Object.keys(changedFields).join(", ");
         toast.success(`Trainer updated successfully (${changedFieldNames})`);
       } else {
-        // Create new trainer
         const tempPassword = "T" + Math.random().toString(36).slice(-10) + "1@";
 
         const newTrainer = await api.createTrainer({
@@ -192,7 +179,6 @@ const TrainerPage = () => {
           specialization: String(trainer.specialization),
         });
 
-        // Send email with password
         try {
           await api.sendEmail({
             to: trainer.email!,
@@ -259,7 +245,6 @@ const TrainerPage = () => {
     <div class="card bg-base-100 shadow h-full flex flex-col">
       <Toaster />
       <div class="card-body gap-4 flex-1 flex flex-col overflow-hidden min-h-0 p-6">
-        {/* HEADER */}
         <div class="flex justify-between items-center shrink-0">
           <h2 class="card-title">Trainers</h2>
 
@@ -269,7 +254,6 @@ const TrainerPage = () => {
           </button>
         </div>
 
-        {/* FILTER */}
         <div class="shrink-0">
           <input
             type="text"
@@ -282,7 +266,6 @@ const TrainerPage = () => {
           />
         </div>
 
-        {/* TABLE */}
         <div class="overflow-auto flex-1 border border-base-200 rounded-lg">
           <table class="table table-zebra table-pin-rows table-fixed w-full">
             <thead>
@@ -345,7 +328,6 @@ const TrainerPage = () => {
           </table>
         </div>
 
-        {/* PAGINATION */}
         <div class="flex justify-between items-center shrink-0 pt-2">
           <span class="text-sm opacity-60">
             Page {page()} of {totalPages()}
@@ -383,7 +365,6 @@ const TrainerPage = () => {
         </div>
       </div>
 
-      {/* ADD / EDIT MODAL */}
       <Show when={editingUser()}>
         {(u) => (
           <ModalEdit<Trainer>
@@ -402,7 +383,6 @@ const TrainerPage = () => {
         )}
       </Show>
 
-      {/* DELETE MODAL */}
       <Show when={deletingUser()}>
         {(u) => (
           <ModalDelete<Trainer>
