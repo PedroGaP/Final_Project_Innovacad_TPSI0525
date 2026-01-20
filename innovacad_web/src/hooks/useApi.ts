@@ -40,7 +40,7 @@ export const API_ENDPOINTS = {
   },
 } as const;
 
-const baseUrl = "http://localhost:8080";
+const baseUrl = "https://api.innovacad.grod.ovh";
 const baseWebUrl = "http://localhost:5000";
 const SESSION_COOKIE_KEY = "better-auth.session_data";
 
@@ -434,7 +434,7 @@ export const useApi = () => {
   };
 
   const listAccounts = async () => {
-    const res = await fetchApi<Account[]>( 
+    const res = await fetchApi<Account[]>(
       `/sign/accounts?session-token=${user()!.session_token}`,
       "GET",
     );
@@ -442,6 +442,30 @@ export const useApi = () => {
     if (res.isError || !res.data) {
       console.log(res.error);
       throw new Error("[List Accounts] > Failed to list accounts.");
+    }
+
+    return res.data;
+  };
+
+  const enable2FA = async () => {};
+
+  const disable2FA = async () => {};
+
+  const send2FA = async () => {
+    const res = await fetchApi<boolean>(`sign/send-otp`, "POST");
+
+    if (res.isError || !res.data) {
+      throw new Error(`Failed to send OTP: ${res.error?.message}`);
+    }
+
+    return res.data;
+  };
+
+  const verify2FA = async () => {
+    const res = await fetchApi<boolean>(`sign/verify-otp`, "POST");
+
+    if (res.isError || !res.data) {
+      throw new Error(`Failed to verify OTP: ${res.error?.message}`);
     }
 
     return res.data;
@@ -459,5 +483,9 @@ export const useApi = () => {
     logoutUser,
     linkSocial,
     listAccounts,
+    enable2FA,
+    disable2FA,
+    send2FA,
+    verify2FA,
   };
 };

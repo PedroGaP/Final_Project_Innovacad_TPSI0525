@@ -1,8 +1,9 @@
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import { Upload } from "lucide-solid";
-import { createEffect, createResource, Show } from "solid-js";
+import { createResource, Show } from "solid-js";
 import GoogleLogo from "@/assets/google.svg";
 import SocialAuthCard from "@/components/SocialAuthCard";
+import TwoFactorCard from "@/components/TwoFactorCard";
 import FacebookLogo from "@/assets/facebook.svg";
 import { useApi } from "@/hooks/useApi";
 
@@ -148,6 +149,7 @@ const AccountSettingsPage = () => {
             </label>
 
             {/* Card de Ligação Microsoft */}
+            <TwoFactorCard user={user} />
             <div class="flex flex-col gap-4">
               <SocialAuthCard
                 logo={GoogleLogo}
@@ -155,7 +157,7 @@ const AccountSettingsPage = () => {
                 title="Google"
                 is_linked={
                   accounts()?.find((a) => a.providerId == "google") != null
-                } 
+                }
                 provider="google"
               />
               <SocialAuthCard
