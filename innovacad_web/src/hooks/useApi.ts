@@ -34,7 +34,10 @@ export const API_ENDPOINTS = {
     SESSION: "/sign/session",
     LINK_SOCIAL: "/sign/link-social",
     SEND_2FA: "/sign/send-otp",
-    VERIFY_2FA: "/sign/verify-otp"
+    VERIFY_2FA: "/sign/verify-otp",
+    IS_2FA_ENABLED: "/sign/is-otp-enabled",
+    ENABLE_2FA: "/sign/enable-otp",
+    DISABLE_2FA: "/sign/disable-otp"
   },
   USERS: {
     TRAINEES: "/trainees",
@@ -465,9 +468,35 @@ export const useApi = () => {
     return res.data;
   };
 
-  const enable2FA = async () => {};
+  const is2FAEnabled = async (userId: String) => {
+    const res = await fetchApi<boolean>(`${API_ENDPOINTS.AUTH.IS_2FA_ENABLED}?user_id=${userId}`, "GET" );
 
-  const disable2FA = async () => {};
+    if (res.isError || !res.data) {
+      throw new Error(`Failed to get 2FA status: ${res.error?.message}`);
+    }
+
+    return res.data;
+  };
+
+  const enable2FA = async (password: String) => {
+    const res = await fetchApi<boolean>(`${API_ENDPOINTS.AUTH.ENABLE_2FA}?password=${password}`, "POST");
+
+     if (res.isError || !res.data) {
+      throw new Error(`Failed to enable OTP: ${res.error?.message}`);
+    }
+
+    return res.data;
+  };
+
+  const disable2FA = async (password: String) => {
+       const res = await fetchApi<boolean>(`${API_ENDPOINTS.AUTH.DISABLE_2FA}?password=${password}`, "POST");
+
+     if (res.isError || !res.data) {
+      throw new Error(`Failed to disable OTP: ${res.error?.message}`);
+    }
+
+    return res.data;
+  };
 
   const send2FA = async () => {
     const res = await fetchApi(API_ENDPOINTS.AUTH.SEND_2FA, "POST");
@@ -500,7 +529,7 @@ export const useApi = () => {
     }
 
     console.log("NAVIGATING TO DASHBOARD");
-    // Email verified, proceed to dashboard
+
     toast.success("Login successful. You'll be redirected to dashboard", {
       duration: 2000,
     });
@@ -508,7 +537,6 @@ export const useApi = () => {
 
     return user;
   };
-
 
   return {
     signIn,
@@ -522,6 +550,7 @@ export const useApi = () => {
     logoutUser,
     linkSocial,
     listAccounts,
+    is2FAEnabled,
     enable2FA,
     disable2FA,
     send2FA,
