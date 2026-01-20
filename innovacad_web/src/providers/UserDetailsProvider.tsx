@@ -45,6 +45,7 @@ export const UserDetailsProvider = (props: { children: JSX.Element }) => {
   const logout = () => {
     setUser(null);
     Cookies.remove("better-auth.session_data");
+    Cookies.remove("better-auth.two_factor");
     window.location.href = "/";
   };
 

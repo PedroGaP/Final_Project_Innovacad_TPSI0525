@@ -149,7 +149,6 @@ const AccountSettingsPage = () => {
             </label>
 
             {/* Card de Ligação Microsoft */}
-            <TwoFactorCard user={user} />
             <div class="flex flex-col gap-4">
               <SocialAuthCard
                 logo={GoogleLogo}
@@ -170,7 +169,18 @@ const AccountSettingsPage = () => {
                 provider="facebook"
               />
             </div>
+            <div class="divider pt-2"></div>
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text opacity-70 font-medium">
+                  Security Settings
+                </span>
+              </label>
+              <TwoFactorCard user={user} />
+            </div>
           </div>
+                      
+
         </div>
       </div>
     </>
