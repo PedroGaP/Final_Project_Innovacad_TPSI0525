@@ -1,69 +1,127 @@
 import { useApi } from "@/hooks/useApi";
-// import type { Trainee, Trainer, User } from "@/types/user";
-import { onMount, createEffect, createSignal } from "solid-js";
+import { useUserDetails } from "@/providers/UserDetailsProvider";
+import { createEffect, createSignal, Show } from "solid-js";
+import { Icon } from "../Icon";
+import toast from "solid-toast";
 
-// type TUser = Accessor<User | Trainer | Trainee | null>;
+const TwoFactorCard = () => {
+  const { user } = useUserDetails();
+  const { enable2FA, disable2FA, is2FAEnabled } = useApi();
+  
+  // State
+  const [is2FA, setIs2FA] = createSignal<boolean>(false);
+  const [password, setPassword] = createSignal<string>("");
+  const [isLoading, setIsLoading] = createSignal<boolean>(false);
 
-const TwoFactorCard = (user: any) => {
-  const { enable2FA, disable2FA } = useApi();
-  const [twoFactorStatus, setTwoFactorStatus] = createSignal<boolean>(false);
-
-  onMount(() => {
-    const currentUser = user();
-    console.log(currentUser);
-    if (!currentUser) return;
-    setTwoFactorStatus(currentUser.twoFactorEnabled!);
-  });
-
+  // 1. Fetch Status on Mount or User Change
   createEffect(async () => {
-    const current2FAStatus = twoFactorStatus();
+    const userId = user()?.id;
+    if (!userId) return;
 
-    if (current2FAStatus) await enable2FA();
-    else await disable2FA();
+    try {
+      const status = await is2FAEnabled(userId);
+      setIs2FA(status);
+    } catch (e) {
+      console.error("Failed to fetch 2FA status", e);
+    }
   });
+
+  const handle2FA = async () => {
+    if (password() === "") {
+      toast.error("Please enter your password first.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // 2. Logic: If it IS enabled, we want to DISABLE it.
+      if (is2FA()) {
+        await disable2FA(password());
+        setIs2FA(false); // Update UI state on success
+        toast.success("2FA Disabled!");
+      } else {
+        await enable2FA(password());
+        setIs2FA(true); // Update UI state on success
+        toast.success("2FA Enabled!");
+      }
+      // Clear password after success for security
+      setPassword(""); 
+    } catch (error) {
+      console.log(password())
+      toast.error("Operation failed. Check your password.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-<div class="flex flex-col rounded-lg border border-base-300 bg-base-200 transition-all duration-200">
-    {/* Top Row: Matches your 'Connect' style exactly */}
-    <div class="flex items-center justify-between p-4">
-      <div class="flex items-center gap-4">
-        {/* Icon Box */}
-        <div class="w-10 h-10 bg-base-100 rounded-lg flex items-center justify-center shadow-sm text-primary">
-          {/* Shield Icon SVG */}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="w-6 h-6"
-          >
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
+    <div class="flex flex-col rounded-lg border border-base-300 bg-base-200 transition-all duration-200">
+      <div class="flex items-center justify-between p-4">
+        <div class="flex items-center gap-4">
+          <div class={`w-10 h-10 rounded-lg flex items-center justify-center shadow-sm ${is2FA() ? 'bg-primary text-primary-content' : 'bg-white text-primary'}`}>
+            <Icon name="Shield" size={30} />
+          </div>
+
+          <div class="flex flex-col">
+            <span class="font-bold text-sm">Two-Factor Authentication</span>
+            <span class="text-xs opacity-60">
+              {is2FA() ? "Your account is secure." : "Secure your account with 2FA."}
+            </span>
+          </div>
         </div>
 
-        {/* Text Column */}
-        <div class="flex flex-col">
-          <span class="font-bold text-sm">Two-Factor Authentication</span>
-          <span class="text-xs opacity-60">
-            Secure your account with 2FA
-          </span>
-        </div>
+        {/* 3. The Toggle is now purely visual (disabled pointer events) */}
+        <input
+          type="checkbox"
+          class="toggle toggle-primary cursor-default"
+          checked={is2FA()}
+          disabled // Visual only, prevents the "Toggle Trap"
+        />
       </div>
 
-      {/* Action: Toggle Switch */}
-      <input
-        type="checkbox"
-        class="toggle toggle-primary"
-        checked={twoFactorStatus()}
-        onChange={async (e) =>
-          setTwoFactorStatus((e.target as HTMLInputElement).checked)
-        }
-      />
+      <div class="border-t border-base-300 bg-base-100/50 p-4 rounded-b-lg animate-in slide-in-from-top-2">
+        <div class="flex flex-col gap-3">
+          <div class="text-sm">
+            <span class="opacity-70">Please enter your password to </span>
+            {/* 4. Corrected Logic Labels */}
+            <span class={`font-bold ${is2FA() ? 'text-error' : 'text-primary'}`}>
+              {is2FA() ? 'disable' : 'enable'}
+            </span>
+            <span class="opacity-70"> 2FA.</span>
+          </div>
+
+          <div class="join w-full shadow-sm">
+            <div class="relative w-full">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-base-content/50">
+                <Icon name="Lock" size={16} />
+              </div>
+              <input
+                type="password"
+                placeholder="Current Password"
+                class="input input-bordered join-item w-full pl-10 focus:outline-offset-0"
+                value={password()} 
+                disabled={isLoading()}
+                onInput={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            <button
+              class={`btn join-item border-none w-24 ${is2FA() ? 'btn-error text-white' : 'btn-primary'}`}
+              onClick={handle2FA}
+              disabled={isLoading()}
+            >
+              {isLoading() ? (
+                <span class="loading loading-spinner loading-xs"></span>
+              ) : (
+                // 5. Corrected Button Text
+                is2FA() ? 'Disable' : 'Enable'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
   );
 };
 

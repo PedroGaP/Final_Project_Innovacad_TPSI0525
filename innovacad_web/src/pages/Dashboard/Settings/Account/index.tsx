@@ -176,7 +176,7 @@ const AccountSettingsPage = () => {
                   Security Settings
                 </span>
               </label>
-              <TwoFactorCard user={user} />
+              <TwoFactorCard />
             </div>
           </div>
                       
