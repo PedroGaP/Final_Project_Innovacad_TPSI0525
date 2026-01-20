@@ -65,7 +65,9 @@ class SignController {
   }
 
   @Post("/send-otp")
-  Future<Response> sendOTP(@Header('cookie') dynamic cookieHeader) async {
+  Future<Response> sendOTP(@Header('cookie') String? cookieHeader) async {
+    print("Estou aqui $cookieHeader");
+
     final result = await _service.sendOTP(cookieHeader);
 
     return resultToResponse(result, headers: result.headers);
@@ -77,6 +79,33 @@ class SignController {
     @Query('otp') String otp,
   ) async {
     final result = await _service.verifyOTP(twoFactorCookie, otp);
+
+    return resultToResponse(result, headers: result.headers);
+  }
+
+  @Post("/enable-otp")
+  Future<Response> enableOTP(
+    @Header('cookie') dynamic cookies,
+    @Query("password") String password,
+  ) async {
+    final result = await _service.enableOTP(cookies, password);
+
+    return resultToResponse(result, headers: result.headers);
+  }
+
+  @Post("/disable-otp")
+  Future<Response> disableOTP(
+    @Header('cookie') dynamic cookies,
+    @Query("password") String password,
+  ) async {
+    final result = await _service.disableOTP(cookies, password);
+
+    return resultToResponse(result, headers: result.headers);
+  }
+
+  @Get("/is-otp-enabled")
+  Future<Response> isOTPEnabled(@Query("user_id") String userId) async {
+    final result = await _service.isOTPEnabled(userId);
 
     return resultToResponse(result, headers: result.headers);
   }

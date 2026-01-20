@@ -613,6 +613,9 @@ class RemoteUserService {
 
   Future<Result<bool>> sendOTP(dynamic cookies) async {
     try {
+      print("aquiiiii");
+      print("COOKIES: $cookies");
+
       final uri = Uri(
         scheme: _settings["auth"]["protocol"],
         host: _settings["auth"]["host"],
@@ -708,6 +711,116 @@ class RemoteUserService {
         sessionResponse.data!.toJson(),
         headers: {"set-cookie": response.headers["set-cookie"]},
       );
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          e.toString(),
+          details: {"error": s.toString()},
+        ),
+      );
+    }
+  }
+
+  Future<Result<bool>> enableOTP(dynamic cookies, String password) async {
+    try {
+      final uri = Uri(
+        scheme: _settings["auth"]["protocol"],
+        host: _settings["auth"]["host"],
+        port: _settings["auth"]["port"],
+        path: "/api/auth/two-factor/enable",
+      );
+
+      final response = await _dio.postUri(
+        uri,
+        data: {"password": password},
+        options: Options(
+          headers: {
+            'cookie': cookies is List ? cookies.join(";") : cookies,
+            "origin": "http://localhost:8080",
+          },
+        ),
+      );
+
+      if (response.statusCode != HttpStatus.ok)
+        return Result.failure(
+          AppError(
+            AppErrorType.external,
+            "Failed to enable the 2FA",
+            details: {"status": response.statusCode},
+          ),
+        );
+
+      return Result.success(true);
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          e.toString(),
+          details: {"error": s.toString()},
+        ),
+      );
+    }
+  }
+
+  Future<Result<bool>> disableOTP(dynamic cookies, String password) async {
+    try {
+      final uri = Uri(
+        scheme: _settings["auth"]["protocol"],
+        host: _settings["auth"]["host"],
+        port: _settings["auth"]["port"],
+        path: "/api/auth/two-factor/disable",
+      );
+
+      final response = await _dio.postUri(
+        uri,
+        data: {"password": password},
+        options: Options(
+          headers: {
+            'cookie': cookies is List ? cookies.join(";") : cookies,
+            "origin": "http://localhost:8080",
+          },
+        ),
+      );
+
+      if (response.statusCode != HttpStatus.ok)
+        return Result.failure(
+          AppError(
+            AppErrorType.external,
+            "Failed to disable the 2FA",
+            details: {"status": response.statusCode},
+          ),
+        );
+
+      return Result.success(response.data["status"]);
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          e.toString(),
+          details: {"error": s.toString()},
+        ),
+      );
+    }
+  }
+
+  Future<Result<bool>> isOTPEnabled(String userId) async {
+    try {
+      MysqlUtils db = await MysqlConfiguration.connect();
+
+      final user =
+          await db.getOne(table: "user", where: {"id": userId})
+              as Map<String, dynamic>;
+
+      if (user.isEmpty)
+        return Result.failure(
+          AppError(
+            AppErrorType.external,
+            "Failed to fetch the user with the id $userId",
+          ),
+        );
+
+      return Result.success(user["twoFactorEnabled"]);
     } catch (e, s) {
       return Result.failure(
         AppError(

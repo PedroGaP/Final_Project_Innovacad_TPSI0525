@@ -34,6 +34,11 @@ export const API_ENDPOINTS = {
     SESSION: "/sign/session",
     LINK_SOCIAL: "/sign/link-social",
     SIGN_IN_SOCIAL: "/sign/social/in",
+    SEND_2FA: "/sign/send-otp",
+    VERIFY_2FA: "/sign/verify-otp",
+    IS_2FA_ENABLED: "/sign/is-otp-enabled",
+    ENABLE_2FA: "/sign/enable-otp",
+    DISABLE_2FA: "/sign/disable-otp",
   },
   USERS: {
     TRAINEES: "/trainees",
@@ -78,7 +83,9 @@ export const useApi = () => {
       !path.includes(API_ENDPOINTS.AUTH.VERIFY) &&
       !path.includes(API_ENDPOINTS.AUTH.SEND_VERIFY) &&
       !path.includes(API_ENDPOINTS.AUTH.SESSION) &&
-      !path.includes(API_ENDPOINTS.AUTH.SIGN_IN_SOCIAL)
+      !path.includes(API_ENDPOINTS.AUTH.SIGN_IN_SOCIAL) &&
+      !path.includes(API_ENDPOINTS.AUTH.SEND_2FA) &&
+      !path.includes(API_ENDPOINTS.AUTH.VERIFY_2FA)
     );
   };
 
@@ -215,7 +222,7 @@ export const useApi = () => {
       toast.custom("Please verify your email to access the dashboard", {
         duration: 3000,
       });
-      await navigate("/verify-email");
+      navigate("/verify-email");
       return user;
     }
 
@@ -223,7 +230,7 @@ export const useApi = () => {
     toast.success("Login successful. You'll be redirected to dashboard", {
       duration: 2000,
     });
-    await navigate("/dashboard");
+    navigate("/dashboard");
 
     return user;
   };
@@ -652,6 +659,88 @@ export const useApi = () => {
     return res.data;
   };
 
+  const is2FAEnabled = async (userId: String) => {
+    const res = await fetchApi<boolean>(
+      `${API_ENDPOINTS.AUTH.IS_2FA_ENABLED}?user_id=${userId}`,
+      "GET",
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(`Failed to get 2FA status: ${res.error?.message}`);
+    }
+
+    return res.data;
+  };
+
+  const enable2FA = async (password: String) => {
+    const res = await fetchApi<boolean>(
+      `${API_ENDPOINTS.AUTH.ENABLE_2FA}?password=${password}`,
+      "POST",
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(`Failed to enable OTP: ${res.error?.message}`);
+    }
+
+    return res.data;
+  };
+
+  const disable2FA = async (password: String) => {
+    const res = await fetchApi<boolean>(
+      `${API_ENDPOINTS.AUTH.DISABLE_2FA}?password=${password}`,
+      "POST",
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(`Failed to disable OTP: ${res.error?.message}`);
+    }
+
+    return res.data;
+  };
+
+  const send2FA = async () => {
+    const res = await fetchApi(API_ENDPOINTS.AUTH.SEND_2FA, "POST");
+
+    if (res.isError || !res.data) {
+      throw new Error(`Failed to send OTP: ${res.error?.message}`);
+    }
+
+    return res.data;
+  };
+
+  const verify2FA = async (code: string) => {
+    const res = await fetchApi(
+      `${API_ENDPOINTS.AUTH.VERIFY_2FA}?otp=${code}`,
+      "POST",
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(`Failed to verify OTP: ${res.error?.message}`);
+    }
+
+    const userData = res.data as UserResponseData;
+    const user = mapToUserType(userData);
+    setUser(user);
+
+    if (userData.emailVerified === false) {
+      console.log("NAVIGATING TO VERIFY PAGE");
+      toast.custom("Please verify your email to access the dashboard", {
+        duration: 3000,
+      });
+      navigate("/verify-email");
+      return user;
+    }
+
+    console.log("NAVIGATING TO DASHBOARD");
+
+    toast.success("Login successful. You'll be redirected to dashboard", {
+      duration: 2000,
+    });
+    navigate("/dashboard");
+
+    return user;
+  };
+
   return {
     signIn,
     signUp,
@@ -672,5 +761,10 @@ export const useApi = () => {
     listAccounts,
     sendEmail,
     signInSocial,
+    is2FAEnabled,
+    enable2FA,
+    disable2FA,
+    send2FA,
+    verify2FA,
   };
 };

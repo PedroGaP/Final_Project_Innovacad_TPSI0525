@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:developer';
-
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
 import 'package:vaden/vaden.dart' as v;
@@ -19,7 +16,9 @@ abstract class ISignService {
     dynamic twoFactorCookie,
     String otp,
   );
-  //Future<Result<bool>> loginSocial(LoginSocialDto dto);
+  Future<Result<bool>> enableOTP(dynamic cookies, String password);
+  Future<Result<bool>> disableOTP(dynamic cookies, String password);
+  Future<Result<bool>> isOTPEnabled(String userId);
 }
 
 @v.Service()
@@ -135,5 +134,20 @@ class SignServiceImpl implements ISignService {
     final result = await _remoteUserService.verifyOTP(twoFactorCookie, otp);
 
     return result;
+  }
+
+  @override
+  Future<Result<bool>> enableOTP(dynamic cookies, String password) async {
+    return await _remoteUserService.enableOTP(cookies, password);
+  }
+
+  @override
+  Future<Result<bool>> disableOTP(dynamic cookies, String password) async {
+    return await _remoteUserService.disableOTP(cookies, password);
+  }
+
+  @override
+  Future<Result<bool>> isOTPEnabled(String userId) async {
+    return await _remoteUserService.isOTPEnabled(userId);
   }
 }

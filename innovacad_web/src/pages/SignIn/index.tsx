@@ -36,12 +36,19 @@ const SignIn = () => {
 
     console.log(`[USER] > ${JSON.stringify(user)}`);
 
+    if (user?.twoFactorRedirect) {
+      console.log("Sent to the 2FA verification page!");
+      navigate("/verify-2fa");
+      return;
+    }
+
     if (!user?.verified) {
-      console.log("Navegou aqui!");
+      console.log("Sent to the email verification page!");
       navigate("/verify-email");
       return;
     }
 
+    console.log("Sent to the dashboard page!");
     navigate("/dashboard");
   };
 

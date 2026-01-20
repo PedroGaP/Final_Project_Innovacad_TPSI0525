@@ -12,6 +12,7 @@ export type UserResponseData = {
   birthday_date?: number | undefined;
   emailVerified: boolean | undefined;
   session_token: string | undefined;
+  twoFactorRedirect: boolean | undefined;
 };
 
 class User {
@@ -24,6 +25,7 @@ class User {
   role: string | undefined;
   verified: boolean | undefined;
   session_token: string | undefined;
+  twoFactorRedirect: boolean | undefined;
 
   constructor(data: UserResponseData) {
     this.id = data.id;
@@ -35,6 +37,7 @@ class User {
     this.image = data.image;
     this.verified = data.emailVerified;
     this.session_token = data.session_token;
+    this.twoFactorRedirect = data.twoFactorRedirect;
   }
 
   toJson(): string {
