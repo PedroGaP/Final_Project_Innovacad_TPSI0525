@@ -185,11 +185,8 @@ export const useApi = () => {
     data: SignInData,
   ): Promise<User | Trainer | Trainee | undefined> => {
     if ("email" in data && "username" in data) {
-      console.log("Both email and username provided");
       throw new Error("Provide either email or username, not both");
     }
-
-    console.log("aaaa");
 
     const res = await fetchApi<UserResponseData>(
       API_ENDPOINTS.AUTH.SIGN_IN,
@@ -216,7 +213,22 @@ export const useApi = () => {
       "Boolean check - !userData.emailVerified:",
       !userData.emailVerified,
     );
+    console.log("Raw twoFactorRedirect:", userData.twoFactorRedirect);
+    console.log(
+      "Type of twoFactorRedirect:",
+      typeof userData.twoFactorRedirect,
+    );
 
+    if (userData.twoFactorRedirect === true) {
+      console.log("NAVIGATING TO VERIFY 2FA PAGE");
+      toast.custom("Please verify your 2FA to access the dashboard", {
+        duration: 3000,
+      });
+      navigate("/verify-2fa");
+      return user;
+    }
+
+    // If email NOT verified (emailVerified === 0 or false), redirect to verification page
     if (userData.emailVerified === false) {
       console.log("NAVIGATING TO VERIFY PAGE");
       toast.custom("Please verify your email to access the dashboard", {
@@ -227,6 +239,7 @@ export const useApi = () => {
     }
 
     console.log("NAVIGATING TO DASHBOARD");
+    // Email verified, proceed to dashboard
     toast.success("Login successful. You'll be redirected to dashboard", {
       duration: 2000,
     });
