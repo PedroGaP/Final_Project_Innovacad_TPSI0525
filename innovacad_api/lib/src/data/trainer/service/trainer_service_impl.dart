@@ -1,6 +1,5 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
-import 'package:innovacad_api/src/data/user/dto/link/user_link_account_dto.dart';
 import 'package:innovacad_api/src/domain/domain.dart';
 import 'package:vaden/vaden.dart';
 

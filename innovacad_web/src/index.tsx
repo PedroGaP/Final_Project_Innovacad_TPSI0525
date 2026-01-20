@@ -16,6 +16,7 @@ import { UserDetailsProvider } from "./providers/UserDetailsProvider";
 import SettingsPage from "./pages/Dashboard/Settings";
 import { Toaster } from "solid-toast";
 import VerifyEmail from "./pages/VerifyEmail";
+import Verify2FA from "./pages/Verify2FA";
 
 const routes: RouteDefinition[] = [
   {
@@ -26,6 +27,10 @@ const routes: RouteDefinition[] = [
   {
     path: "/verify-email",
     component: VerifyEmail,
+  },
+  {
+    path: "/verify-2fa",
+    component: Verify2FA,
   },
   {
     path: "/dashboard",
@@ -73,5 +78,5 @@ render(
       </UserDetailsProvider>
     </ThemeProvider>
   ),
-  document.getElementById("root")!
+  document.getElementById("root")!,
 );

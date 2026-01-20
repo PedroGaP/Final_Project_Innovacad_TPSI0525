@@ -70,8 +70,9 @@ class SignController {
   }
 
   @Post("/send-otp")
-  Future<Response> sendOTP(@Header('cookie') dynamic cookieHeader) async {
-    print(cookieHeader);
+  Future<Response> sendOTP(@Header('cookie') String? cookieHeader) async {
+    print("Estou aqui $cookieHeader");
+
     final result = await _service.sendOTP(cookieHeader);
 
     return resultToResponse(result, headers: result.headers);

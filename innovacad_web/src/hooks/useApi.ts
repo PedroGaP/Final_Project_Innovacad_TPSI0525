@@ -16,7 +16,7 @@ import {
   User,
   type UserResponseData,
 } from "@/types/user";
-import { useNavigate } from "@solidjs/router";
+import {useNavigate } from "@solidjs/router";
 import Cookies from "js-cookie";
 import toast from "solid-toast";
 
@@ -33,6 +33,8 @@ export const API_ENDPOINTS = {
     VALIDITY: "/sign/validity",
     SESSION: "/sign/session",
     LINK_SOCIAL: "/sign/link-social",
+    SEND_2FA: "/sign/send-otp",
+    VERIFY_2FA: "/sign/verify-otp"
   },
   USERS: {
     TRAINEES: "/trainees",
@@ -40,7 +42,7 @@ export const API_ENDPOINTS = {
   },
 } as const;
 
-const baseUrl = "https://api.innovacad.grod.ovh";
+const baseUrl = "http://localhost:8080";
 const baseWebUrl = "http://localhost:5000";
 const SESSION_COOKIE_KEY = "better-auth.session_data";
 
@@ -76,7 +78,9 @@ export const useApi = () => {
       path !== API_ENDPOINTS.AUTH.SIGN_UP &&
       !path.includes(API_ENDPOINTS.AUTH.VERIFY) &&
       !path.includes(API_ENDPOINTS.AUTH.SEND_VERIFY) &&
-      !path.includes(API_ENDPOINTS.AUTH.SESSION)
+      !path.includes(API_ENDPOINTS.AUTH.SESSION) &&
+      !path.includes(API_ENDPOINTS.AUTH.SEND_2FA) &&
+      !path.includes(API_ENDPOINTS.AUTH.VERIFY_2FA)
     );
   };
 
@@ -103,7 +107,7 @@ export const useApi = () => {
       const reqHeaders: HeadersInit = {
         ...headers,
         ...(user()?.token && !skipAuth
-          ? { Authorization: `Bearer ${user()!.token}` }
+          ? { Authorization: `Bearer ${user()!.token}`  }
           : {}),
       };
 
@@ -207,6 +211,20 @@ export const useApi = () => {
       "Boolean check - !userData.emailVerified:",
       !userData.emailVerified,
     );
+    console.log("Raw twoFactorRedirect:", userData.twoFactorRedirect);
+    console.log(
+      "Type of twoFactorRedirect:",
+      typeof userData.twoFactorRedirect,
+    );
+
+    if (userData.twoFactorRedirect === true) {
+      console.log("NAVIGATING TO VERIFY 2FA PAGE");
+      toast.custom("Please verify your 2FA to access the dashboard", {
+        duration: 3000,
+      });
+      navigate("/verify-2fa");
+      return user;
+    }
 
     // If email NOT verified (emailVerified === 0 or false), redirect to verification page
     if (userData.emailVerified === false) {
@@ -214,7 +232,7 @@ export const useApi = () => {
       toast.custom("Please verify your email to access the dashboard", {
         duration: 3000,
       });
-      await navigate("/verify-email");
+      navigate("/verify-email");
       return user;
     }
 
@@ -223,7 +241,7 @@ export const useApi = () => {
     toast.success("Login successful. You'll be redirected to dashboard", {
       duration: 2000,
     });
-    await navigate("/dashboard");
+    navigate("/dashboard");
 
     return user;
   };
@@ -452,7 +470,7 @@ export const useApi = () => {
   const disable2FA = async () => {};
 
   const send2FA = async () => {
-    const res = await fetchApi<boolean>(`sign/send-otp`, "POST");
+    const res = await fetchApi(API_ENDPOINTS.AUTH.SEND_2FA, "POST");
 
     if (res.isError || !res.data) {
       throw new Error(`Failed to send OTP: ${res.error?.message}`);
@@ -461,15 +479,36 @@ export const useApi = () => {
     return res.data;
   };
 
-  const verify2FA = async () => {
-    const res = await fetchApi<boolean>(`sign/verify-otp`, "POST");
+  const verify2FA = async (code: string) => {
+    const res = await fetchApi(`${API_ENDPOINTS.AUTH.VERIFY_2FA}?otp=${code}`, "POST");
 
     if (res.isError || !res.data) {
       throw new Error(`Failed to verify OTP: ${res.error?.message}`);
     }
 
-    return res.data;
+    const userData = res.data as UserResponseData;
+    const user = mapToUserType(userData);
+    setUser(user);
+
+    if (userData.emailVerified === false) {
+      console.log("NAVIGATING TO VERIFY PAGE");
+      toast.custom("Please verify your email to access the dashboard", {
+        duration: 3000,
+      });
+      navigate("/verify-email");
+      return user;
+    }
+
+    console.log("NAVIGATING TO DASHBOARD");
+    // Email verified, proceed to dashboard
+    toast.success("Login successful. You'll be redirected to dashboard", {
+      duration: 2000,
+    });
+    navigate("/dashboard");
+
+    return user;
   };
+
 
   return {
     signIn,

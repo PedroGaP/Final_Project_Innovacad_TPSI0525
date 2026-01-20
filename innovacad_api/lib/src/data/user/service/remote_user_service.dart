@@ -615,6 +615,9 @@ class RemoteUserService {
 
   Future<Result<bool>> sendOTP(dynamic cookies) async {
     try {
+      print("aquiiiii");
+      print("COOKIES: $cookies");
+
       final uri = Uri(
         scheme: _settings["auth"]["protocol"],
         host: _settings["auth"]["host"],

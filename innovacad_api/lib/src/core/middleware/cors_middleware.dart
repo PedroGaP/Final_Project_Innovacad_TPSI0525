@@ -8,6 +8,7 @@ Middleware corsMiddleware({
     'Content-Type',
     'Accept',
     'Authorization',
+    'Cookie',
     'better-auth.session_data',
   ],
 }) {
