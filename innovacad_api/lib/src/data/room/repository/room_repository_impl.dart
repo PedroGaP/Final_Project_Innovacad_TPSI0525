@@ -25,10 +25,8 @@ class RoomRepositoryImpl implements IRoomRepository {
          );
       }).toList();
       
-      await db.close();
       return Result.success(rooms);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -41,7 +39,6 @@ class RoomRepositoryImpl implements IRoomRepository {
       final result = await db.getOne(table: table, where: {"id": id});
       
       if (result.isEmpty) {
-         await db.close();
          return Result.failure(AppError(AppErrorType.notFound, "Room not found"));
       }
 
@@ -51,10 +48,8 @@ class RoomRepositoryImpl implements IRoomRepository {
          capacity: result["capacity"] is int ? result["capacity"] : int.parse(result["capacity"].toString())
       );
       
-      await db.close();
       return Result.success(dao);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -79,12 +74,10 @@ class RoomRepositoryImpl implements IRoomRepository {
       final created = await db.getOne(table: table, where: {"room_name": dto.roomName}); 
        
       if (created.isEmpty) {
-          await db.close();
           // Fallback if name not unique or failed
           return Result.failure(AppError(AppErrorType.internal, "Created room could not be retrieved"));
       }
       
-      await db.close();
       return Result.success(OutputRoomDao(
          roomId: created["id"] is int ? created["id"] : int.parse(created["id"].toString()), 
          roomName: created["room_name"], 
@@ -92,7 +85,6 @@ class RoomRepositoryImpl implements IRoomRepository {
       ));
       
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -108,7 +100,6 @@ class RoomRepositoryImpl implements IRoomRepository {
       if (dto.capacity != null) updateData["capacity"] = dto.capacity;
       
       if (updateData.isEmpty) {
-          await db.close();
           return getById(dto.roomId);
       }
       
@@ -118,10 +109,8 @@ class RoomRepositoryImpl implements IRoomRepository {
          where: {"id": dto.roomId}
       );
       
-      await db.close();
       return getById(dto.roomId);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -135,11 +124,9 @@ class RoomRepositoryImpl implements IRoomRepository {
       
       db = await MysqlConfiguration.connect();
       await db.delete(table: table, where: {"id": dto.roomId});
-      await db.close();
       
       return existingRes;
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }

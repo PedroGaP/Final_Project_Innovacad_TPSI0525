@@ -17,6 +17,7 @@ OutputTraineeDao _$OutputTraineeDaoFromJson(Map<String, dynamic> json) =>
         json['createdAt'] as Object,
       ),
       verified: json['emailVerified'] as bool,
+      twoFactorEnabled: json['twoFactorEnabled'] as bool? ?? false,
       traineeId: json['trainee_id'] as String,
       birthdayDate: const DateTimeConverter().fromJson(
         json['birthday_date'] as Object,
@@ -38,6 +39,7 @@ Map<String, dynamic> _$OutputTraineeDaoToJson(OutputTraineeDao instance) =>
       'token': instance.token,
       'session_token': instance.sessionToken,
       'emailVerified': instance.verified,
+      'twoFactorEnabled': instance.twoFactorEnabled,
       'trainee_id': instance.traineeId,
       'birthday_date': const DateTimeConverter().toJson(instance.birthdayDate),
     };

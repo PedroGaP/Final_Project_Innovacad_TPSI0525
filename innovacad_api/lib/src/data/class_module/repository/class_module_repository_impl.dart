@@ -25,10 +25,8 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
          );
       }).toList();
       
-      await db.close();
       return Result.success(items);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -41,7 +39,6 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
       final result = await db.getOne(table: table, where: {"id": id});
       
       if (result.isEmpty) {
-         await db.close();
          return Result.failure(AppError(AppErrorType.notFound, "ClassModule not found"));
       }
 
@@ -52,10 +49,8 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
          currentDuration: result["current_duration"] is int ? result["current_duration"] : int.parse(result["current_duration"].toString())
       );
       
-      await db.close();
       return Result.success(dao);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -83,11 +78,9 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
       }); 
        
       if (created.isEmpty) {
-          await db.close();
           return Result.failure(AppError(AppErrorType.internal, "Created ClassModule could not be retrieved"));
       }
       
-      await db.close();
       return Result.success(OutputClassModuleDao(
          classesModulesId: created["id"].toString(), 
          classId: created["class_id"].toString(), 
@@ -96,7 +89,6 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
       ));
       
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -113,7 +105,6 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
       if (dto.currentDuration != null) updateData["current_duration"] = dto.currentDuration;
       
       if (updateData.isEmpty) {
-          await db.close();
           return getById(dto.classesModulesId);
       }
       
@@ -123,10 +114,8 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
          where: {"id": dto.classesModulesId}
       );
       
-      await db.close();
       return getById(dto.classesModulesId);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -140,11 +129,9 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
       
       db = await MysqlConfiguration.connect();
       await db.delete(table: table, where: {"id": dto.classesModulesId});
-      await db.close();
       
       return existingRes;
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }

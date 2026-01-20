@@ -17,10 +17,7 @@ class UpdateTrainerDto extends UpdateUserDto with Validator<UpdateTraineeDto> {
 
   UpdateTrainerDto({
     super.name,
-    super.oldPassword,
-    super.newPassword,
     super.image,
-    super.sessionToken,
     this.birthdayDate,
     this.specialization,
   });

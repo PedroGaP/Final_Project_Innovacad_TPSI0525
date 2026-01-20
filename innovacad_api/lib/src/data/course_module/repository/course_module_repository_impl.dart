@@ -25,10 +25,8 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
          );
       }).toList();
       
-      await db.close();
       return Result.success(items);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -41,7 +39,6 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
       final result = await db.getOne(table: table, where: {"id": id});
       
       if (result.isEmpty) {
-         await db.close();
          return Result.failure(AppError(AppErrorType.notFound, "CourseModule association not found"));
       }
 
@@ -52,10 +49,8 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
          sequenceCourseModuleId: result["sequence_course_module_id"]?.toString()
       );
       
-      await db.close();
       return Result.success(dao);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -83,11 +78,9 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
       final created = await db.getOne(table: table, where: {"course_id": dto.courseId, "module_id": dto.moduleId}); 
        
       if (created.isEmpty) {
-          await db.close();
           return Result.failure(AppError(AppErrorType.internal, "Created association could not be retrieved"));
       }
       
-      await db.close();
       return Result.success(OutputCourseModuleDao(
          coursesModulesId: created["id"].toString(), 
          courseId: created["course_id"].toString(),
@@ -96,7 +89,6 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
       ));
       
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -113,7 +105,6 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
       if (dto.sequenceCourseModuleId != null) updateData["sequence_course_module_id"] = dto.sequenceCourseModuleId;
       
       if (updateData.isEmpty) {
-          await db.close();
           return getById(dto.coursesModulesId);
       }
       
@@ -123,10 +114,8 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
          where: {"id": dto.coursesModulesId}
       );
       
-      await db.close();
       return getById(dto.coursesModulesId);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -140,11 +129,9 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
       
       db = await MysqlConfiguration.connect();
       await db.delete(table: table, where: {"id": dto.coursesModulesId});
-      await db.close();
       
       return existingRes;
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }

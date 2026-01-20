@@ -4,6 +4,7 @@ import 'package:vaden/vaden.dart';
 @Configuration()
 class MysqlConfiguration {
   static MysqlUtils? utils;
+  static MysqlUtilsSettings? settings;
 
   MysqlConfiguration();
 
@@ -13,20 +14,22 @@ class MysqlConfiguration {
 
   @Bean()
   Future<MysqlUtils> initDatabase(ApplicationSettings settings) async {
-    if (utils != null) {
+    if (utils != null && !(await utils!.isConnectionAlive())) {
       return utils!;
     }
 
+    MysqlConfiguration.settings = MysqlUtilsSettings(
+      host: settings["mysql"]["hostname"],
+      user: settings["mysql"]["username"],
+      db: settings["mysql"]["database"],
+      password: settings["mysql"]["password"],
+      secure: true,
+      pool: true,
+      collation: "utf8mb4_uca1400_ai_ci",
+    );
+
     utils = MysqlUtils(
-      settings: MysqlUtilsSettings(
-        host: settings["mysql"]["hostname"],
-        user: settings["mysql"]["username"],
-        db: settings["mysql"]["database"],
-        password: settings["mysql"]["password"],
-        secure: true,
-        pool: true,
-        collation: "utf8mb4_uca1400_ai_ci",
-      ),
+      settings: MysqlConfiguration.settings!,
       errorLog: (log) {
         print(log);
       },

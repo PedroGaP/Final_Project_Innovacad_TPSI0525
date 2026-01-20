@@ -16,6 +16,7 @@ class UserSigninDao extends OutputUserDao {
     required super.createdAt,
     required super.role,
     required super.verified,
+    required super.twoFactorEnabled,
     super.image,
     super.token,
     super.sessionToken,

@@ -26,10 +26,8 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
          );
       }).toList();
       
-      await db.close();
       return Result.success(items);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -42,7 +40,6 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
       final result = await db.getOne(table: table, where: {"id": id});
       
       if (result.isEmpty) {
-         await db.close();
          return Result.failure(AppError(AppErrorType.notFound, "Availability not found"));
       }
 
@@ -54,10 +51,8 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
          endDateTimestamp: DateTime.parse(result["end_date_timestamp"].toString())
       );
       
-      await db.close();
       return Result.success(dao);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -87,11 +82,9 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
       }); 
        
       if (created.isEmpty) {
-          await db.close();
           return Result.failure(AppError(AppErrorType.internal, "Created Availability could not be retrieved"));
       }
       
-      await db.close();
       return Result.success(OutputAvailabilityDao(
          availabilityId: created["id"].toString(), 
          trainerId: created["trainer_id"].toString(),
@@ -101,7 +94,6 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
       ));
       
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -119,7 +111,6 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
       if (dto.endDateTimestamp != null) updateData["end_date_timestamp"] = dto.endDateTimestamp!.toIso8601String();
       
       if (updateData.isEmpty) {
-          await db.close();
           return getById(dto.availabilityId);
       }
       
@@ -129,10 +120,8 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
          where: {"id": dto.availabilityId}
       );
       
-      await db.close();
       return getById(dto.availabilityId);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -146,11 +135,9 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
       
       db = await MysqlConfiguration.connect();
       await db.delete(table: table, where: {"id": dto.availabilityId});
-      await db.close();
       
       return existingRes;
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }

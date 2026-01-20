@@ -12,7 +12,7 @@ class UpdateTraineeDto extends UpdateUserDto with Validator<UpdateTraineeDto> {
   @DateTimeConverter()
   final DateTime? birthdayDate;
 
-  UpdateTraineeDto({super.name, super.username, this.birthdayDate});
+  UpdateTraineeDto({super.name, this.birthdayDate});
 
   @override
   LucidValidator<UpdateTraineeDto> validate(

@@ -17,6 +17,7 @@ OutputUserDao _$OutputUserDaoFromJson(Map<String, dynamic> json) =>
       ),
       role: json['role'] as String,
       verified: json['emailVerified'] as bool,
+      twoFactorEnabled: json['twoFactorEnabled'] as bool? ?? false,
       image: json['image'] as String?,
       token: json['token'] as String?,
       sessionToken: json['session_token'] as String?,
@@ -34,4 +35,5 @@ Map<String, dynamic> _$OutputUserDaoToJson(OutputUserDao instance) =>
       'token': instance.token,
       'session_token': instance.sessionToken,
       'emailVerified': instance.verified,
+      'twoFactorEnabled': instance.twoFactorEnabled,
     };

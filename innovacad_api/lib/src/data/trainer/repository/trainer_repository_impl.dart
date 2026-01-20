@@ -56,7 +56,6 @@ class TrainerRepositoryImpl implements ITrainerRepository {
         );
       }
 
-      await db.close();
       return Result.success(OutputTrainerDao.fromJson(results.rows[0]));
     } catch (e) {
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
@@ -164,12 +163,18 @@ class TrainerRepositoryImpl implements ITrainerRepository {
   ) async {
     MysqlUtils? db;
     try {
-      print("UPDATE S_TOKEN: ${dto.sessionToken}");
+      final res = await getById(trainerId);
 
-      // 1. User Details
-      final isUserUpdated = await _remoteUserService.updateUser(
-        dto
-      );
+      if (res.isFailure)
+        return Result.failure(
+          AppError(
+            AppErrorType.notFound,
+            "Couldn't find the trainer with provided trainer id",
+            details: {...(res.error?.details ?? {})},
+          ),
+        );
+
+      final isUserUpdated = await _remoteUserService.updateUser(res.data!.id, dto);
 
       if (isUserUpdated.isFailure)
         return Result.failure(
@@ -205,7 +210,6 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       if (db != null) {
         try {
           await db.rollback();
-          await db.close();
         } catch (_) {}
       }
       print("[ERROR] Update Trainer: $e\n$s");

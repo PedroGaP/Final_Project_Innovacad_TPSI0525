@@ -96,7 +96,4 @@ from verification;
 select *
 from user;
 
-Insert into trainers(trainer_id, user_id, birthday_date, specialization)
-VALUES (UUID(), '1aV01zChJh8dgs8FTgGjRjVSLItuSVvj', NOW(), 'ginecologista');
-
-SELECT trainer_id, birthday_date, specialization FROM trainers WHERE user_id = '1aV01zChJh8dgs8FTgGjRjVSLItuSVvj';
+UPDATE `user` SET `name` = 'joaozinha2' WHERE `id` = 'tqaBTOMYvRRbYDfvjBEaCTKDi95gFwOd'

@@ -24,10 +24,8 @@ class CourseRepositoryImpl implements ICourseRepository {
          );
       }).toList();
       
-      await db.close();
       return Result.success(courses);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -40,7 +38,6 @@ class CourseRepositoryImpl implements ICourseRepository {
       final result = await db.getOne(table: table, where: {"id": id});
       
       if (result.isEmpty) {
-         await db.close();
          return Result.failure(AppError(AppErrorType.notFound, "Course not found"));
       }
 
@@ -50,10 +47,8 @@ class CourseRepositoryImpl implements ICourseRepository {
          name: result["name"]
       );
       
-      await db.close();
       return Result.success(dao);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -81,12 +76,10 @@ class CourseRepositoryImpl implements ICourseRepository {
       final created = await db.getOne(table: table, where: {"identifier": dto.identifier});
        
       if (created.isEmpty) {
-          await db.close();
           // Fallback or error?
           return Result.failure(AppError(AppErrorType.internal, "Created course could not be retrieved"));
       }
       
-      await db.close();
       return Result.success(OutputCourseDao(
          courseId: created["id"].toString(), 
          identifier: created["identifier"], 
@@ -94,7 +87,6 @@ class CourseRepositoryImpl implements ICourseRepository {
       ));
       
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -110,7 +102,6 @@ class CourseRepositoryImpl implements ICourseRepository {
       if (dto.name != null) updateData["name"] = dto.name;
       
       if (updateData.isEmpty) {
-          await db.close();
           return getById(dto.courseId); // No changes
       }
       
@@ -120,10 +111,8 @@ class CourseRepositoryImpl implements ICourseRepository {
          where: {"id": dto.courseId}
       );
       
-      await db.close();
       return getById(dto.courseId);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -137,11 +126,9 @@ class CourseRepositoryImpl implements ICourseRepository {
       
       db = await MysqlConfiguration.connect();
       await db.delete(table: table, where: {"id": dto.courseId});
-      await db.close();
       
       return existingRes;
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }

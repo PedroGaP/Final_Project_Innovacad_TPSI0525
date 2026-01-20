@@ -28,10 +28,8 @@ class GradeRepositoryImpl implements IGradeRepository {
          );
       }).toList();
       
-      await db.close();
       return Result.success(items);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -44,7 +42,6 @@ class GradeRepositoryImpl implements IGradeRepository {
       final result = await db.getOne(table: table, where: {"id": id});
       
       if (result.isEmpty) {
-         await db.close();
          return Result.failure(AppError(AppErrorType.notFound, "Grade not found"));
       }
 
@@ -58,10 +55,8 @@ class GradeRepositoryImpl implements IGradeRepository {
          updatedAt: DateTime.parse(result["updated_at"].toString())
       );
       
-      await db.close();
       return Result.success(dao);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -97,11 +92,9 @@ class GradeRepositoryImpl implements IGradeRepository {
       }); 
        
       if (created.isEmpty) {
-          await db.close();
           return Result.failure(AppError(AppErrorType.internal, "Created Grade could not be retrieved"));
       }
       
-      await db.close();
       return Result.success(OutputGradeDao(
          gradeId: created["id"].toString(), 
          classModuleId: created["class_module_id"].toString(),
@@ -113,7 +106,6 @@ class GradeRepositoryImpl implements IGradeRepository {
       ));
       
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -134,7 +126,6 @@ class GradeRepositoryImpl implements IGradeRepository {
       updateData["updated_at"] = DateTime.now().toIso8601String();
       
       if (updateData.length <= 1) { // Only updated_at
-          await db.close();
           // If only timestamp updated (no meaningful changes), just return existing.
           return getById(dto.gradeId);
       }
@@ -145,10 +136,8 @@ class GradeRepositoryImpl implements IGradeRepository {
          where: {"id": dto.gradeId}
       );
       
-      await db.close();
       return getById(dto.gradeId);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -162,11 +151,9 @@ class GradeRepositoryImpl implements IGradeRepository {
       
       db = await MysqlConfiguration.connect();
       await db.delete(table: table, where: {"id": dto.gradeId});
-      await db.close();
       
       return existingRes;
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }

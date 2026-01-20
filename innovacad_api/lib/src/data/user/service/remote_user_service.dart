@@ -20,6 +20,7 @@ class SignInAdminResult {
 class RemoteUserService {
   final v.ApplicationSettings _settings;
   final Dio _dio;
+  final String table = "user";
 
   RemoteUserService(this._settings, this._dio);
 
@@ -504,67 +505,38 @@ class RemoteUserService {
     }
   }
 
-  Future<Result<bool>> updateUser(UpdateUserDto dto) async {
+  Future<Result<bool>> updateUser(String id, UpdateUserDto dto) async {
+    MysqlUtils? db;
     try {
-      if (dto.sessionToken == null)
-        return Result.failure(
-          AppError(AppErrorType.forbidden, "You must provide a token"),
-        );
-
-      final updateUri = Uri(
-        scheme: _settings["auth"]["protocol"],
-        host: _settings["auth"]["host"],
-        port: _settings["auth"]["port"],
-        path: "/api/auth/update-user",
-      );
-
-      var data = {};
+      db = await MysqlConfiguration.connect();
+      Map<String, dynamic> data = {};
 
       if (dto.name != null) data["name"] = dto.name;
       if (dto.image != null) data["image"] = dto.image;
 
-      final updateResponse = await _dio.postUri(
-        updateUri,
-        options: Options(
-          headers: {"Authorization": "Bearer ${dto.sessionToken}"},
-        ),
-        data: data,
+      if (data.length == 0) return Result.success(true);
+
+      print(table);
+
+      final res = await db.update(
+        table: table,
+        updateData: data,
+        where: {"id": id},
+        debug: true,
       );
 
-      if (updateResponse.statusCode != HttpStatus.ok) {
-        return Result.success(false);
-      }
+      print(res);
 
-      final passwordUri = Uri(
-        scheme: _settings["auth"]["protocol"],
-        host: _settings["auth"]["host"],
-        port: _settings["auth"]["port"],
-        path: "/api/auth/update-user",
-      );
-
-      if (dto.newPassword != null && dto.oldPassword != null) {
-        final passwordResponse = await _dio.postUri(
-          passwordUri,
-          options: Options(
-            headers: {"Authorization": "Bearer ${dto.sessionToken}"},
-          ),
-          data: {
-            "newPassword": dto.newPassword,
-            "currentPassword": dto.oldPassword,
-          },
-        );
-
-        if (passwordResponse.statusCode != HttpStatus.ok)
-          return Result.success(false);
-      }
+      if (res < BigInt.one) return Result.success(true);
 
       return Result.success(true);
-    } catch (e) {
+    } catch (e, s) {
+      print(s);
       return Result.failure(
         AppError(
           AppErrorType.internal,
           "Failed to update the user",
-          details: {"error": e.toString()},
+          details: {"error": e.toString(), "stack": s.toString()},
         ),
       );
     }
