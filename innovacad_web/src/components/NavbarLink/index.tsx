@@ -43,7 +43,6 @@ export const NavbarLink = (props: NavProps) => {
   return (
     <li class="block w-full py-1">
       <div
-        // Move tooltip here to ensure it pops out correctly
         class={props.collapsed ? "tooltip tooltip-right w-full" : "w-full"}
         data-tip={props.title}
       >
@@ -61,7 +60,6 @@ export const NavbarLink = (props: NavProps) => {
             <Icon
               name={props.icon}
               size={props.size}
-              // Dynamically color based on active state
               class={isActive() ? "text-primary" : "text-base-content/70"}
             />
           </div>

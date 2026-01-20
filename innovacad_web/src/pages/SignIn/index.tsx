@@ -19,7 +19,6 @@ const SignIn = () => {
   const navigate = useNavigate();
 
   const handleSocialLogin = () => {
-    // TODO: hook up Google auth (Firebase, Auth0, etc.)
     console.log("Google sign in");
   };
 

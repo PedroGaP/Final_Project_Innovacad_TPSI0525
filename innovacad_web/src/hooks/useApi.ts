@@ -90,7 +90,6 @@ export const useApi = () => {
     skipAuth?: boolean,
   ): Promise<Result<T>> => {
     try {
-      // Validate token for protected endpoints
       if (!skipAuth && requiresAuth(path)) {
         if (!user() || !user()?.token) {
           handleAuthFailure(403, "No authentication token provided");
@@ -124,7 +123,6 @@ export const useApi = () => {
         };
       }
 
-      // Handle authentication/authorization errors
       if (res.status === 401 || res.status === 403) {
         handleAuthFailure(res.status, data?.error?.message || "Unauthorized");
         return new Failure(
@@ -236,7 +234,7 @@ export const useApi = () => {
       API_ENDPOINTS.AUTH.SIGN_UP,
       "POST",
       data,
-      true, // skipAuth for public endpoint
+      true,
     );
 
     if (res.isError || !res.data) {
@@ -301,7 +299,7 @@ export const useApi = () => {
       API_ENDPOINTS.AUTH.SEND_VERIFY,
       "POST",
       { token, email },
-      true, // skipAuth - user not fully authenticated yet
+      true,
     );
 
     if (res.isError || !res.data) {
@@ -329,7 +327,7 @@ export const useApi = () => {
         verifyToken,
         callback,
       },
-      true, // skipAuth - no user session yet
+      true,
     );
 
     if (res.isError || !res.data) {
@@ -377,11 +375,10 @@ export const useApi = () => {
       `${API_ENDPOINTS.AUTH.SESSION}?session-token=${sessionToken}`,
       "GET",
       undefined,
-      true, // skipAuth - session token in query param
+      true,
     );
 
     if (res.isError || !res.data) {
-      // Clear invalid session
       logout();
       Cookies.remove(SESSION_COOKIE_KEY);
       return null;

@@ -54,10 +54,6 @@ const TrainerPage = () => {
     const userToDelete = deletingUser();
     if (!userToDelete) return;
 
-    // Optional: Call API to delete
-    // await api.deleteTrainer(userToDelete.id);
-
-    // Update the UI immediately without refetching the whole list
     mutate((prev) => prev?.filter((u) => u.id !== userToDelete.id) || []);
     setDeletingUser(null);
   };

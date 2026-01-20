@@ -33,10 +33,9 @@ const AccountSettingsPage = () => {
 
   return (
     <>
-      {/* 2. Conteúdo Central (Formulário) */}
 
       <div class="w-full flex-1 min-h-full border-base-300 bg-base-100">
-        {/* Header do Formulário */}
+        {/* Header*/}
         <div class="flex justify-between items-center p-6 border-b border-base-200">
           <div>
             <h3 class="text-lg font-bold">Personal Info</h3>
@@ -52,9 +51,9 @@ const AccountSettingsPage = () => {
           </div>
         </div>
 
-        {/* Corpo do Formulário */}
+        {/* Body */}
         <div class="p-6 space-y-6">
-          {/* Foto */}
+          {/* Photo */}
           <div class="form-control">
             <label class="label pt-0">
               <span class="label-text opacity-70 font-medium">Your photo</span>
@@ -86,7 +85,7 @@ const AccountSettingsPage = () => {
             </div>
           </div>
 
-          {/* Nome */}
+          {/* Name */}
           <div class="form-control w-full">
             <label class="label">
               <span class="label-text opacity-70 font-medium">Full name</span>
@@ -123,7 +122,7 @@ const AccountSettingsPage = () => {
             />
           </div>
 
-          {/* Data de Nascimento */}
+          {/* Birth Date */}
           <div class="form-control w-full">
             <label class="label">
               <span class="label-text opacity-70 font-medium">
@@ -137,7 +136,7 @@ const AccountSettingsPage = () => {
             />
           </div>
 
-          {/* --- Linked Accounts Section --- */}
+          {/*  Linked Accounts Section  */}
           <div class="divider pt-2"></div>
 
           <div class="form-control w-full">
@@ -147,7 +146,6 @@ const AccountSettingsPage = () => {
               </span>
             </label>
 
-            {/* Card de Ligação Microsoft */}
             <div class="flex flex-col gap-4">
               <SocialAuthCard
                 logo={GoogleLogo}

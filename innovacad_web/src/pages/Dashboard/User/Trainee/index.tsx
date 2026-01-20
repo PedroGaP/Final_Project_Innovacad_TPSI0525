@@ -5,27 +5,31 @@ import CopyToClipboard from "@/components/CopyToClipboard";
 import capitalize from "@/utils/capitalize";
 import { useApi } from "@/hooks/useApi";
 import { Toaster } from "solid-toast";
+import toast from "solid-toast";
+import ModalEdit from "@/components/Modal/Edit";
+import ModalDelete from "@/components/Modal/Delete";
 
 const PAGE_SIZE = 10;
+
 const createEmptyTrainee = (): Trainee =>
   ({
     id: "",
     name: "",
     email: "",
-    role: "User",
-    traineeId: "",
     username: "",
+    role: "trainee",
+    traineeId: "",
     token: "",
-  } as Trainee);
+    birthdayDate: "",
+    image: null,
+    verified: false,
+    session_token: "",
+  }) as unknown as Trainee;
 
 const TraineePage = () => {
   const api = useApi();
 
-  const [usersData, { mutate, refetch }] = createResource<Trainee[]>(
-    api.fetchTrainees
-  );
-
-  console.log(JSON.stringify(usersData()));
+  const [usersData, { mutate }] = createResource<Trainee[]>(api.fetchTrainees);
 
   const [page, setPage] = createSignal(1);
   const [search, setSearch] = createSignal("");
@@ -38,12 +42,12 @@ const TraineePage = () => {
     const list = usersData() || [];
     return list.filter(
       (u: Trainee) =>
-        u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
+        u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q),
     );
   });
 
   const totalPages = createMemo(() =>
-    Math.ceil(filteredUsers().length / PAGE_SIZE)
+    Math.ceil(filteredUsers().length / PAGE_SIZE),
   );
 
   const paginatedUsers = createMemo(() => {
@@ -51,16 +55,51 @@ const TraineePage = () => {
     return filteredUsers().slice(start, start + PAGE_SIZE);
   });
 
+  const handleSaveTrainee = async (trainee: Trainee) => {
+    try {
+      const isEditing = trainee.traineeId && trainee.traineeId.length > 0;
+
+      if (isEditing) {
+
+        mutate(
+          (prev) =>
+            prev?.map((u) =>
+              u.traineeId === trainee.traineeId ? trainee : u,
+            ) || [],
+        );
+        toast.success("Trainee updated successfully");
+      } else {
+
+        mutate((prev) => [...(prev || []), trainee]);
+        toast.success("Trainee created successfully");
+      }
+
+      setEditingUser(null);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save trainee",
+      );
+      throw error;
+    }
+  };
+
   const confirmDelete = async () => {
     const userToDelete = deletingUser();
     if (!userToDelete) return;
 
-    // Optional: Call API to delete
-    // await api.deleteTrainee(userToDelete.id);
+    try {
 
-    // Update the UI immediately without refetching the whole list
-    mutate((prev) => prev?.filter((u) => u.id !== userToDelete.id) || []);
-    setDeletingUser(null);
+      mutate(
+        (prev) =>
+          prev?.filter((u) => u.traineeId !== userToDelete.traineeId) || [],
+      );
+      toast.success("Trainee deleted successfully");
+      setDeletingUser(null);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete trainee",
+      );
+    }
   };
 
   return (
@@ -96,7 +135,7 @@ const TraineePage = () => {
           <table class="table table-zebra table-fixed w-full">
             <thead>
               <tr>
-                <th class="w-52">Trainer ID</th>
+                <th class="w-52">Trainee ID</th>
                 <th class="w-52">User ID</th>
                 <th class="w-32">Name</th>
                 <th class="w-48">Email</th>
@@ -106,56 +145,51 @@ const TraineePage = () => {
               </tr>
             </thead>
 
-            <tbody class="overflow-scroll">
+            <tbody>
               <For each={paginatedUsers()}>
-                {(user) => {
-                  console.log(user);
-                  console.log(typeof user);
-                  return (
-                    <tr>
-                      <td class="w-52">
-                        <CopyToClipboard val={user.traineeId}>
-                          <div class="overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 pb-1 text-xs font-mono max-w-52">
-                            {user.traineeId}
-                          </div>
-                        </CopyToClipboard>
-                      </td>
+                {(user) => (
+                  <tr>
+                    <td class="w-52">
+                      <CopyToClipboard val={user.traineeId}>
+                        <div class="overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 pb-1 text-xs font-mono max-w-52">
+                          {user.traineeId}
+                        </div>
+                      </CopyToClipboard>
+                    </td>
 
-                      {/* Coluna User ID */}
-                      <td class="w-52">
-                        <CopyToClipboard val={user.id}>
-                          <div class="overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 pb-1 text-xs font-mono max-w-52">
-                            {user.id}
-                          </div>
-                        </CopyToClipboard>
-                      </td>
+                    <td class="w-52">
+                      <CopyToClipboard val={user.id || ""}>
+                        <div class="overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 pb-1 text-xs font-mono max-w-52">
+                          {user.id}
+                        </div>
+                      </CopyToClipboard>
+                    </td>
 
-                      <td>{user.name}</td>
-                      <td>{user.email}</td>
-                      <td>{user.username}</td>
-                      <td>
-                        <span class="badge badge-outline">
-                          {!!user.role ? capitalize(user.role) : "N/A"}
-                        </span>
-                      </td>
-                      <td class="text-right space-x-2">
-                        <button
-                          class="btn btn-ghost btn-sm"
-                          onClick={() => setEditingUser(user)}
-                        >
-                          <Icon name="Pencil" size={16} />
-                        </button>
+                    <td>{user.name}</td>
+                    <td>{user.email}</td>
+                    <td>{user.username}</td>
+                    <td>
+                      <span class="badge badge-outline">
+                        {!!user.role ? capitalize(user.role) : "N/A"}
+                      </span>
+                    </td>
+                    <td class="text-right space-x-2">
+                      <button
+                        class="btn btn-ghost btn-sm"
+                        onClick={() => setEditingUser(user)}
+                      >
+                        <Icon name="Pencil" size={16} />
+                      </button>
 
-                        <button
-                          class="btn btn-ghost btn-sm text-error"
-                          onClick={() => setDeletingUser(user)}
-                        >
-                          <Icon name="Trash" size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                }}
+                      <button
+                        class="btn btn-ghost btn-sm text-error"
+                        onClick={() => setDeletingUser(user)}
+                      >
+                        <Icon name="Trash" size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                )}
               </For>
             </tbody>
           </table>
@@ -202,84 +236,27 @@ const TraineePage = () => {
       {/* ADD / EDIT MODAL */}
       <Show when={editingUser()}>
         {(u) => (
-          <dialog open class="modal">
-            <div class="modal-box">
-              <h3 class="font-bold text-lg">
-                {u().id ? "Edit Trainee" : "Add Trainee"}
-              </h3>
-
-              <div class="space-y-3 mt-4">
-                <input
-                  class="input input-bordered w-full"
-                  placeholder="Name"
-                  value={u().name}
-                  onInput={(e) =>
-                    setEditingUser({
-                      ...u(),
-                      name: e.currentTarget.value,
-                    } as Trainee)
-                  }
-                />
-
-                <input
-                  class="input input-bordered w-full"
-                  placeholder="Email"
-                  value={u().email}
-                  onInput={(e) =>
-                    setEditingUser({
-                      ...u(),
-                      email: e.currentTarget.value,
-                    } as Trainee)
-                  }
-                />
-
-                <select
-                  class="select select-bordered w-full"
-                  value={u().role}
-                  onChange={(e) =>
-                    setEditingUser({
-                      ...u(),
-                      role: e.currentTarget.value,
-                    } as Trainee)
-                  }
-                >
-                  <option>Trainee</option>
-                  <option>Trainer</option>
-                  <option>Admin</option>
-                </select>
-              </div>
-
-              <div class="modal-action">
-                <button class="btn" onClick={() => setEditingUser(null)}>
-                  Cancel
-                </button>
-                <button class="btn btn-primary">Save</button>
-              </div>
-            </div>
-          </dialog>
+          <ModalEdit<Trainee>
+            value={u}
+            setValue={setEditingUser}
+            onSave={handleSaveTrainee}
+            onCancel={() => setEditingUser(null)}
+            title="Trainee"
+          />
         )}
       </Show>
 
       {/* DELETE MODAL */}
       <Show when={deletingUser()}>
         {(u) => (
-          <dialog open class="modal">
-            <div class="modal-box">
-              <h3 class="font-bold text-lg">Delete TRainee</h3>
-              <p class="py-4">
-                Are you sure you want to delete <strong>{u().name}</strong>?
-              </p>
-
-              <div class="modal-action">
-                <button class="btn" onClick={() => setDeletingUser(null)}>
-                  Cancel
-                </button>
-                <button class="btn btn-error" onClick={confirmDelete}>
-                  Delete
-                </button>
-              </div>
-            </div>
-          </dialog>
+          <ModalDelete<Trainee>
+            value={u}
+            setValue={setDeletingUser}
+            onConfirm={confirmDelete}
+            onCancel={() => setDeletingUser(null)}
+            title="Delete Trainee"
+            description="Are you sure you want to delete this trainee? This action cannot be undone."
+          />
         )}
       </Show>
     </div>

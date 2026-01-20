@@ -8,7 +8,6 @@ export const verifyEmailPage = (
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Verifique o seu Email</title>
     <style>
-      /* Reset básico para garantir que fica igual em todo o lado */
       body {
         margin: 0;
         padding: 0;
@@ -19,7 +18,6 @@ export const verifyEmailPage = (
         border-collapse: collapse;
       }
 
-      /* Estilos responsivos para telemóvel */
       @media screen and (max-width: 600px) {
         .container {
           width: 100% !important;

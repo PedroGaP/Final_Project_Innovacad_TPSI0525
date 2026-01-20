@@ -34,7 +34,7 @@ class CourseController {
     @Body() UpdateCourseDto dto,
   ) async {
     if (dto.courseId != id) {
-       // Consider strictly validating or just using ID from body if path ID is ignored or vice versa
+       // Validate
     }
     final result = await _service.update(dto);
     return resultToResponse(result);
