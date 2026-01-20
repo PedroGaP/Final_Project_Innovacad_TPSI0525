@@ -232,7 +232,6 @@ export const useApi = () => {
       return user;
     }
 
-    // If email NOT verified (emailVerified === 0 or false), redirect to verification page
     if (userData.emailVerified === false) {
       console.log("NAVIGATING TO VERIFY PAGE");
       toast.custom("Please verify your email to access the dashboard", {
@@ -243,7 +242,6 @@ export const useApi = () => {
     }
 
     console.log("NAVIGATING TO DASHBOARD");
-    // Email verified, proceed to dashboard
     toast.success("Login successful. You'll be redirected to dashboard", {
       duration: 2000,
     });
@@ -343,9 +341,6 @@ export const useApi = () => {
     const updateData: Record<string, any> = {};
 
     if (data.name !== undefined) updateData.name = data.name;
-    // Don't allow updating email and username
-    // if (data.email !== undefined) updateData.email = data.email;
-    // if (data.username !== undefined) updateData.username = data.username;
     if (data.birthdayDate !== undefined)
       updateData.birthdayDate = data.birthdayDate;
 

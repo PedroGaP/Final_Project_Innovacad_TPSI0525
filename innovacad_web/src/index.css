@@ -71,13 +71,11 @@
   --noise: 1;
 }
 
-/* No seu index.css ou app.css */
 .overflow-x-auto {
-  scrollbar-width: thin; /* Para Firefox */
+  scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
 }
 
-/* Para Chrome, Safari e Edge */
 .overflow-x-auto::-webkit-scrollbar {
   height: 6px !important;
   display: block !important;

@@ -191,7 +191,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       db = await MysqlConfiguration.connect();
       await db.startTrans();
 
-      // Update Trainee table
       final traineeData = <String, dynamic>{};
       if (dto.birthdayDate != null)
         traineeData["birthday_date"] = dto.birthdayDate;

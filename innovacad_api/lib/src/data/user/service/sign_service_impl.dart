@@ -93,7 +93,6 @@ class SignServiceImpl implements ISignService {
 
   @override
   Future<Result<bool>> checkEmailValidity(CheckEmailValidityDto dto) async {
-    // TODO: implement checkEmailValidity
     final result = await _remoteUserService.checkEmailValidity(dto);
     if (result.isFailure) return Result.success(false);
 

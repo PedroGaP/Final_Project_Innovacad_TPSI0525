@@ -37,8 +37,7 @@ export default function ModalDelete<T extends Record<string, any>>(
       class="modal modal-bottom sm:modal-middle"
     >
       <div class="modal-box w-full max-w-sm bg-base-100 shadow-xl rounded-xl p-0 overflow-hidden">
-        {/* Header */}
-        <div class="bg-gradient-to-r from-error to-error/80 px-6 py-4 flex items-center justify-between">
+        <div class="bg-linear-to-r from-error to-error/80 px-6 py-4 flex items-center justify-between">
           <div class="flex-1">
             <h3 class="font-bold text-lg text-white">
               {props.title || "Delete Item"}
@@ -53,11 +52,9 @@ export default function ModalDelete<T extends Record<string, any>>(
           </button>
         </div>
 
-        {/* Content */}
         <div class="px-6 py-4">
           <div class="flex items-start gap-3">
-            <div class="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-error/10">
-              {/* Trash/Delete Icon */}
+            <div class="shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-error/10">
               <svg
                 class="h-6 w-6 text-error"
                 fill="none"
@@ -95,7 +92,6 @@ export default function ModalDelete<T extends Record<string, any>>(
           </div>
         </div>
 
-        {/* Footer */}
         <div class="bg-base-200/30 px-6 py-3 flex gap-2 justify-end border-t border-base-300">
           <button
             class="btn btn-ghost btn-sm font-medium"
@@ -123,7 +119,6 @@ export default function ModalDelete<T extends Record<string, any>>(
         </div>
       </div>
 
-      {/* Backdrop */}
       <form method="dialog" class="modal-backdrop bg-black/30">
         <button onClick={handleCancel}>close</button>
       </form>

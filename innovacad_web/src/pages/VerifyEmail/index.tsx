@@ -116,7 +116,6 @@ const VerifyEmail = () => {
     <div class="hero min-h-screen bg-base-200">
       <div class="hero-content text-center">
         <div class="card w-full max-w-md shadow-2xl bg-base-100 p-12 items-center text-center">
-          {/* Logo */}
           <div class="bg-primary/10 p-4 rounded-2xl mb-6">
             <Mail size={40} class="text-primary" />
           </div>

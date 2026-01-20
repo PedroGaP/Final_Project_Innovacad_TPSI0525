@@ -106,9 +106,6 @@ export const API_ENDPOINTS = {
   },
 } as const;
 
-/**
- * Check if request requires authentication
- */
 const requiresAuth = (path: string): boolean => {
   return (
     path !== API_ENDPOINTS.AUTH.SIGN_IN &&
@@ -119,9 +116,6 @@ const requiresAuth = (path: string): boolean => {
   );
 };
 
-/**
- * Centralized error handler for auth failures
- */
 const handleAuthFailure = (status: number, message: string) => {
   const { logout } = useUserDetails();
   const navigate = useNavigate();
@@ -136,10 +130,6 @@ const handleAuthFailure = (status: number, message: string) => {
   }
 };
 
-/**
- * Core API fetch method with error handling
- * Can be used across the entire application
- */
 export const fetchApi = async <T>(
   path: string,
   method: string,

@@ -59,7 +59,6 @@ const SignIn = () => {
   return (
     <div class="min-h-screen flex items-center justify-center bg-base-300 px-4">
       <div class="card w-full max-w-sm bg-base-100 shadow-2xl overflow-hidden">
-        {/* Card Header (Internal) */}
         <div class="bg-primary p-6 text-primary-content">
           <h2 class="card-title text-2xl font-bold flex items-center gap-2">
             <TbLogin />
@@ -71,7 +70,6 @@ const SignIn = () => {
         </div>
 
         <div class="card-body gap-1 p-6">
-          {/* Email */}
           <div class="form-control">
             <label class="label">
               <span class="label-text font-medium">Email</span>
@@ -84,7 +82,6 @@ const SignIn = () => {
             />
           </div>
 
-          {/* Password */}
           <div class="form-control mt-2">
             <label class="label">
               <span class="label-text font-medium">Password</span>
@@ -103,7 +100,6 @@ const SignIn = () => {
             </A>
           </div>
 
-          {/* Card Actions (Internal Footer) */}
           <div class="card-actions flex-col mt-6 gap-3">
             <button
               class="btn btn-primary btn-block shadow-lg"

@@ -19,8 +19,8 @@ const PortalTooltip = (props: { text: string; children: any }) => {
     if (!ref) return;
     const rect = ref.getBoundingClientRect();
     setPos({
-      x: rect.left + rect.width / 2, // Center horizontally
-      y: rect.top - 6, // Position slightly above the icon
+      x: rect.left + rect.width / 2,
+      y: rect.top - 6,
     });
   };
 
@@ -39,11 +39,10 @@ const PortalTooltip = (props: { text: string; children: any }) => {
       <Show when={pos()}>
         <Portal>
           <div
-            class="fixed z-[9999] px-2 py-1 text-xs font-medium text-neutral-content bg-neutral rounded shadow-sm pointer-events-none transform -translate-x-1/2 -translate-y-full animate-in fade-in zoom-in-95 duration-100"
+            class="fixed z-9999 px-2 py-1 text-xs font-medium text-neutral-content bg-neutral rounded shadow-sm pointer-events-none transform -translate-x-1/2 -translate-y-full animate-in fade-in zoom-in-95 duration-100"
             style={{ top: `${pos()?.y}px`, left: `${pos()?.x}px` }}
           >
             {props.text}
-            {/* Tiny triangle arrow pointing down */}
             <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-neutral"></div>
           </div>
         </Portal>
@@ -52,9 +51,6 @@ const PortalTooltip = (props: { text: string; children: any }) => {
   );
 };
 
-/**
- * Get autocomplete value based on field name
- */
 const getAutocompleteValue = (fieldName: string): string => {
   const f = fieldName.toLowerCase();
   if (f.includes("email")) return "email";
@@ -136,7 +132,7 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
   return (
     <dialog id="edit_modal" class="modal modal-open">
       <div class="modal-box w-11/12 max-w-md p-0 overflow-hidden flex flex-col bg-base-100 rounded-xl">
-        {/* --- HEADER --- */}
+
         <div class="bg-linear-to-r from-primary to-primary/80 px-6 py-4 flex items-center justify-between shrink-0">
           <div class="flex-1">
             <h3 class="font-bold text-lg text-primary-content">
@@ -151,7 +147,6 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
           </button>
         </div>
 
-        {/* --- BODY --- */}
         <div class="px-6 py-4 overflow-y-auto max-h-[60vh]">
           <For each={getEditableFieldKeys()}>
             {(fieldName) => {
@@ -216,7 +211,6 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
           </For>
         </div>
 
-        {/* --- FOOTER --- */}
         <div class="bg-base-200/50 px-6 py-3 flex gap-2 justify-end border-t border-base-300 shrink-0">
           <button
             class="btn btn-ghost btn-sm font-medium"

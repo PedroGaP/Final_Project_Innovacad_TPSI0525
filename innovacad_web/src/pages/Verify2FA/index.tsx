@@ -77,7 +77,6 @@ const Verify2FA = () => {
     }
   };
 
-  // Lógica para colar o código (Paste)
   const handlePaste = (e: ClipboardEvent) => {
     e.preventDefault();
     const pasteData = e.clipboardData?.getData("text");
@@ -109,7 +108,6 @@ const Verify2FA = () => {
     <div class="hero min-h-screen bg-base-200">
       <div class="hero-content text-center">
         <div class="card w-full max-w-md shadow-2xl bg-base-100 p-12 items-center text-center">
-          {/* Logo / Ícone Dinâmico */}
           <div class="bg-primary/10 p-4 rounded-2xl mb-6">
             <Mail size={40} class="text-primary" />
           </div>
@@ -136,7 +134,6 @@ const Verify2FA = () => {
               type="submit"
               class="btn btn-primary w-full text-lg mb-6"
               disabled={code().length < 1 || loading()}
-              //disabled={code().some((d) => d === "") || loading()}
             >
               {loading() ? (
                 <span class="loading loading-spinner"></span>

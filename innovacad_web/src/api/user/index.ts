@@ -1,4 +1,3 @@
-import { useUserDetails } from "@/providers/UserDetailsProvider";
 import { Trainee, Trainer, type UserResponseData } from "@/types/user";
 import { fetchApi } from "@/api/api";
 import toast from "solid-toast";
@@ -9,9 +8,7 @@ export const USER_ENDPOINTS = {
 } as const;
 
 export const useUserApi = () => {
-  /**
-   * Fetch all trainees
-   */
+
   const fetchTrainees = async (): Promise<Trainee[]> => {
     const res = await fetchApi<UserResponseData[]>(
       USER_ENDPOINTS.TRAINEES,
@@ -28,9 +25,6 @@ export const useUserApi = () => {
     );
   };
 
-  /**
-   * Create a new trainee
-   */
   const createTrainee = async (data: Partial<Trainee>): Promise<Trainee> => {
     const res = await fetchApi<UserResponseData>(
       USER_ENDPOINTS.TRAINEES,
@@ -50,9 +44,6 @@ export const useUserApi = () => {
     );
   };
 
-  /**
-   * Update an existing trainee
-   */
   const updateTrainee = async (
     traineeId: string,
     data: Partial<Trainee>,
@@ -75,9 +66,6 @@ export const useUserApi = () => {
     );
   };
 
-  /**
-   * Delete a trainee
-   */
   const deleteTrainee = async (traineeId: string): Promise<void> => {
     const res = await fetchApi<void>(
       `${USER_ENDPOINTS.TRAINEES}/${traineeId}`,
@@ -91,9 +79,6 @@ export const useUserApi = () => {
     toast.success("Trainee deleted successfully");
   };
 
-  /**
-   * Fetch all trainers
-   */
   const fetchTrainers = async (): Promise<Trainer[]> => {
     const res = await fetchApi<UserResponseData[]>(
       USER_ENDPOINTS.TRAINERS,
@@ -110,9 +95,6 @@ export const useUserApi = () => {
     );
   };
 
-  /**
-   * Create a new trainer
-   */
   const createTrainer = async (data: Partial<Trainer>): Promise<Trainer> => {
     const res = await fetchApi<UserResponseData>(
       USER_ENDPOINTS.TRAINERS,
@@ -132,9 +114,6 @@ export const useUserApi = () => {
     );
   };
 
-  /**
-   * Update an existing trainer
-   */
   const updateTrainer = async (
     trainerId: string,
     data: Partial<Trainer>,
@@ -157,9 +136,6 @@ export const useUserApi = () => {
     );
   };
 
-  /**
-   * Delete a trainer
-   */
   const deleteTrainer = async (trainerId: string): Promise<void> => {
     const res = await fetchApi<void>(
       `${USER_ENDPOINTS.TRAINERS}/${trainerId}`,
@@ -174,12 +150,11 @@ export const useUserApi = () => {
   };
 
   return {
-    // Trainees
     fetchTrainees,
     createTrainee,
     updateTrainee,
     deleteTrainee,
-    // Trainers
+
     fetchTrainers,
     createTrainer,
     updateTrainer,

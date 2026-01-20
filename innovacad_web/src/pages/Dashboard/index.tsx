@@ -1,6 +1,6 @@
 import { NavbarLink, type NavProps } from "@/components/NavbarLink";
 import { Icon } from "@/components/Icon";
-import { createMemo, createSignal, For, Show } from "solid-js"; // Added onMount
+import { createMemo, createSignal, For, Show } from "solid-js";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useLocation } from "@solidjs/router";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -59,7 +59,6 @@ const DashboardLayout = (props: any) => {
           <input id="dashboard-drawer" type="checkbox" class="drawer-toggle" />
 
           <div class="drawer-content flex flex-col bg-base-200 h-screen overflow-hidden">
-            {/* NAVBAR */}
             <header class="navbar bg-base-100 border-b border-base-300 h-16 min-h-16 px-4 sticky top-0 z-10 gap-2 flex-none">
               <div class="flex-none">
                 <label
@@ -189,7 +188,6 @@ const DashboardLayout = (props: any) => {
             </main>
           </div>
 
-          {/* SIDEBAR */}
           <div class="drawer-side z-30">
             <label for="dashboard-drawer" class="drawer-overlay"></label>
             <aside

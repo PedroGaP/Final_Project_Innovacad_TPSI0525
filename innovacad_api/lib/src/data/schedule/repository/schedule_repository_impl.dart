@@ -17,7 +17,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       final results = await db.getAll(table: table);
       
       final items = results.map((row) {
-         // Handle bool: MySQL returns 1/0 usually.
          final onlineVal = row["online"];
          final bool online = onlineVal == 1 || onlineVal == true || onlineVal == '1';
          
@@ -101,23 +100,15 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
          }
       );
       
-      // Retrieval: potentially tricky if multiple identical schedules.
-      // Trying to match all non-ID fields to reduce risk.
       final Map<String, dynamic> where = {
          "class_module_id": dto.classModuleId, 
          "trainer_id": dto.trainerId,
          "availability_id": dto.availabilityId
       };
       
-      // MysqlUtils doesn't support complex where (e.g. range) easily in getOne usually, but exact match works.
-      // Dates string comparison should work if stored identically. 
-      // where["start_date_timestamp"] = dto.startDateTimestamp.toIso8601String(); 
-      // omitting dates to avoid precision mismatch issues, relying on IDs.
-      
       final created = await db.getOne(table: table, where: where); 
        
       if (created.isEmpty) {
-          // Fallback or error? Retrying with dates might work if previous failed.
            return Result.failure(AppError(AppErrorType.internal, "Created Schedule could not be retrieved"));
       }
       
@@ -156,7 +147,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       if (dto.classModuleId != null) updateData["class_module_id"] = dto.classModuleId;
       if (dto.trainerId != null) updateData["trainer_id"] = dto.trainerId;
       if (dto.availabilityId != null) updateData["availability_id"] = dto.availabilityId;
-      if (dto.roomId != null) updateData["room_id"] = dto.roomId; // What if setting to null? DTO doesn't distinguish "missing" vs "null". Assuming explicit set for now or ignoring removal.
+      if (dto.roomId != null) updateData["room_id"] = dto.roomId;
       if (dto.online != null) updateData["online"] = dto.online! ? 1 : 0;
       if (dto.startDateTimestamp != null) updateData["start_date_timestamp"] = dto.startDateTimestamp!.toIso8601String();
       if (dto.endDateTimestamp != null) updateData["end_date_timestamp"] = dto.endDateTimestamp!.toIso8601String();
