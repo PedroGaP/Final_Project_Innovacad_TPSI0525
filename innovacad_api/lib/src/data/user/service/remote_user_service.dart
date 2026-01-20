@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -20,6 +22,7 @@ class SignInAdminResult {
 class RemoteUserService {
   final v.ApplicationSettings _settings;
   final Dio _dio;
+  final String table = "user";
 
   RemoteUserService(this._settings, this._dio);
 
@@ -199,14 +202,21 @@ class RemoteUserService {
         );
       }
 
+      print("ÄAA: ${response.headers['set-cookie']}");
+      final signInCookies = response.headers['set-cookie'] ?? [];
+
       final res = await _dio.get(
         'http://localhost:10000/api/auth/get-session',
-        options: Options(
-          headers: {"cookie": response.headers["set-cookie"]![0]},
-        ),
+        options: Options(headers: {"cookie": signInCookies}),
       );
 
-      if (res.statusCode != HttpStatus.ok || res.data == null)
+      print("--------------------------------------------");
+      print(res.data);
+      print(res.requestOptions.headers);
+      print(res.statusCode);
+      print("--------------------------------------------");
+
+      if (res.statusCode != HttpStatus.ok || res.data == null) {
         return Result.failure(
           AppError(
             AppErrorType.notFound,
@@ -214,16 +224,20 @@ class RemoteUserService {
             details: response.data,
           ),
         );
-
-      print(res.data);
+      }
 
       final userData = res.data["user"] as Map<String, dynamic>;
-      print(res.data);
+
       userData["session_token"] = res.data["session"]["token"];
       userData["token"] = token;
-      userData["headers"] = {"set-cookie": res.headers["set-cookie"]![0]};
+      userData["headers"] = {"set-cookie": res.headers["set-cookie"]};
 
-      return Result.success(userData, headers: userData["headers"]);
+      final sessionCookies = res.headers['set-cookie'] ?? [];
+      final allCookies = [...signInCookies, ...sessionCookies];
+
+      log("Repo: ${jsonEncode(userData["headers"])}");
+
+      return Result.success(userData, headers: {"set-cookie": allCookies});
     } catch (e, s) {
       print(s);
       return Result.failure(
@@ -269,25 +283,25 @@ class RemoteUserService {
 
       if (response.statusCode != HttpStatus.ok) {
         return Result.failure(
-          AppError(AppErrorType.badRequest, "Sign-in failed.."),
+          AppError(
+            AppErrorType.badRequest,
+            "Sign-in failed..",
+            details: {
+              ...response.data,
+              "status": response.statusCode,
+              ...response.requestOptions.data,
+            },
+          ),
         );
       }
 
-      // final cookie = response.headers['set-cookie'].toString();
-      // final token = TokenUtils.getUserToken(cookie);
-
-      // if (token == null)
-      //   return Result.failure(
-      //     AppError(AppErrorType.external, "Failed to retrieve user token"),
-      //   );
-
       print(response.data);
-      //final userData = response.data["user"] as Map<String, dynamic>;
-      // userData["token"] = token;
-      final res = response.data;
-      res["headers"] = {"set-cookie": response.headers["set-cookie"]![0]};
+      print(response.headers);
 
-      return Result.success(response.data);
+      return Result.success(
+        response.data,
+        headers: {"set-cookie": response.headers["set-cookie"]![0]},
+      );
     } catch (e, s) {
       print(s);
       return Result.failure(
@@ -471,10 +485,17 @@ class RemoteUserService {
     try {
       final res = await _dio.get(
         "http://localhost:10000/api/auth/get-session",
-        options: Options(headers: {"cookie": sessionCookie}),
+        options: Options(
+          headers: {
+            "Authorization":
+                "Bearer ${TokenUtils.getUserSessionToken(sessionCookie)}",
+          },
+        ),
       );
 
-      if (res.statusCode != 200 || res.data == null)
+      if (res.statusCode != 200 || res.data == null) {
+        print(res.data);
+        print(res.requestOptions.headers);
         return Result.failure(
           AppError(
             AppErrorType.notFound,
@@ -482,6 +503,7 @@ class RemoteUserService {
             details: res.data,
           ),
         );
+      }
 
       print(res.headers);
 
@@ -504,67 +526,38 @@ class RemoteUserService {
     }
   }
 
-  Future<Result<bool>> updateUser(UpdateUserDto dto) async {
+  Future<Result<bool>> updateUser(String id, UpdateUserDto dto) async {
+    MysqlUtils? db;
     try {
-      if (dto.sessionToken == null)
-        return Result.failure(
-          AppError(AppErrorType.forbidden, "You must provide a token"),
-        );
-
-      final updateUri = Uri(
-        scheme: _settings["auth"]["protocol"],
-        host: _settings["auth"]["host"],
-        port: _settings["auth"]["port"],
-        path: "/api/auth/update-user",
-      );
-
-      var data = {};
+      db = await MysqlConfiguration.connect();
+      Map<String, dynamic> data = {};
 
       if (dto.name != null) data["name"] = dto.name;
       if (dto.image != null) data["image"] = dto.image;
 
-      final updateResponse = await _dio.postUri(
-        updateUri,
-        options: Options(
-          headers: {"Authorization": "Bearer ${dto.sessionToken}"},
-        ),
-        data: data,
+      if (data.length == 0) return Result.success(true);
+
+      print(table);
+
+      final res = await db.update(
+        table: table,
+        updateData: data,
+        where: {"id": id},
+        debug: true,
       );
 
-      if (updateResponse.statusCode != HttpStatus.ok) {
-        return Result.success(false);
-      }
+      print(res);
 
-      final passwordUri = Uri(
-        scheme: _settings["auth"]["protocol"],
-        host: _settings["auth"]["host"],
-        port: _settings["auth"]["port"],
-        path: "/api/auth/update-user",
-      );
-
-      if (dto.newPassword != null && dto.oldPassword != null) {
-        final passwordResponse = await _dio.postUri(
-          passwordUri,
-          options: Options(
-            headers: {"Authorization": "Bearer ${dto.sessionToken}"},
-          ),
-          data: {
-            "newPassword": dto.newPassword,
-            "currentPassword": dto.oldPassword,
-          },
-        );
-
-        if (passwordResponse.statusCode != HttpStatus.ok)
-          return Result.success(false);
-      }
+      if (res < BigInt.one) return Result.success(true);
 
       return Result.success(true);
-    } catch (e) {
+    } catch (e, s) {
+      print(s);
       return Result.failure(
         AppError(
           AppErrorType.internal,
           "Failed to update the user",
-          details: {"error": e.toString()},
+          details: {"error": e.toString(), "stack": s.toString()},
         ),
       );
     }
@@ -582,7 +575,12 @@ class RemoteUserService {
       );
       final response = await _dio.getUri(
         uri,
-        options: Options(headers: {'Authorization': 'Bearer $sessionToken'}),
+        options: Options(
+          headers: {
+            'Authorization':
+                'Bearer ${TokenUtils.getUserSessionToken(sessionToken)}',
+          },
+        ),
       );
 
       if (response.statusCode != HttpStatus.ok) {

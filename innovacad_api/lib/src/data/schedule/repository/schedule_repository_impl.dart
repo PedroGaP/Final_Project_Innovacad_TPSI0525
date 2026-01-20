@@ -39,10 +39,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
          );
       }).toList();
       
-      await db.close();
       return Result.success(items);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -55,7 +53,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       final result = await db.getOne(table: table, where: {"id": id});
       
       if (result.isEmpty) {
-         await db.close();
          return Result.failure(AppError(AppErrorType.notFound, "Schedule not found"));
       }
       
@@ -79,10 +76,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
          endDateTimestamp: DateTime.parse(result["end_date_timestamp"].toString())
       );
       
-      await db.close();
       return Result.success(dao);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -122,12 +117,9 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       final created = await db.getOne(table: table, where: where); 
        
       if (created.isEmpty) {
-          await db.close();
           // Fallback or error? Retrying with dates might work if previous failed.
            return Result.failure(AppError(AppErrorType.internal, "Created Schedule could not be retrieved"));
       }
-      
-      await db.close();
       
       final onlineVal = created["online"];
       final bool online = onlineVal == 1 || onlineVal == true || onlineVal == '1';
@@ -150,7 +142,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       ));
       
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -171,7 +162,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       if (dto.endDateTimestamp != null) updateData["end_date_timestamp"] = dto.endDateTimestamp!.toIso8601String();
       
       if (updateData.isEmpty) {
-          await db.close();
           return getById(dto.scheduleId);
       }
       
@@ -181,10 +171,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
          where: {"id": dto.scheduleId}
       );
       
-      await db.close();
       return getById(dto.scheduleId);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -198,11 +186,9 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       
       db = await MysqlConfiguration.connect();
       await db.delete(table: table, where: {"id": dto.scheduleId});
-      await db.close();
       
       return existingRes;
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }

@@ -9,6 +9,7 @@ export interface NavProps {
   collapsed?: boolean;
   title: string;
   children?: Omit<NavProps, "collapsed">[];
+  role?: string;
 }
 
 export const NavbarLink = (props: NavProps) => {
@@ -16,8 +17,8 @@ export const NavbarLink = (props: NavProps) => {
   const location = useLocation();
   const [isOpen, setIsOpen] = createSignal(
     props.children?.some((child: any) =>
-      location.pathname.includes(child.path)
-    ) ?? false
+      location.pathname.includes(child.path),
+    ) ?? false,
   );
 
   const isActive = createMemo(() => {
@@ -28,7 +29,7 @@ export const NavbarLink = (props: NavProps) => {
     )
       return true;
     return props.children?.some((child: any) =>
-      location.pathname.includes(child.path)
+      location.pathname.includes(child.path),
     );
   });
 
@@ -43,7 +44,6 @@ export const NavbarLink = (props: NavProps) => {
   return (
     <li class="block w-full py-1">
       <div
-        // Move tooltip here to ensure it pops out correctly
         class={props.collapsed ? "tooltip tooltip-right w-full" : "w-full"}
         data-tip={props.title}
       >
@@ -61,7 +61,6 @@ export const NavbarLink = (props: NavProps) => {
             <Icon
               name={props.icon}
               size={props.size}
-              // Dynamically color based on active state
               class={isActive() ? "text-primary" : "text-base-content/70"}
             />
           </div>
@@ -102,10 +101,10 @@ export const NavbarLink = (props: NavProps) => {
                   class="text-sm py-2 px-4 w-full text-left rounded-md transition-colors hover:bg-base-200"
                   classList={{
                     "text-primary font-bold": location.pathname.includes(
-                      child.path
+                      child.path,
                     ),
                     "text-base-content/60": !location.pathname.includes(
-                      child.path
+                      child.path,
                     ),
                   }}
                   onclick={() => navigate(`/dashboard/${child.path}`)}

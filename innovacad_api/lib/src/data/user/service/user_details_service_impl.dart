@@ -30,7 +30,6 @@ class UserDetailsServiceImpl implements UserDetailsService {
       )).cast<String, dynamic>();
 
       if (user.isEmpty) {
-        await db.close();
         return null;
       }
 
@@ -41,10 +40,8 @@ class UserDetailsServiceImpl implements UserDetailsService {
         token: "",
       );
 
-      await db.close();
       return details;
     } catch (e, s) {
-      if (db != null) await db.close();
       print(e);
       print(s);
     }

@@ -25,10 +25,8 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
          );
       }).toList();
       
-      await db.close();
       return Result.success(items);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -41,7 +39,6 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
       final result = await db.getOne(table: table, where: {"id": id});
       
       if (result.isEmpty) {
-         await db.close();
          return Result.failure(AppError(AppErrorType.notFound, "Enrollment not found"));
       }
 
@@ -52,10 +49,8 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
          finalGrade: result["final_grade"] is num ? (result["final_grade"] as num).toDouble() : double.parse(result["final_grade"].toString())
       );
       
-      await db.close();
       return Result.success(dao);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -82,11 +77,9 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
       }); 
        
       if (created.isEmpty) {
-          await db.close();
           return Result.failure(AppError(AppErrorType.internal, "Created Enrollment could not be retrieved"));
       }
       
-      await db.close();
       return Result.success(OutputEnrollmentDao(
          enrollmentId: created["id"].toString(), 
          classId: created["class_id"].toString(),
@@ -95,7 +88,6 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
       ));
       
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -112,7 +104,6 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
       if (dto.finalGrade != null) updateData["final_grade"] = dto.finalGrade;
       
       if (updateData.isEmpty) {
-          await db.close();
           return getById(dto.enrollmentId);
       }
       
@@ -122,10 +113,8 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
          where: {"id": dto.enrollmentId}
       );
       
-      await db.close();
       return getById(dto.enrollmentId);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -139,11 +128,9 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
       
       db = await MysqlConfiguration.connect();
       await db.delete(table: table, where: {"id": dto.enrollmentId});
-      await db.close();
       
       return existingRes;
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }

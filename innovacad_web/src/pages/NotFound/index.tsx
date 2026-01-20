@@ -8,7 +8,6 @@ const NotFound = () => {
 		<div class="hero">
 			<div class="hero-content text-center">
 				<div class="max-w-md">
-					{/* Enhanced 404 Visuals */}
 					<div class="relative">
 						<h1 class="text-9xl font-black opacity-10 select-none">404</h1>
 						<p class="absolute inset-0 flex items-center justify-center text-4xl font-bold">

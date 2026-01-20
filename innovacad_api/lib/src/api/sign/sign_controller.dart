@@ -13,11 +13,8 @@ class SignController {
 
   //@Get('/session/<session-token>')
   @Get('/session')
-  Future<Response> getSession(
-    @Query('session-token') String sessionCookie,
-  ) async {
-    final result = await _service.getSession("sessionCookie");
-    print(jsonEncode(result.data?.toJson()));
+  Future<Response> getSession(@Header('cookie') String sessionCookie) async {
+    final result = await _service.getSession(sessionCookie);
 
     return resultToResponse(result);
   }
@@ -25,6 +22,7 @@ class SignController {
   @Post('/in')
   Future<Response> signin(@Body() UserSigninDto dto) async {
     final result = await _service.signin(dto);
+    print(result.headers);
 
     return resultToResponse(result, headers: result.headers);
   }
@@ -32,9 +30,8 @@ class SignController {
   @Post('/social/in')
   Future<Response> signinWithSocials(@Body() SigninSocialDto provider) async {
     final result = await _service.signinWithSocials(provider);
-    final headers = result.data!["headers"];
-    result.data!.remove("headers");
-    return resultToResponse(result, headers: headers);
+
+    return resultToResponse(result, headers: result.headers);
   }
 
   @Post("/send/verify")
@@ -62,11 +59,9 @@ class SignController {
   }
 
   @Get("/accounts")
-  Future<Response> listAccounts(
-    @Query("session-token") String sessionToken,
-  ) async {
+  Future<Response> listAccounts(@Header("cookie") String sessionToken) async {
     final result = await _service.listAccounts(sessionToken);
-    return resultToResponse(result);
+    return resultToResponse(result, headers: result.headers);
   }
 
   @Post("/send-otp")

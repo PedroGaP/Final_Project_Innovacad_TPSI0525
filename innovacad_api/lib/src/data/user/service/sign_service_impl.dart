@@ -47,6 +47,9 @@ class SignServiceImpl implements ISignService {
     if (role == 'trainee') user = OutputTraineeDao.fromJson(authResult.data!);
 
     if (user != null) {
+      print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+      print(authResult.headers);
+      print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
       return Result.success(user, headers: authResult.headers);
     }
 
@@ -56,40 +59,6 @@ class SignServiceImpl implements ISignService {
         "The provided user doesn't have a application use associated.",
       ),
     );
-
-    /* MysqlUtils? db;
-    try {
-      db = await MysqlConfiguration.connect();
-
-      final results = await Future.wait([
-        db.getOne(
-          table: 'trainers',
-          fields: 'trainer_id, user_id, birthday_date, specialization',
-          where: {'user_id': userId},
-        ),
-        db.getOne(
-          table: 'trainees',
-          fields: 'trainee_id, user_id, birthday_date',
-          where: {'user_id': userId},
-        ),
-      ]);
-
-      if (results[0].isNotEmpty) {
-        mergedUser.addAll(Map<String, dynamic>.from(results[0]));
-        return Result.success(OutputTrainerDao.fromJson(mergedUser));
-      } else if (results[1].isNotEmpty) {
-        mergedUser.addAll(Map<String, dynamic>.from(results[1]));
-        return Result.success(OutputTraineeDao.fromJson(mergedUser));
-      }
-
-      return Result.success(UserSigninDao.fromJson(mergedUser));
-    } catch (e) {
-      return Result.failure(
-        AppError(AppErrorType.internal, "Database Error during sign-in: $e"),
-      );
-    } finally {
-      await db?.close();
-    }*/
   }
 
   @override
@@ -99,7 +68,7 @@ class SignServiceImpl implements ISignService {
     final authResult = await _remoteUserService.signInUserWithSocials(dto);
     if (authResult.isFailure) return Result.failure(authResult.error!);
 
-    return Result.success(authResult.data!);
+    return Result.success(authResult.data!, headers: authResult.headers);
   }
 
   @override

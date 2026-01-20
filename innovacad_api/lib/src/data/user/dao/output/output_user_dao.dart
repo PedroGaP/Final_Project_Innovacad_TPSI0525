@@ -9,7 +9,7 @@ class OutputUserDao {
   @annotation.JsonKey(name: 'id')
   final String id;
 
-  @annotation.JsonKey(name: 'name')
+  @annotation.JsonKey(name: 'name') // Changeable
   final String name;
 
   @annotation.JsonKey(name: 'email')
@@ -25,7 +25,7 @@ class OutputUserDao {
   @DateTimeConverter()
   final DateTime createdAt;
 
-  @annotation.JsonKey(name: 'image')
+  @annotation.JsonKey(name: 'image')  // Changeable
   final String? image;
 
   @annotation.JsonKey(name: 'token')
@@ -37,6 +37,9 @@ class OutputUserDao {
   @annotation.JsonKey(name: 'emailVerified')
   final bool verified;
 
+  @annotation.JsonKey(name: 'twoFactorEnabled', defaultValue: false)
+  final bool twoFactorEnabled;
+
   OutputUserDao({
     required this.id,
     required this.username,
@@ -45,6 +48,7 @@ class OutputUserDao {
     required this.createdAt,
     required this.role,
     required this.verified,
+    required this.twoFactorEnabled,
     this.image,
     this.token,
     this.sessionToken,

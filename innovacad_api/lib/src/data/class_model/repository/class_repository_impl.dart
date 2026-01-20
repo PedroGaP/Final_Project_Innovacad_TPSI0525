@@ -38,10 +38,8 @@ class ClassRepositoryImpl implements IClassRepository {
          );
       }).toList();
       
-      await db.close();
       return Result.success(classes);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -54,7 +52,6 @@ class ClassRepositoryImpl implements IClassRepository {
       final result = await db.getOne(table: table, where: {"id": id});
       
       if (result.isEmpty) {
-         await db.close();
          return Result.failure(AppError(AppErrorType.notFound, "Class not found"));
       }
       
@@ -77,10 +74,8 @@ class ClassRepositoryImpl implements IClassRepository {
          endDateTimestamp: end
       );
       
-      await db.close();
       return Result.success(dao);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -107,11 +102,8 @@ class ClassRepositoryImpl implements IClassRepository {
       final created = await db.getOne(table: table, where: {"identifier": dto.identifier}); 
        
       if (created.isEmpty) {
-          await db.close();
           return Result.failure(AppError(AppErrorType.internal, "Created class could not be retrieved"));
       }
-      
-      await db.close();
       
       // Reuse logic or construct directly
       final statusStr = created["status"];
@@ -131,7 +123,6 @@ class ClassRepositoryImpl implements IClassRepository {
       ));
       
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -151,7 +142,6 @@ class ClassRepositoryImpl implements IClassRepository {
       if (dto.endDateTimestamp != null) updateData["end_date_timestamp"] = dto.endDateTimestamp!.toIso8601String();
       
       if (updateData.isEmpty) {
-          await db.close();
           return getById(dto.classId);
       }
       
@@ -161,10 +151,8 @@ class ClassRepositoryImpl implements IClassRepository {
          where: {"id": dto.classId}
       );
       
-      await db.close();
       return getById(dto.classId);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -178,11 +166,9 @@ class ClassRepositoryImpl implements IClassRepository {
       
       db = await MysqlConfiguration.connect();
       await db.delete(table: table, where: {"id": dto.classId});
-      await db.close();
       
       return existingRes;
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }

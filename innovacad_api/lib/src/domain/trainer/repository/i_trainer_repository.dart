@@ -9,7 +9,10 @@ abstract class ITrainerRepository
   Future<Result<OutputTrainerDao>> create(CreateTrainerDto dto);
 
   @override
-  Future<Result<OutputTrainerDao>> update(String id, UpdateTrainerDto dto);
+  Future<Result<OutputTrainerDao>> update(
+    String trainerId,
+    UpdateTrainerDto dto,
+  );
 
   @override
   Future<Result<OutputTrainerDao>> delete(String id);

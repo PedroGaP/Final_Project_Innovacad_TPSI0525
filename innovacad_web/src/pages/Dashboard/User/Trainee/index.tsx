@@ -5,27 +5,116 @@ import CopyToClipboard from "@/components/CopyToClipboard";
 import capitalize from "@/utils/capitalize";
 import { useApi } from "@/hooks/useApi";
 import { Toaster } from "solid-toast";
+import toast from "solid-toast";
+import ModalEdit from "@/components/Modal/Edit";
+import ModalDelete from "@/components/Modal/Delete";
+import { newPasswordEmail } from "@/components/NewPasswordEmail";
 
 const PAGE_SIZE = 10;
+
 const createEmptyTrainee = (): Trainee =>
   ({
     id: "",
-    name: "",
-    email: "",
-    role: "User",
-    traineeId: "",
     username: "",
+    email: "",
+    name: "",
+    role: "trainee",
+    traineeId: "",
     token: "",
-  } as Trainee);
+    birthdayDate: "",
+    image: null,
+    verified: false,
+    session_token: "",
+  }) as unknown as Trainee;
+
+/**
+ * Convert epoch timestamp (milliseconds) to date string (YYYY-MM-DD)
+ */
+const epochToDate = (epoch: number | string): string => {
+  if (!epoch) return "";
+  const date = new Date(Number(epoch));
+  return date.toISOString().split("T")[0];
+};
+
+/**
+ * Validates if a trainee has all required fields filled
+ */
+const validateTrainee = (
+  trainee: Trainee,
+): { valid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+
+  const name = String(trainee.name || "").trim();
+  if (!name) {
+    errors.push("Name is required");
+  }
+
+  const email = String(trainee.email || "").trim();
+  if (!email) {
+    errors.push("Email is required");
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.push("Email is invalid");
+  }
+
+  const username = String(trainee.username || "").trim();
+  if (!username) {
+    errors.push("Username is required");
+  } else if (username.length < 3) {
+    errors.push("Username must be at least 3 characters");
+  }
+
+  const birthdayDate = String(trainee.birthdayDate || "").trim();
+  if (!birthdayDate) {
+    errors.push("Birthday date is required");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+};
+
+/**
+ * Get only the fields that have changed between old and new trainee
+ */
+const getChangedFields = (
+  oldTrainee: Trainee,
+  newTrainee: Trainee,
+): {
+  name?: string;
+  email?: string;
+  username?: string;
+  birthdayDate?: string; // Change return type to string if your API expects string
+} => {
+  const changes: any = {};
+
+  if (String(oldTrainee.name) !== String(newTrainee.name)) {
+    changes.name = String(newTrainee.name);
+  }
+
+  if (String(oldTrainee.email) !== String(newTrainee.email)) {
+    changes.email = String(newTrainee.email);
+  }
+
+  if (String(oldTrainee.username) !== String(newTrainee.username)) {
+    changes.username = String(newTrainee.username);
+  }
+
+  // Compare strings directly and send the date string
+  if (String(oldTrainee.birthdayDate) !== String(newTrainee.birthdayDate)) {
+    changes.birthdayDate = String(newTrainee.birthdayDate);
+  }
+
+  return changes;
+};
 
 const TraineePage = () => {
   const api = useApi();
 
-  const [usersData, { mutate, refetch }] = createResource<Trainee[]>(
-    api.fetchTrainees
+  const [usersData, { mutate }] = createResource<Trainee[]>(api.fetchTrainees);
+  const [originalTrainee, setOriginalTrainee] = createSignal<Trainee | null>(
+    null,
   );
-
-  console.log(JSON.stringify(usersData()));
 
   const [page, setPage] = createSignal(1);
   const [search, setSearch] = createSignal("");
@@ -38,12 +127,13 @@ const TraineePage = () => {
     const list = usersData() || [];
     return list.filter(
       (u: Trainee) =>
-        u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
+        String(u.name).toLowerCase().includes(q) ||
+        String(u.email).toLowerCase().includes(q),
     );
   });
 
   const totalPages = createMemo(() =>
-    Math.ceil(filteredUsers().length / PAGE_SIZE)
+    Math.ceil(filteredUsers().length / PAGE_SIZE),
   );
 
   const paginatedUsers = createMemo(() => {
@@ -51,123 +141,218 @@ const TraineePage = () => {
     return filteredUsers().slice(start, start + PAGE_SIZE);
   });
 
+  const handleSaveTrainee = async (trainee: Trainee) => {
+    try {
+      // Validate trainee data
+      const validation = validateTrainee(trainee);
+      if (!validation.valid) {
+        validation.errors.forEach((error) => toast.error(error));
+        throw new Error("Validation failed");
+      }
+
+      const isEditing =
+        trainee.traineeId && String(trainee.traineeId).length > 0;
+
+      if (isEditing) {
+        // Update existing trainee - only send changed fields
+        const original = originalTrainee();
+        if (!original) {
+          throw new Error("Original trainee data not found");
+        }
+
+        const changedFields = getChangedFields(original, trainee);
+
+        // If no fields changed, just close the modal
+        if (Object.keys(changedFields).length === 0) {
+          toast.success("No changes detected");
+          setEditingUser(null);
+          return;
+        }
+
+        await api.updateTrainee(String(trainee.traineeId), changedFields);
+
+        mutate(
+          (prev) =>
+            prev?.map((u) =>
+              u.traineeId === trainee.traineeId ? trainee : u,
+            ) || [],
+        );
+
+        const changedFieldNames = Object.keys(changedFields).join(", ");
+        toast.success(`Trainee updated successfully (${changedFieldNames})`);
+      } else {
+        // Create new trainee
+        const tempPassword = "T" + Math.random().toString(36).slice(-10) + "1@";
+
+        const newTrainee = await api.createTrainee({
+          name: String(trainee.name),
+          email: String(trainee.email),
+          username: String(trainee.username),
+          password: tempPassword,
+          birthdayDate: String(trainee.birthdayDate),
+        });
+
+        try {
+          await api.sendEmail({
+            to: trainee.email!,
+            subject: "Account Creation - New Password Innovacad",
+            body: newPasswordEmail(tempPassword),
+          });
+        } catch (error) {
+          console.error(
+            `Something went wrong sending an email for ${trainee.email}`,
+            error,
+          );
+        }
+
+        mutate((prev) => [...(prev || []), newTrainee]);
+        toast.success(
+          "Trainee created successfully. A temporary password has been sent to their email.",
+        );
+      }
+
+      setEditingUser(null);
+      setOriginalTrainee(null);
+    } catch (error) {
+      // Only show error toast if it's not from validation
+      if (error instanceof Error && error.message !== "Validation failed") {
+        toast.error(error.message || "Failed to save trainee");
+      }
+      throw error;
+    }
+  };
+
   const confirmDelete = async () => {
     const userToDelete = deletingUser();
     if (!userToDelete) return;
 
-    // Optional: Call API to delete
-    // await api.deleteTrainee(userToDelete.id);
+    try {
+      await api.deleteTrainee(String(userToDelete.traineeId));
 
-    // Update the UI immediately without refetching the whole list
-    mutate((prev) => prev?.filter((u) => u.id !== userToDelete.id) || []);
-    setDeletingUser(null);
+      mutate(
+        (prev) =>
+          prev?.filter((u) => u.traineeId !== userToDelete.traineeId) || [],
+      );
+      toast.success("Trainee deleted successfully");
+      setDeletingUser(null);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete trainee",
+      );
+      throw error;
+    }
+  };
+
+  const handleEditClick = (user: Trainee) => {
+    const dateStr = epochToDate(user.birthdayDate!);
+    const traineeWithDateStr = {
+      ...user,
+      birthdayDate: dateStr,
+    } as any as Trainee;
+
+    setOriginalTrainee(traineeWithDateStr);
+    setEditingUser(traineeWithDateStr);
+  };
+
+  const handleAddClick = () => {
+    setOriginalTrainee(null);
+    setEditingUser(createEmptyTrainee());
   };
 
   return (
-    <div class="card bg-base-100 shadow">
+    <div class="card bg-base-100 shadow h-full flex flex-col">
       <Toaster />
-      <div class="card-body gap-4">
-        {/* HEADER */}
-        <div class="flex justify-between items-center">
+      <div class="card-body gap-4 flex-1 flex flex-col overflow-hidden min-h-0 p-6">
+        <div class="flex justify-between items-center shrink-0">
           <h2 class="card-title">Trainees</h2>
-
-          <button
-            class="btn btn-primary btn-sm"
-            onClick={() => setEditingUser(createEmptyTrainee())}
-          >
+          <button class="btn btn-primary btn-sm" onClick={handleAddClick}>
             <Icon name="Plus" size={16} />
             Add Trainee
           </button>
         </div>
 
-        {/* FILTER */}
-        <input
-          type="text"
-          placeholder="Search trainees..."
-          class="input input-bordered input-sm w-full max-w-xs"
-          onInput={(e) => {
-            setSearch(e.currentTarget.value);
-            setPage(1);
-          }}
-        />
+        <div class="shrink-0">
+          <input
+            type="text"
+            placeholder="Search trainees..."
+            class="input input-bordered input-sm w-full max-w-xs"
+            onInput={(e) => {
+              setSearch(e.currentTarget.value);
+              setPage(1);
+            }}
+          />
+        </div>
 
         {/* TABLE */}
-        <div class="overflow-x-auto">
-          <table class="table table-zebra table-fixed w-full">
+        <div class="overflow-auto flex-1 border border-base-200 rounded-lg">
+          <table class="table table-zebra table-pin-rows table-fixed w-full">
             <thead>
-              <tr>
-                <th class="w-52">Trainer ID</th>
-                <th class="w-52">User ID</th>
-                <th class="w-32">Name</th>
-                <th class="w-48">Email</th>
-                <th class="w-32">Username</th>
-                <th class="w-24">Role</th>
-                <th class="w-28 text-right">Actions</th>
+              <tr class="z-10">
+                {" "}
+                <th class="w-52 bg-base-100">Trainee ID</th>
+                <th class="w-52 bg-base-100">User ID</th>
+                <th class="w-32 bg-base-100">Name</th>
+                <th class="w-48 bg-base-100">Email</th>
+                <th class="w-32 bg-base-100">Username</th>
+                <th class="w-24 bg-base-100">Role</th>
+                <th class="w-28 text-right bg-base-100">Actions</th>
               </tr>
             </thead>
-
-            <tbody class="overflow-scroll">
+            <tbody>
               <For each={paginatedUsers()}>
-                {(user) => {
-                  console.log(user);
-                  console.log(typeof user);
-                  return (
-                    <tr>
-                      <td class="w-52">
-                        <CopyToClipboard val={user.traineeId}>
-                          <div class="overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 pb-1 text-xs font-mono max-w-52">
-                            {user.traineeId}
-                          </div>
-                        </CopyToClipboard>
-                      </td>
-
-                      {/* Coluna User ID */}
-                      <td class="w-52">
-                        <CopyToClipboard val={user.id}>
-                          <div class="overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 pb-1 text-xs font-mono max-w-52">
-                            {user.id}
-                          </div>
-                        </CopyToClipboard>
-                      </td>
-
-                      <td>{user.name}</td>
-                      <td>{user.email}</td>
-                      <td>{user.username}</td>
-                      <td>
-                        <span class="badge badge-outline">
-                          {!!user.role ? capitalize(user.role) : "N/A"}
-                        </span>
-                      </td>
-                      <td class="text-right space-x-2">
-                        <button
-                          class="btn btn-ghost btn-sm"
-                          onClick={() => setEditingUser(user)}
-                        >
-                          <Icon name="Pencil" size={16} />
-                        </button>
-
-                        <button
-                          class="btn btn-ghost btn-sm text-error"
-                          onClick={() => setDeletingUser(user)}
-                        >
-                          <Icon name="Trash" size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                }}
+                {(user) => (
+                  <tr>
+                    {/* ... your existing table cells ... */}
+                    {/* (Keep content exactly as you had it) */}
+                    <td class="w-52">
+                      <CopyToClipboard val={String(user.traineeId)}>
+                        <div class="overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 pb-1 text-xs font-mono max-w-52">
+                          {user.traineeId}
+                        </div>
+                      </CopyToClipboard>
+                    </td>
+                    <td class="w-52">
+                      <CopyToClipboard val={String(user.id || "")}>
+                        <div class="overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 pb-1 text-xs font-mono max-w-52">
+                          {user.id}
+                        </div>
+                      </CopyToClipboard>
+                    </td>
+                    <td>{user.name}</td>
+                    <td>{user.email}</td>
+                    <td>{user.username}</td>
+                    <td>
+                      <span class="badge badge-outline">
+                        {!!user.role ? capitalize(String(user.role)) : "N/A"}
+                      </span>
+                    </td>
+                    <td class="text-right space-x-2">
+                      <button
+                        class="btn btn-ghost btn-sm"
+                        onClick={() => handleEditClick(user)}
+                      >
+                        <Icon name="Pencil" size={16} />
+                      </button>
+                      <button
+                        class="btn btn-ghost btn-sm text-error"
+                        onClick={() => setDeletingUser(user)}
+                      >
+                        <Icon name="Trash" size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                )}
               </For>
             </tbody>
           </table>
         </div>
 
-        {/* PAGINATION */}
-        <div class="flex justify-between items-center">
+        <div class="flex justify-between items-center shrink-0 pt-2">
           <span class="text-sm opacity-60">
             Page {page()} of {totalPages()}
           </span>
-
           <div class="join">
+            {/* ... your existing pagination buttons ... */}
             <button
               class="join-item btn btn-sm"
               disabled={page() === 1}
@@ -175,7 +360,6 @@ const TraineePage = () => {
             >
               «
             </button>
-
             <For each={Array.from({ length: totalPages() })}>
               {(_, i) => (
                 <button
@@ -187,7 +371,6 @@ const TraineePage = () => {
                 </button>
               )}
             </For>
-
             <button
               class="join-item btn btn-sm"
               disabled={page() === totalPages()}
@@ -202,84 +385,31 @@ const TraineePage = () => {
       {/* ADD / EDIT MODAL */}
       <Show when={editingUser()}>
         {(u) => (
-          <dialog open class="modal">
-            <div class="modal-box">
-              <h3 class="font-bold text-lg">
-                {u().id ? "Edit Trainee" : "Add Trainee"}
-              </h3>
-
-              <div class="space-y-3 mt-4">
-                <input
-                  class="input input-bordered w-full"
-                  placeholder="Name"
-                  value={u().name}
-                  onInput={(e) =>
-                    setEditingUser({
-                      ...u(),
-                      name: e.currentTarget.value,
-                    } as Trainee)
-                  }
-                />
-
-                <input
-                  class="input input-bordered w-full"
-                  placeholder="Email"
-                  value={u().email}
-                  onInput={(e) =>
-                    setEditingUser({
-                      ...u(),
-                      email: e.currentTarget.value,
-                    } as Trainee)
-                  }
-                />
-
-                <select
-                  class="select select-bordered w-full"
-                  value={u().role}
-                  onChange={(e) =>
-                    setEditingUser({
-                      ...u(),
-                      role: e.currentTarget.value,
-                    } as Trainee)
-                  }
-                >
-                  <option>Trainee</option>
-                  <option>Trainer</option>
-                  <option>Admin</option>
-                </select>
-              </div>
-
-              <div class="modal-action">
-                <button class="btn" onClick={() => setEditingUser(null)}>
-                  Cancel
-                </button>
-                <button class="btn btn-primary">Save</button>
-              </div>
-            </div>
-          </dialog>
+          <ModalEdit<Trainee>
+            value={u()}
+            setValue={setEditingUser}
+            onSave={handleSaveTrainee}
+            onCancel={() => {
+              setEditingUser(null);
+              setOriginalTrainee(null);
+            }}
+            title={originalTrainee() ? "Edit Trainee" : "Add Trainee"}
+            disabledFields={originalTrainee() ? ["email", "username"] : []}
+          />
         )}
       </Show>
 
       {/* DELETE MODAL */}
       <Show when={deletingUser()}>
         {(u) => (
-          <dialog open class="modal">
-            <div class="modal-box">
-              <h3 class="font-bold text-lg">Delete TRainee</h3>
-              <p class="py-4">
-                Are you sure you want to delete <strong>{u().name}</strong>?
-              </p>
-
-              <div class="modal-action">
-                <button class="btn" onClick={() => setDeletingUser(null)}>
-                  Cancel
-                </button>
-                <button class="btn btn-error" onClick={confirmDelete}>
-                  Delete
-                </button>
-              </div>
-            </div>
-          </dialog>
+          <ModalDelete<Trainee>
+            value={u}
+            setValue={setDeletingUser}
+            onConfirm={confirmDelete}
+            onCancel={() => setDeletingUser(null)}
+            title="Delete Trainee"
+            description="Are you sure you want to delete this trainee? This action cannot be undone."
+          />
         )}
       </Show>
     </div>

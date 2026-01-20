@@ -1,4 +1,4 @@
-export const twoFactorPage = (otp: string): string => `<!doctype html>
+export const newPasswordEmail = (password: string): string => `<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
@@ -87,8 +87,7 @@ export const twoFactorPage = (otp: string): string => `<!doctype html>
                   "
                 >
                   Obrigado por utilizar a Innovacad! Para começar a usar a
-                  plataforma, por favor valide o seu endereço de email inserindo
-                  o código abaixo na aplicação.
+                  plataforma, por favor utilize a password indicada abaixo.
                 </p>
 
                 <div style="margin-top: 40px; padding-top: 20px">
@@ -107,7 +106,7 @@ export const twoFactorPage = (otp: string): string => `<!doctype html>
                         color: #333333;
                         letter-spacing: 2px;
                       "
-                      >${otp}</strong
+                      >${password}</strong
                     >
                   </div>
                 </div>

@@ -24,10 +24,8 @@ class ModuleRepositoryImpl implements IModuleRepository {
          );
       }).toList();
       
-      await db.close();
       return Result.success(modules);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -40,7 +38,6 @@ class ModuleRepositoryImpl implements IModuleRepository {
       final result = await db.getOne(table: table, where: {"id": id});
       
       if (result.isEmpty) {
-         await db.close();
          return Result.failure(AppError(AppErrorType.notFound, "Module not found"));
       }
 
@@ -50,10 +47,8 @@ class ModuleRepositoryImpl implements IModuleRepository {
          duration: result["duration"]
       );
       
-      await db.close();
       return Result.success(dao);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -79,11 +74,9 @@ class ModuleRepositoryImpl implements IModuleRepository {
       // Sticking to name for now as per simple CRUD pattern unless concurrency is high.
        
       if (created.isEmpty) {
-          await db.close();
           return Result.failure(AppError(AppErrorType.internal, "Created module could not be retrieved"));
       }
       
-      await db.close();
       return Result.success(OutputModuleDao(
          moduleId: created["id"].toString(), 
          name: created["name"], 
@@ -91,7 +84,6 @@ class ModuleRepositoryImpl implements IModuleRepository {
       ));
       
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -107,7 +99,6 @@ class ModuleRepositoryImpl implements IModuleRepository {
       if (dto.duration != null) updateData["duration"] = dto.duration;
       
       if (updateData.isEmpty) {
-          await db.close();
           return getById(dto.moduleId);
       }
       
@@ -117,10 +108,8 @@ class ModuleRepositoryImpl implements IModuleRepository {
          where: {"id": dto.moduleId}
       );
       
-      await db.close();
       return getById(dto.moduleId);
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -134,11 +123,9 @@ class ModuleRepositoryImpl implements IModuleRepository {
       
       db = await MysqlConfiguration.connect();
       await db.delete(table: table, where: {"id": dto.moduleId});
-      await db.close();
       
       return existingRes;
     } catch (e) {
-      if (db != null) await db.close();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }

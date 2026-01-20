@@ -17,7 +17,7 @@ const SettingsPage = () => {
           <div class="flex-1 px-2 mx-2 font-bold">Settings</div>
         </div>
 
-        {/* Layout Interno: Settings Menu + Formulário */}
+        {/* Settings Menu */}
         <div class="flex flex-1 overflow-hidden">
           {/* Sidebar Menu Settings */}
           <div class="w-64 border-r border-base-300 hidden md:flex flex-col pt-6 pb-4 overflow-y-auto bg-base-100">

@@ -20,6 +20,8 @@ dependencies:
   mysql_client_plus: ^0.1.2
   json_annotation: ^4.9.0
   dart_jsonwebtoken: ^3.3.1
+  mailer: ^6.6.0
+  dotenv: ^4.2.0
 
 dev_dependencies:
   build_runner: ^2.10.3

@@ -10,6 +10,8 @@ class TraineeRepositoryImpl implements ITraineeRepository {
   final RemoteUserService _remoteUserService;
   final String table = "trainees";
   final String userTable = "user";
+  final String relationFields =
+      "t.trainee_id, t.user_id, t.birthday_date, u.emailVerified, u.twoFactorEnabled, u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt";
 
   TraineeRepositoryImpl(this._remoteUserService);
 
@@ -22,15 +24,16 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       db = await MysqlConfiguration.connect();
 
       final query =
-          "SELECT t.trainee_id, t.user_id, t.birthday_date, u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt FROM `trainees` t JOIN `user` u ON t.user_id = u.id";
+          "SELECT $relationFields FROM `trainees` t JOIN `user` u ON t.user_id = u.id";
       final results = await db.query(query);
+
 
       for (var row in results.rows) {
         daos.add(OutputTraineeDao.fromJson(row));
       }
 
       return Result.success(daos);
-    } catch (e) {
+    } catch (e, s) {
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -43,7 +46,7 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       db = await MysqlConfiguration.connect();
 
       final results = await db.query(
-        "SELECT t.trainee_id, t.user_id, t.birthday_date, u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt "
+        "SELECT $relationFields "
         "FROM `trainees` t JOIN `user` u ON t.user_id = u.id WHERE t.trainee_id = ? LIMIT 1",
         whereValues: [id],
         isStmt: true,
@@ -55,7 +58,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
         );
       }
 
-      await db.close();
       return Result.success(OutputTraineeDao.fromJson(results.rows[0]));
     } catch (e) {
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
@@ -161,10 +163,21 @@ class TraineeRepositoryImpl implements ITraineeRepository {
   ) async {
     MysqlUtils? db;
     try {
-      print("UPDATE S_TOKEN: ${dto.sessionToken}");
+      final res = await getById(traineeId);
 
-      // 1. User Details
-      final isUserUpdated = await _remoteUserService.updateUser(dto);
+      if (res.isFailure)
+        return Result.failure(
+          AppError(
+            AppErrorType.notFound,
+            "Couldn't find the trainee with provided trainee id",
+            details: {...(res.error?.details ?? {})},
+          ),
+        );
+
+      final isUserUpdated = await _remoteUserService.updateUser(
+        res.data!.id,
+        dto,
+      );
 
       if (isUserUpdated.isFailure)
         return Result.failure(
@@ -198,10 +211,8 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       if (db != null) {
         try {
           await db.rollback();
-          await db.close();
         } catch (_) {}
       }
-      print("[ERROR] Update Trainer: $e\n$s");
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }

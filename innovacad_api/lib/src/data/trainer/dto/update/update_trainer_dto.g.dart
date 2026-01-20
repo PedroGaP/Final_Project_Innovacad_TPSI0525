@@ -9,10 +9,7 @@ part of 'update_trainer_dto.dart';
 UpdateTrainerDto _$UpdateTrainerDtoFromJson(Map<String, dynamic> json) =>
     UpdateTrainerDto(
       name: json['name'] as String?,
-      oldPassword: json['old_password'] as String?,
-      newPassword: json['new_password'] as String?,
       image: json['image'] as String?,
-      sessionToken: json['session_token'] as String?,
       birthdayDate: _$JsonConverterFromJson<Object, DateTime>(
         json['birthday_date'],
         const DateTimeConverter().fromJson,
@@ -23,10 +20,7 @@ UpdateTrainerDto _$UpdateTrainerDtoFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$UpdateTrainerDtoToJson(UpdateTrainerDto instance) =>
     <String, dynamic>{
       'name': instance.name,
-      'old_password': instance.oldPassword,
-      'new_password': instance.newPassword,
       'image': instance.image,
-      'session_token': instance.sessionToken,
       'birthday_date': _$JsonConverterToJson<Object, DateTime>(
         instance.birthdayDate,
         const DateTimeConverter().toJson,
