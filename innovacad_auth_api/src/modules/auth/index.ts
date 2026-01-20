@@ -6,6 +6,7 @@ import {
   openAPI,
   twoFactor,
   username,
+  UserWithTwoFactor,
 } from "better-auth/plugins";
 import { createPool } from "mysql2/promise";
 import { API } from "@/src/utils/env";
@@ -82,7 +83,7 @@ export const auth = betterAuth({
           try {
             const transporter = nodemailer.createTransport({
               service: "gmail",
-              
+
               auth: {
                 user: "peterdroidyt@gmail.com",
                 pass: API.GOOGLE.GMAIL_SECRET,
@@ -126,6 +127,27 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     disableSignUp: false,
+    sendResetPassword: async ({ user, url }) => {
+      try {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: "peterdroidyt@gmail.com",
+            pass: API.GOOGLE.GMAIL_SECRET,
+          },
+        });
+
+        await sendTwoFactorEmail({
+          user: user as UserWithTwoFactor,
+          otp: url,
+          toEmail: user.email,
+          subject: "Password reset request",
+          transporter: transporter,
+        });
+      } catch (e) {
+        console.log(e);
+      }
+    },
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url, token }) => {

@@ -88,9 +88,6 @@ const SignIn = () => {
           <div class="form-control mt-2">
             <label class="label">
               <span class="label-text font-medium">Password</span>
-              <A href="#" class="label-text-alt link link-hover text-primary">
-                Forgot?
-              </A>
             </label>
             <input
               type="password"
@@ -98,6 +95,12 @@ const SignIn = () => {
               class="input input-bordered focus:input-primary transition-all"
               onInput={(e) => handleInput("password", e.target.value)}
             />
+            <A
+              href={`/forgot-password`}
+              class="label-text-alt link link-hover text-primary"
+            >
+              Forgot Password?
+            </A>
           </div>
 
           {/* Card Actions (Internal Footer) */}

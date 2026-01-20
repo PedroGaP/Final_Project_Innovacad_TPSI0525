@@ -8,6 +8,8 @@ import 'package:innovacad_api/src/api/utils/token_utils.dart';
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/account/dao/output_account_dao.dart';
 import 'package:innovacad_api/src/data/data.dart';
+import 'package:innovacad_api/src/data/user/dto/reset_password/request_reset_password_dto.dart';
+import 'package:innovacad_api/src/data/user/dto/reset_password/reset_password_dto.dart';
 import 'package:mysql_utils/mysql_utils.dart';
 import 'package:vaden/vaden.dart' as v;
 
@@ -826,6 +828,77 @@ class RemoteUserService {
         AppError(
           AppErrorType.internal,
           e.toString(),
+          details: {"error": s.toString()},
+        ),
+      );
+    }
+  }
+
+  Future<Result<bool>> requestPasswordReset(RequestResetPasswordDto dto) async {
+    try {
+      final uri = Uri(
+        scheme: _settings["auth"]["protocol"],
+        host: _settings["auth"]["host"],
+        port: _settings["auth"]["port"],
+        path: "/api/auth/request-password-reset",
+      );
+
+      final data = {"email": dto.email, "redirectTo": dto.redirectTo};
+
+      final response = await _dio.postUri(uri, data: data);
+
+      if (response.statusCode != HttpStatus.ok) {
+        return Result.failure(
+          AppError(
+            AppErrorType.external,
+            "Failed to send password reset email.",
+            details: {"status": response.statusCode, "message": response.data},
+          ),
+        );
+      }
+
+      return Result.success(response.data["status"] ?? true);
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Error requesting password reset: $e",
+          details: {"error": s.toString()},
+        ),
+      );
+    }
+  }
+
+  Future<Result<bool>> resetPassword(ResetPasswordDto dto) async {
+    try {
+      final uri = Uri(
+        scheme: _settings["auth"]["protocol"],
+        host: _settings["auth"]["host"],
+        port: _settings["auth"]["port"],
+        path: "/api/auth/reset-password",
+      );
+
+      // Note: Typically the token is passed in the body for reset-password
+      final data = {"newPassword": dto.newPassword, "token": dto.token};
+
+      final response = await _dio.postUri(uri, data: data);
+
+      if (response.statusCode != HttpStatus.ok) {
+        return Result.failure(
+          AppError(
+            AppErrorType.external,
+            "Failed to reset password.",
+            details: {"status": response.statusCode, "message": response.data},
+          ),
+        );
+      }
+
+      return Result.success(response.data["status"] ?? true);
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Error resetting password: $e",
           details: {"error": s.toString()},
         ),
       );

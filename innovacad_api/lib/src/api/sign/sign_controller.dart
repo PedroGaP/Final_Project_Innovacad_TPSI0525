@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:innovacad_api/src/core/core.dart';
+import 'package:innovacad_api/src/data/user/dto/reset_password/request_reset_password_dto.dart';
+import 'package:innovacad_api/src/data/user/dto/reset_password/reset_password_dto.dart';
 import 'package:innovacad_api/src/data/user/service/sign_service_impl.dart';
 import 'package:innovacad_api/src/data/data.dart';
 import 'package:vaden/vaden.dart';
@@ -108,5 +110,19 @@ class SignController {
     final result = await _service.isOTPEnabled(userId);
 
     return resultToResponse(result, headers: result.headers);
+  }
+
+  @Post("/request-password-reset")
+  Future<Response> requestPasswordReset(
+    @Body() RequestResetPasswordDto dto,
+  ) async {
+    final result = await _service.requestPasswordReset(dto);
+    return resultToResponse(result);
+  }
+
+  @Post("/reset-password")
+  Future<Response> resetPassword(@Body() ResetPasswordDto dto) async {
+    final result = await _service.resetPassword(dto);
+    return resultToResponse(result);
   }
 }
