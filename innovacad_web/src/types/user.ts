@@ -7,6 +7,7 @@ export type UserResponseData = {
   role: string | undefined;
   trainer_id?: string | undefined;
   trainee_id?: string | undefined;
+  specialization?: string | undefined;
   image?: string | undefined;
   birthday_date?: number | undefined;
   emailVerified: boolean | undefined;
@@ -59,15 +60,18 @@ class Trainee extends User {
 class Trainer extends User {
   trainerId: string | undefined;
   birthdayDate: number | undefined;
+  specialization: string | undefined;
 
   constructor(
     data: UserResponseData,
     trainerId: string,
     birthdayDate?: number | undefined,
+    specialization?: string | undefined,
   ) {
     super(data);
     this.trainerId = trainerId || data.trainer_id;
     this.birthdayDate = birthdayDate || data.birthday_date;
+    this.specialization = specialization || data.specialization;
   }
 }
 

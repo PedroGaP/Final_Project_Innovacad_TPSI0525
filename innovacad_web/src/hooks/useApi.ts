@@ -33,6 +33,7 @@ export const API_ENDPOINTS = {
     VALIDITY: "/sign/validity",
     SESSION: "/sign/session",
     LINK_SOCIAL: "/sign/link-social",
+    SIGN_IN_SOCIAL: "/sign/social/in",
   },
   USERS: {
     TRAINEES: "/trainees",
@@ -76,7 +77,8 @@ export const useApi = () => {
       path !== API_ENDPOINTS.AUTH.SIGN_UP &&
       !path.includes(API_ENDPOINTS.AUTH.VERIFY) &&
       !path.includes(API_ENDPOINTS.AUTH.SEND_VERIFY) &&
-      !path.includes(API_ENDPOINTS.AUTH.SESSION)
+      !path.includes(API_ENDPOINTS.AUTH.SESSION) &&
+      !path.includes(API_ENDPOINTS.AUTH.SIGN_IN_SOCIAL)
     );
   };
 
@@ -171,14 +173,16 @@ export const useApi = () => {
 
   /**
    * Sign in user with email or username
-   * Returns user data and whether email verification is required
    */
   const signIn = async (
     data: SignInData,
   ): Promise<User | Trainer | Trainee | undefined> => {
     if ("email" in data && "username" in data) {
+      console.log("Both email and username provided");
       throw new Error("Provide either email or username, not both");
     }
+
+    console.log("aaaa");
 
     const res = await fetchApi<UserResponseData>(
       API_ENDPOINTS.AUTH.SIGN_IN,
@@ -206,7 +210,6 @@ export const useApi = () => {
       !userData.emailVerified,
     );
 
-    // If email NOT verified (emailVerified === 0 or false), redirect to verification page
     if (userData.emailVerified === false) {
       console.log("NAVIGATING TO VERIFY PAGE");
       toast.custom("Please verify your email to access the dashboard", {
@@ -217,7 +220,6 @@ export const useApi = () => {
     }
 
     console.log("NAVIGATING TO DASHBOARD");
-    // Email verified, proceed to dashboard
     toast.success("Login successful. You'll be redirected to dashboard", {
       duration: 2000,
     });
@@ -270,6 +272,177 @@ export const useApi = () => {
   };
 
   /**
+   * Create a new trainee
+   */
+  const createTrainee = async (data: {
+    name: string;
+    email: string;
+    username: string;
+    password: string;
+    birthdayDate: string;
+  }): Promise<Trainee> => {
+    const res = await fetchApi<UserResponseData>(
+      API_ENDPOINTS.USERS.TRAINEES,
+      "POST",
+      {
+        name: data.name,
+        email: data.email,
+        username: data.username,
+        password: data.password,
+        birthdayDate: data.birthdayDate,
+      },
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(`Create trainee failed: ${res.error?.message}`);
+    }
+
+    return new Trainee(
+      res.data,
+      res.data.trainee_id || "",
+      res.data.birthday_date,
+    );
+  };
+
+  /**
+   * Update an existing trainee
+   */
+  const updateTrainee = async (
+    traineeId: string,
+    data: {
+      name?: string;
+      email?: string;
+      username?: string;
+      birthdayDate?: string;
+    },
+  ): Promise<Trainee> => {
+    const updateData: Record<string, any> = {};
+
+    if (data.name !== undefined) updateData.name = data.name;
+    // Don't allow updating email and username
+    // if (data.email !== undefined) updateData.email = data.email;
+    // if (data.username !== undefined) updateData.username = data.username;
+    if (data.birthdayDate !== undefined)
+      updateData.birthdayDate = data.birthdayDate;
+
+    const res = await fetchApi<UserResponseData>(
+      `${API_ENDPOINTS.USERS.TRAINEES}/${traineeId}`,
+      "PUT",
+      updateData,
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(`Update trainee failed: ${res.error?.message}`);
+    }
+
+    return new Trainee(
+      res.data,
+      res.data.trainee_id || "",
+      res.data.birthday_date,
+    );
+  };
+
+  /**
+   * Delete a trainee
+   */
+  const deleteTrainee = async (traineeId: string): Promise<void> => {
+    const res = await fetchApi<void>(
+      `${API_ENDPOINTS.USERS.TRAINEES}/${traineeId}`,
+      "DELETE",
+    );
+
+    if (res.isError) {
+      throw new Error(`Delete trainee failed: ${res.error?.message}`);
+    }
+  };
+
+  /**
+   * Create a new trainer
+   */
+  const createTrainer = async (data: {
+    name: string;
+    email: string;
+    username: string;
+    password: string;
+    birthdayDate: string;
+    specialization: string;
+  }): Promise<Trainer> => {
+    const res = await fetchApi<UserResponseData>(
+      API_ENDPOINTS.USERS.TRAINERS,
+      "POST",
+      {
+        name: data.name,
+        email: data.email,
+        username: data.username,
+        password: data.password,
+        birthdayDate: data.birthdayDate,
+        specialization: data.specialization,
+      },
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(`Create trainer failed: ${res.error?.message}`);
+    }
+
+    return new Trainer(
+      res.data,
+      res.data.trainee_id || "",
+      res.data.birthday_date,
+    );
+  };
+
+  /**
+   * Update an existing trainer
+   */
+  const updateTrainer = async (
+    trainerId: string,
+    data: {
+      name?: string;
+      birthdayDate?: string;
+      specialization?: string;
+    },
+  ): Promise<Trainer> => {
+    const updateData: Record<string, any> = {};
+
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.birthdayDate !== undefined)
+      updateData.birthdayDate = data.birthdayDate;
+    if (data.specialization !== undefined)
+      updateData.specialization = data.specialization;
+
+    const res = await fetchApi<UserResponseData>(
+      `${API_ENDPOINTS.USERS.TRAINERS}/${trainerId}`,
+      "PUT",
+      updateData,
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(`Update trainer failed: ${res.error?.message}`);
+    }
+
+    return new Trainer(
+      res.data,
+      res.data.trainee_id || "",
+      res.data.birthday_date,
+      res.data.specialization,
+    );
+  };
+
+  /**
+   * Delete a trainer
+   */
+  const deleteTrainer = async (trainerId: string): Promise<void> => {
+    const res = await fetchApi<void>(
+      `${API_ENDPOINTS.USERS.TRAINERS}/${trainerId}`,
+      "DELETE",
+    );
+
+    if (res.isError) {
+      throw new Error(`Delete trainer failed: ${res.error?.message}`);
+    }
+  };
+
+  /**
    * Fetch all trainers
    */
   const fetchTrainers = async (): Promise<Trainer[]> => {
@@ -289,7 +462,6 @@ export const useApi = () => {
 
   /**
    * Send verification email to unverified user
-   * Called when user tries to login with unverified email
    */
   const sendVerificationEmail = async (
     email: string,
@@ -315,7 +487,6 @@ export const useApi = () => {
 
   /**
    * Verify email with token from email link
-   * One-time verification when user clicks email link
    */
   const verifyEmail = async (verifyToken: string): Promise<boolean> => {
     const callback = `${baseUrl}/verify-email?status=verified`;
@@ -365,14 +536,8 @@ export const useApi = () => {
    * Get current user session from cookie
    */
   const getSession = async (): Promise<User | null> => {
-    const sessionToken = Cookies.get(SESSION_COOKIE_KEY);
-
-    if (!sessionToken || sessionToken.length < 1) {
-      return null;
-    }
-
     const res = await fetchApi<UserResponseData>(
-      `${API_ENDPOINTS.AUTH.SESSION}?session-token=${sessionToken}`,
+      `${API_ENDPOINTS.AUTH.SESSION}`,
       "GET",
       undefined,
       true,
@@ -431,7 +596,7 @@ export const useApi = () => {
   };
 
   const listAccounts = async () => {
-    const res = await fetchApi<Account[]>( 
+    const res = await fetchApi<Account[]>(
       `/sign/accounts?session-token=${user()!.session_token}`,
       "GET",
     );
@@ -444,11 +609,60 @@ export const useApi = () => {
     return res.data;
   };
 
+  const sendEmail = async (data: {
+    to: string;
+    subject: string;
+    body: string;
+  }) => {
+    try {
+      const res = await fetchApi<any>(`/email/send`, "POST", { ...data });
+
+      if (res.isError || !res.data) {
+        console.log(res.error);
+        throw new Error("[Send Email] > Failed to send email.");
+      }
+
+      return res.data;
+    } catch (e: any) {
+      throw new Error("[Send Email] > Failed to send email.\n" + e.toString());
+    }
+  };
+
+  const signInSocial = async () => {
+    const formattedCallback = `${baseWebUrl}/dashboard`;
+
+    const res = await fetchApi<LinkSocialData>(
+      API_ENDPOINTS.AUTH.SIGN_IN_SOCIAL,
+      "POST",
+      {
+        provider: "google",
+        callback: formattedCallback,
+        token: user()?.session_token,
+      },
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(`Social login failed: ${res.error?.message}`);
+    }
+
+    if (res.data.url) {
+      window.open(res.data.url, "_blank")?.focus();
+    }
+
+    return res.data;
+  };
+
   return {
     signIn,
     signUp,
     fetchTrainees,
     fetchTrainers,
+    createTrainee,
+    updateTrainee,
+    deleteTrainee,
+    createTrainer,
+    updateTrainer,
+    deleteTrainer,
     sendVerificationEmail,
     verifyEmail,
     checkUserEmailValidity,
@@ -456,5 +670,7 @@ export const useApi = () => {
     logoutUser,
     linkSocial,
     listAccounts,
+    sendEmail,
+    signInSocial,
   };
 };

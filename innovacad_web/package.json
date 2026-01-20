@@ -13,6 +13,7 @@
 		"@solidjs/router": "^0.15.4",
 		"js-cookie": "^3.0.5",
 		"lucide-solid": "^0.562.0",
+		"nodemailer": "^7.0.12",
 		"solid-js": "^1.9.10",
 		"solid-toast": "^0.5.0"
 	},
@@ -21,6 +22,7 @@
 		"@tailwindcss/vite": "^4.1.18",
 		"@types/js-cookie": "^3.0.6",
 		"@types/node": "^24.10.1",
+		"@types/nodemailer": "^7.0.5",
 		"daisyui": "^5.5.14",
 		"solid-icons": "^1.1.0",
 		"tailwindcss": "^4.1.18",

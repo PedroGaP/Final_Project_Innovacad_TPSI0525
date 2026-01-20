@@ -1,12 +1,11 @@
 import { NavbarLink, type NavProps } from "@/components/NavbarLink";
 import { Icon } from "@/components/Icon";
-import { createMemo, createSignal, For, Show } from "solid-js";
+import { createMemo, createSignal, For, Show } from "solid-js"; // Added onMount
 import { useTheme } from "@/providers/ThemeProvider";
 import { useLocation } from "@solidjs/router";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import capitalize from "@/utils/capitalize";
-import toast from "solid-toast";
 
 const DashboardLayout = (props: any) => {
   const { user, logout } = useUserDetails();
@@ -33,18 +32,21 @@ const DashboardLayout = (props: any) => {
       size: 22,
       path: "user",
       title: "Users",
+      role: "admin",
       children: [
         {
           icon: "BriefcaseBusiness",
           size: 16,
           path: "user/trainers",
           title: "Trainers",
+          role: "admin",
         },
         {
           icon: "Backpack",
           size: 16,
           path: "user/trainees",
           title: "Trainees",
+          role: "admin",
         },
       ],
     },
@@ -182,8 +184,8 @@ const DashboardLayout = (props: any) => {
                 </div>
               </div>
             </header>
-            <main class="flex-1 overflow-hidden">
-              <div class="w-full h-full">{props.children}</div>
+            <main class="flex-1 flex flex-col overflow-hidden p-4 bg-base-200">
+              <div class="w-full h-full flex flex-col">{props.children}</div>
             </main>
           </div>
 
@@ -213,7 +215,11 @@ const DashboardLayout = (props: any) => {
               </div>
               <ul class="p-4 w-full text-base flex-1 overflow-y-auto overflow-x-visible gap-1">
                 <For each={NavItems}>
-                  {(item) => <NavbarLink {...item} collapsed={isCollapsed()} />}
+                  {(item) => (
+                    <Show when={!item.role || item.role === user()?.role}>
+                      <NavbarLink {...item} collapsed={isCollapsed()} />
+                    </Show>
+                  )}
                 </For>
               </ul>
             </aside>

@@ -1,7 +1,7 @@
 import { A, useNavigate } from "@solidjs/router";
 import { TbLogin } from "solid-icons/tb";
 import { createStore } from "solid-js/store";
-import MicrosoftLogo from "@/assets/microsoft.svg";
+import GoogleLogo from "@/assets/google.svg";
 import type { SignInData } from "@/types/auth";
 import type { User } from "@/types/user";
 import debounce from "@/utils/debounce";
@@ -18,8 +18,12 @@ const SignIn = () => {
   });
   const navigate = useNavigate();
 
-  const handleSocialLogin = () => {
-    console.log("Google sign in");
+  const handleSocialLogin = async () => {
+    try {
+      const res = await api.signInSocial();
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const handleEmailSignIn = async () => {
@@ -104,8 +108,8 @@ const SignIn = () => {
               class="btn btn-outline btn-block border-base-300 hover:bg-base-200  uppercase"
               onClick={handleSocialLogin}
             >
-              <img src={MicrosoftLogo} alt="Microsoft" class="w-5 h-5 mr-2" />
-              Sign In with Microsoft
+              <img src={GoogleLogo} alt="Google" class="w-5 h-5 mr-2" />
+              Sign In with Google
             </button>
           </div>
         </div>

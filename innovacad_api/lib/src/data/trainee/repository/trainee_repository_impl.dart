@@ -27,7 +27,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
           "SELECT $relationFields FROM `trainees` t JOIN `user` u ON t.user_id = u.id";
       final results = await db.query(query);
 
-      print(results.rows);
 
       for (var row in results.rows) {
         daos.add(OutputTraineeDao.fromJson(row));
@@ -35,7 +34,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
 
       return Result.success(daos);
     } catch (e, s) {
-      print(s);
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -181,8 +179,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
         dto,
       );
 
-      print(res.data!.toJson());
-
       if (isUserUpdated.isFailure)
         return Result.failure(
           AppError(
@@ -217,7 +213,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
           await db.rollback();
         } catch (_) {}
       }
-      print("[ERROR] Update Trainer: $e\n$s");
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
