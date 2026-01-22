@@ -1,12 +1,14 @@
-import 'package:json_annotation/json_annotation.dart';
+import 'package:json_annotation/json_annotation.dart' as annotation;
+import 'package:vaden/vaden.dart';
 
+@Component()
 enum ClassStatusEnum {
-  @JsonValue('ongoing')
+  @annotation.JsonValue('ongoing')
   ongoing,
 
-  @JsonValue('starting')
+  @annotation.JsonValue('starting')
   starting,
 
-  @JsonValue('finished')
+  @annotation.JsonValue('finished')
   finished,
 }

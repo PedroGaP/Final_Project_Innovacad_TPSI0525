@@ -18,7 +18,7 @@ class UpdateClassDto {
   @annotation.JsonKey(name: 'identifier')
   final String? identifier;
 
-  @annotation.JsonKey(name: 'status')
+  @annotation.JsonEnum(valueField: 'status')
   final ClassStatusEnum? status;
 
   @annotation.JsonKey(name: 'start_date_timestamp')
