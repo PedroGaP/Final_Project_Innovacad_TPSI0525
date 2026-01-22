@@ -9,7 +9,6 @@ part of 'update_availability_dto.dart';
 UpdateAvailabilityDto _$UpdateAvailabilityDtoFromJson(
   Map<String, dynamic> json,
 ) => UpdateAvailabilityDto(
-  availabilityId: json['availability_id'] as String,
   trainerId: json['trainer_id'] as String?,
   status: json['status'] as String?,
   startDateTimestamp: _$JsonConverterFromJson<Object, DateTime>(
@@ -25,7 +24,6 @@ UpdateAvailabilityDto _$UpdateAvailabilityDtoFromJson(
 Map<String, dynamic> _$UpdateAvailabilityDtoToJson(
   UpdateAvailabilityDto instance,
 ) => <String, dynamic>{
-  'availability_id': instance.availabilityId,
   'trainer_id': instance.trainerId,
   'status': instance.status,
   'start_date_timestamp': _$JsonConverterToJson<Object, DateTime>(

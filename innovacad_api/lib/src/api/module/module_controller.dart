@@ -1,6 +1,6 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
-import 'package:innovacad_api/src/domain/module/service/i_module_service.dart';
+import 'package:innovacad_api/src/domain/domain.dart';
 import 'package:vaden/vaden.dart';
 
 @Api(tag: "Modules", description: "CRUD endpoint documentation for modules")
@@ -11,16 +11,11 @@ class ModuleController {
   ModuleController(this._service);
 
   @Get('/')
-  Future<Response> getAll() async {
-    final result = await _service.getAll();
-    return resultToResponse(result);
-  }
+  Future<Response> getAll() async => resultToResponse(await _service.getAll());
 
   @Get('/<id>')
-  Future<Response> getById(@Param("id") String id) async {
-    final result = await _service.getById(id);
-    return resultToResponse(result);
-  }
+  Future<Response> getById(@Param("id") String id) async =>
+      resultToResponse(await _service.getById(id));
 
   @Post("/")
   Future<Response> create(@Body() CreateModuleDto dto) async {
@@ -32,20 +27,9 @@ class ModuleController {
   Future<Response> update(
     @Param("id") String id,
     @Body() UpdateModuleDto dto,
-  ) async {
-    if (dto.moduleId != id) {
-       // Validate consistency
-    }
-    final result = await _service.update(dto);
-    return resultToResponse(result);
-  }
+  ) async => resultToResponse(await _service.update(id, dto));
 
   @Delete('/<id>')
-  Future<Response> delete(
-    @Param("id") String id,
-    @Body() DeleteModuleDto dto 
-  ) async {
-      final result = await _service.delete(dto);
-      return resultToResponse(result);
-  }
+  Future<Response> delete(@Param("id") String id) async =>
+      resultToResponse(await _service.delete(id));
 }

@@ -7,9 +7,6 @@ part 'update_availability_dto.g.dart';
 @DTO()
 @annotation.JsonSerializable()
 class UpdateAvailabilityDto {
-  @annotation.JsonKey(name: 'availability_id')
-  final String availabilityId;
-
   @annotation.JsonKey(name: 'trainer_id')
   final String? trainerId;
 
@@ -25,7 +22,6 @@ class UpdateAvailabilityDto {
   final DateTime? endDateTimestamp;
 
   UpdateAvailabilityDto({
-    required this.availabilityId,
     this.trainerId,
     this.status,
     this.startDateTimestamp,

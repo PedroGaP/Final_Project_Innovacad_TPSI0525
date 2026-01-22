@@ -5,6 +5,6 @@ abstract class IModuleRepository {
   Future<Result<List<OutputModuleDao>>> getAll();
   Future<Result<OutputModuleDao>> getById(String id);
   Future<Result<OutputModuleDao>> create(CreateModuleDto dto);
-  Future<Result<OutputModuleDao>> update(UpdateModuleDto dto);
-  Future<Result<OutputModuleDao>> delete(DeleteModuleDto dto);
+  Future<Result<OutputModuleDao>> update(String id, UpdateModuleDto dto);
+  Future<Result<OutputModuleDao>> delete(String id);
 }

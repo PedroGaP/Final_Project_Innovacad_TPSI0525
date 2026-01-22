@@ -11,50 +11,23 @@ class RoomController {
   RoomController(this._service);
 
   @Get('/')
-  Future<Response> getAll() async {
-    final result = await _service.getAll();
-    return resultToResponse(result);
-  }
+  Future<Response> getAll() async => resultToResponse(await _service.getAll());
 
   @Get('/<id>')
-  Future<Response> getById(@Param("id") String id) async {
-    final intId = int.tryParse(id);
-    if (intId == null) {
-        return Response.badRequest(body: "Invalid ID format");
-    }
-    final result = await _service.getById(intId);
-    return resultToResponse(result);
-  }
+  Future<Response> getById(@Param("id") String id) async =>
+      resultToResponse(await _service.getById(id));
 
   @Post("/")
-  Future<Response> create(@Body() CreateRoomDto dto) async {
-    final result = await _service.create(dto);
-    return resultToResponse(result);
-  }
+  Future<Response> create(@Body() CreateRoomDto dto) async =>
+      resultToResponse(await _service.create(dto));
 
   @Put("/<id>")
   Future<Response> update(
     @Param("id") String id,
     @Body() UpdateRoomDto dto,
-  ) async {
-    final intId = int.tryParse(id);
-    if (intId == null) {
-        return Response.badRequest(body: "Invalid ID format");
-    }
-    if (dto.roomId != intId) {
-       // Validate
-    }
-    final result = await _service.update(dto);
-    return resultToResponse(result);
-  }
+  ) async => resultToResponse(await _service.update(id, dto));
 
   @Delete('/<id>')
-  Future<Response> delete(
-    @Param("id") String id,
-    @Body() DeleteRoomDto dto 
-  ) async {
-      // DTO has roomId as int.
-      final result = await _service.delete(dto);
-      return resultToResponse(result);
-  }
+  Future<Response> delete(@Param("id") String id) async =>
+      resultToResponse(await _service.delete(id));
 }
