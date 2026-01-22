@@ -1,6 +1,6 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
-import 'package:innovacad_api/src/domain/course/service/i_course_service.dart';
+import 'package:innovacad_api/src/domain/domain.dart';
 import 'package:vaden/vaden.dart';
 
 @Api(tag: "Courses", description: "CRUD endpoint documentation for courses")
@@ -11,41 +11,23 @@ class CourseController {
   CourseController(this._service);
 
   @Get('/')
-  Future<Response> getAll() async {
-    final result = await _service.getAll();
-    return resultToResponse(result);
-  }
+  Future<Response> getAll() async => resultToResponse(await _service.getAll());
 
   @Get('/<id>')
-  Future<Response> getById(@Param("id") String id) async {
-    final result = await _service.getById(id);
-    return resultToResponse(result);
-  }
+  Future<Response> getById(@Param("id") String id) async =>
+      resultToResponse(await _service.getById(id));
 
   @Post("/")
-  Future<Response> create(@Body() CreateCourseDto dto) async {
-    final result = await _service.create(dto);
-    return resultToResponse(result);
-  }
+  Future<Response> create(@Body() CreateCourseDto dto) async =>
+      resultToResponse(await _service.create(dto));
 
   @Put("/<id>")
   Future<Response> update(
     @Param("id") String id,
     @Body() UpdateCourseDto dto,
-  ) async {
-    if (dto.courseId != id) {
-       // Validate
-    }
-    final result = await _service.update(dto);
-    return resultToResponse(result);
-  }
+  ) async => resultToResponse(await _service.update(id, dto));
 
   @Delete('/<id>')
-  Future<Response> delete(
-    @Param("id") String id,
-    @Body() DeleteCourseDto dto // DTO requires courseId, so body is expected even for delete
-  ) async {
-      final result = await _service.delete(dto);
-      return resultToResponse(result);
-  }
+  Future<Response> delete(@Param("id") String id) async =>
+      resultToResponse(await _service.delete(id));
 }

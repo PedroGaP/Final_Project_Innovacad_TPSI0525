@@ -6,9 +6,6 @@ part 'update_grade_dto.g.dart';
 @DTO()
 @annotation.JsonSerializable()
 class UpdateGradeDto {
-  @annotation.JsonKey(name: 'grade_id')
-  final String gradeId;
-
   @annotation.JsonKey(name: 'class_module_id')
   final String? classModuleId;
 
@@ -22,7 +19,6 @@ class UpdateGradeDto {
   final String? gradeType;
 
   UpdateGradeDto({
-    required this.gradeId,
     this.classModuleId,
     this.traineeId,
     this.grade,

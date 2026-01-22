@@ -8,7 +8,6 @@ part of 'update_schedule_dto.dart';
 
 UpdateScheduleDto _$UpdateScheduleDtoFromJson(Map<String, dynamic> json) =>
     UpdateScheduleDto(
-      scheduleId: json['schedule_id'] as String,
       classModuleId: json['class_module_id'] as String?,
       trainerId: json['trainer_id'] as String?,
       availabilityId: json['availability_id'] as String?,
@@ -26,7 +25,6 @@ UpdateScheduleDto _$UpdateScheduleDtoFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$UpdateScheduleDtoToJson(UpdateScheduleDto instance) =>
     <String, dynamic>{
-      'schedule_id': instance.scheduleId,
       'class_module_id': instance.classModuleId,
       'trainer_id': instance.trainerId,
       'availability_id': instance.availabilityId,

@@ -1,7 +1,6 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
-import 'package:innovacad_api/src/domain/module/repository/i_module_repository.dart';
-import 'package:innovacad_api/src/domain/module/service/i_module_service.dart';
+import 'package:innovacad_api/src/domain/domain.dart';
 import 'package:vaden/vaden.dart';
 
 @Service()
@@ -11,17 +10,24 @@ class ModuleServiceImpl implements IModuleService {
   ModuleServiceImpl(this._repository);
 
   @override
-  Future<Result<List<OutputModuleDao>>> getAll() async => _repository.getAll();
+  Future<Result<List<OutputModuleDao>>> getAll() async =>
+      await _repository.getAll();
 
   @override
-  Future<Result<OutputModuleDao>> getById(String id) async => _repository.getById(id);
+  Future<Result<OutputModuleDao>> getById(String id) async =>
+      await _repository.getById(id);
 
   @override
-  Future<Result<OutputModuleDao>> create(CreateModuleDto dto) async => _repository.create(dto);
+  Future<Result<OutputModuleDao>> create(CreateModuleDto dto) async =>
+      await _repository.create(dto);
 
   @override
-  Future<Result<OutputModuleDao>> update(UpdateModuleDto dto) async => _repository.update(dto);
+  Future<Result<OutputModuleDao>> update(
+    String id,
+    UpdateModuleDto dto,
+  ) async => await _repository.update(id, dto);
 
   @override
-  Future<Result<OutputModuleDao>> delete(DeleteModuleDto dto) async => _repository.delete(dto);
+  Future<Result<OutputModuleDao>> delete(String id) async =>
+      await _repository.delete(id);
 }

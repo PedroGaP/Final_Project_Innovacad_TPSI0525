@@ -1,6 +1,5 @@
 import 'package:innovacad_api/src/core/core.dart';
-import 'package:innovacad_api/src/data/class_model/enum/class_status_enum.dart';
-export 'package:innovacad_api/src/data/class_model/enum/class_status_enum.dart';
+import 'package:innovacad_api/src/data/data.dart';
 import 'package:vaden/vaden.dart';
 import 'package:json_annotation/json_annotation.dart' as annotation;
 import 'package:json_annotation/json_annotation.dart';

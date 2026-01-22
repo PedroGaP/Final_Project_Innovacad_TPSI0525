@@ -3,8 +3,8 @@ import 'package:innovacad_api/src/data/data.dart';
 
 abstract class IRoomRepository {
   Future<Result<List<OutputRoomDao>>> getAll();
-  Future<Result<OutputRoomDao>> getById(int id);
+  Future<Result<OutputRoomDao>> getById(String id);
   Future<Result<OutputRoomDao>> create(CreateRoomDto dto);
-  Future<Result<OutputRoomDao>> update(UpdateRoomDto dto);
-  Future<Result<OutputRoomDao>> delete(DeleteRoomDto dto);
+  Future<Result<OutputRoomDao>> update(String id, UpdateRoomDto dto);
+  Future<Result<OutputRoomDao>> delete(String id);
 }

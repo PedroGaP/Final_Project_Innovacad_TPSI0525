@@ -11,17 +11,24 @@ class ClassModuleServiceImpl implements IClassModuleService {
   ClassModuleServiceImpl(this._repository);
 
   @override
-  Future<Result<List<OutputClassModuleDao>>> getAll() async => _repository.getAll();
+  Future<Result<List<OutputClassModuleDao>>> getAll() async =>
+      _repository.getAll();
 
   @override
-  Future<Result<OutputClassModuleDao>> getById(String id) async => _repository.getById(id);
+  Future<Result<OutputClassModuleDao>> getById(String id) async =>
+      _repository.getById(id);
 
   @override
-  Future<Result<OutputClassModuleDao>> create(CreateClassModuleDto dto) async => _repository.create(dto);
+  Future<Result<OutputClassModuleDao>> create(CreateClassModuleDto dto) async =>
+      _repository.create(dto);
 
   @override
-  Future<Result<OutputClassModuleDao>> update(UpdateClassModuleDto dto) async => _repository.update(dto);
+  Future<Result<OutputClassModuleDao>> update(
+    String id,
+    UpdateClassModuleDto dto,
+  ) async => _repository.update(id, dto);
 
   @override
-  Future<Result<OutputClassModuleDao>> delete(DeleteClassModuleDto dto) async => _repository.delete(dto);
+  Future<Result<OutputClassModuleDao>> delete(String id) async =>
+      _repository.delete(id);
 }

@@ -11,17 +11,24 @@ class EnrollmentServiceImpl implements IEnrollmentService {
   EnrollmentServiceImpl(this._repository);
 
   @override
-  Future<Result<List<OutputEnrollmentDao>>> getAll() async => _repository.getAll();
+  Future<Result<List<OutputEnrollmentDao>>> getAll() async =>
+      await _repository.getAll();
 
   @override
-  Future<Result<OutputEnrollmentDao>> getById(String id) async => _repository.getById(id);
+  Future<Result<OutputEnrollmentDao>> getById(String id) async =>
+      await _repository.getById(id);
 
   @override
-  Future<Result<OutputEnrollmentDao>> create(CreateEnrollmentDto dto) async => _repository.create(dto);
+  Future<Result<OutputEnrollmentDao>> create(CreateEnrollmentDto dto) async =>
+      await _repository.create(dto);
 
   @override
-  Future<Result<OutputEnrollmentDao>> update(UpdateEnrollmentDto dto) async => _repository.update(dto);
+  Future<Result<OutputEnrollmentDao>> update(
+    String id,
+    UpdateEnrollmentDto dto,
+  ) async => await _repository.update(id, dto);
 
   @override
-  Future<Result<OutputEnrollmentDao>> delete(DeleteEnrollmentDto dto) async => _repository.delete(dto);
+  Future<Result<OutputEnrollmentDao>> delete(String id) async =>
+      await _repository.delete(id);
 }

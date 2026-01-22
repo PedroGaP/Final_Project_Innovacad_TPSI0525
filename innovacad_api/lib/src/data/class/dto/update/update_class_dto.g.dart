@@ -8,7 +8,6 @@ part of 'update_class_dto.dart';
 
 UpdateClassDto _$UpdateClassDtoFromJson(Map<String, dynamic> json) =>
     UpdateClassDto(
-      classId: json['class_id'] as String,
       courseId: json['course_id'] as String?,
       location: json['location'] as String?,
       identifier: json['identifier'] as String?,
@@ -25,7 +24,6 @@ UpdateClassDto _$UpdateClassDtoFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$UpdateClassDtoToJson(UpdateClassDto instance) =>
     <String, dynamic>{
-      'class_id': instance.classId,
       'course_id': instance.courseId,
       'location': instance.location,
       'identifier': instance.identifier,

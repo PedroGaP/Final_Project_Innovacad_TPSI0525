@@ -6,9 +6,6 @@ part 'update_enrollment_dto.g.dart';
 @DTO()
 @annotation.JsonSerializable()
 class UpdateEnrollmentDto {
-  @annotation.JsonKey(name: 'enrollment_id')
-  final String enrollmentId;
-
   @annotation.JsonKey(name: 'class_id')
   final String? classId;
 
@@ -18,12 +15,7 @@ class UpdateEnrollmentDto {
   @annotation.JsonKey(name: 'final_grade')
   final double? finalGrade;
 
-  UpdateEnrollmentDto({
-    required this.enrollmentId,
-    this.classId,
-    this.traineeId,
-    this.finalGrade,
-  });
+  UpdateEnrollmentDto({this.classId, this.traineeId, this.finalGrade});
 
   Map<String, dynamic> toJson() => _$UpdateEnrollmentDtoToJson(this);
 
