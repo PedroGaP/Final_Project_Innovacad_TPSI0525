@@ -114,7 +114,7 @@ class ModuleRepositoryImpl implements IModuleRepository {
 
       final existingModule = await getById(id);
 
-      if (existingModule.isFailure && existingModule.data == null)
+      if (existingModule.isFailure || existingModule.data == null)
         return existingModule;
 
       final updateData = <String, dynamic>{};
@@ -152,7 +152,7 @@ class ModuleRepositoryImpl implements IModuleRepository {
     try {
       final existingModule = await getById(id);
 
-      if (existingModule.isFailure && existingModule.data == null)
+      if (existingModule.isFailure || existingModule.data == null)
         return existingModule;
 
       db = await MysqlConfiguration.connect();
