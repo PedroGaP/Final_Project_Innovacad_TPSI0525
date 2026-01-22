@@ -11,24 +11,24 @@ class AvailabilityServiceImpl implements IAvailabilityService {
 
   @override
   Future<Result<List<OutputAvailabilityDao>>> getAll() async =>
-      _repository.getAll();
+      await _repository.getAll();
 
   @override
   Future<Result<OutputAvailabilityDao>> getById(String id) async =>
-      _repository.getById(id);
+      await _repository.getById(id);
 
   @override
   Future<Result<OutputAvailabilityDao>> create(
     CreateAvailabilityDto dto,
-  ) async => _repository.create(dto);
+  ) async => await _repository.create(dto);
 
   @override
   Future<Result<OutputAvailabilityDao>> update(
     String id,
     UpdateAvailabilityDto dto,
-  ) async => _repository.update(id, dto);
+  ) async => await _repository.update(id, dto);
 
   @override
   Future<Result<OutputAvailabilityDao>> delete(String id) async =>
-      _repository.delete(id);
+      await _repository.delete(id);
 }
