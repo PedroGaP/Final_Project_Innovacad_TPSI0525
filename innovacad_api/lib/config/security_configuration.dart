@@ -14,7 +14,7 @@ class SecurityConfiguration {
     return HttpSecurity([
       RequestMatcher('/auth/**').denyAll(),
       RequestMatcher('/docs/**').permitAll(),
-      RequestMatcher('/courses/**').authenticated(),
+      //RequestMatcher('/courses/**').authenticated(),
       // RequestMatcher('/sign/up').hasRole("admin"),
       AnyRequest().permitAll(),
     ]);

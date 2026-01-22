@@ -12,46 +12,53 @@ class CourseRepositoryImpl implements ICourseRepository {
   @override
   Future<Result<List<OutputCourseDao>>> getAll() async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
+
       final results = await db.getAll(table: table);
 
-      final courses = results.map((row) {
-        return OutputCourseDao(
-          courseId: row["id"].toString(), // Assuming 'id' is the column name
-          identifier: row["identifier"],
-          name: row["name"],
-        );
+      final courses = results.map((data) {
+        return OutputCourseDao.fromJson(data);
       }).toList();
 
       return Result.success(courses);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while fetching the courses...",
+          details: {"error": e.toString(), "stackTrace": s.toString()},
+        ),
+      );
     }
   }
 
   @override
   Future<Result<OutputCourseDao>> getById(String id) async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
-      final result = await db.getOne(table: table, where: {"id": id});
 
-      if (result.isEmpty) {
+      final result =
+          await db.getOne(table: table, where: {"course_id": id})
+              as Map<String, dynamic>;
+
+      if (result.isEmpty)
         return Result.failure(
           AppError(AppErrorType.notFound, "Course not found"),
         );
-      }
 
-      final dao = OutputCourseDao(
-        courseId: result["id"].toString(),
-        identifier: result["identifier"],
-        name: result["name"],
+      return Result.success(OutputCourseDao.fromJson(result));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while fetching the course...",
+          details: {"error": e.toString(), "stackTrace": s.toString()},
+        ),
       );
-
-      return Result.success(dao);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
 
@@ -61,79 +68,106 @@ class CourseRepositoryImpl implements ICourseRepository {
     try {
       db = await MysqlConfiguration.connect();
 
+      db.startTrans();
+
       await db.insert(
         table: table,
         insertData: {"identifier": dto.identifier, "name": dto.name},
       );
 
-      // MysqlUtils insert usually returns void or boolean?
-      // Need to fetch the created item to get ID.
-      // Assuming identifier is unique? Or get the last inserted.
-      // MysqlUtils doesn't easily return last ID unless we query.
-      // Let's query by identifier assuming uniqueness, or identifier+name if needed.
+      final created =
+          await db.getOne(
+                table: table,
+                where: {"identifier": dto.identifier, "name": dto.name},
+              )
+              as Map<String, dynamic>;
 
-      final created = await db.getOne(
-        table: table,
-        where: {"identifier": dto.identifier},
-      );
-
-      if (created.isEmpty) {
-        // Fallback or error?
+      if (created.isEmpty)
         return Result.failure(
           AppError(
             AppErrorType.internal,
             "Created course could not be retrieved",
           ),
         );
-      }
 
-      return Result.success(
-        OutputCourseDao(
-          courseId: created["id"].toString(),
-          identifier: created["identifier"],
-          name: created["name"],
+      db.commit();
+
+      return Result.success(OutputCourseDao.fromJson(created));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while creating the course...",
+          details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
 
   @override
   Future<Result<OutputCourseDao>> update(String id, UpdateCourseDto dto) async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
 
+      final existingCourse = await getById(id);
+
+      if (existingCourse.isFailure || existingCourse.data == null)
+        return existingCourse;
+
       final updateData = <String, dynamic>{};
-      if (dto.identifier != null) updateData["identifier"] = dto.identifier;
-      if (dto.name != null) updateData["name"] = dto.name;
 
-      if (updateData.isEmpty) {
-        return getById(id); // No changes
-      }
+      if (dto.identifier != null &&
+          dto.identifier != existingCourse.data!.identifier)
+        updateData["identifier"] = dto.identifier;
 
-      await db.update(table: table, updateData: updateData, where: {"id": id});
+      if (dto.name != null && dto.name != existingCourse.data!.name)
+        updateData["name"] = dto.name;
 
-      return getById(id);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+      if (updateData.isEmpty) return getById(id);
+
+      await db.update(
+        table: table,
+        updateData: updateData,
+        where: {"course_id": id},
+      );
+
+      return await getById(id);
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while updating the course...",
+          details: {"error": e.toString(), "stackTrace": s.toString()},
+        ),
+      );
     }
   }
 
   @override
   Future<Result<OutputCourseDao>> delete(String id) async {
     MysqlUtils? db;
+
     try {
-      final existingRes = await getById(id);
-      if (existingRes.isFailure) return existingRes;
+      final existingCourse = await getById(id);
+
+      if (existingCourse.isFailure || existingCourse.data == null)
+        return existingCourse;
 
       db = await MysqlConfiguration.connect();
-      await db.delete(table: table, where: {"id": id});
 
-      return existingRes;
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+      await db.delete(table: table, where: {"course_id": id});
+
+      return existingCourse;
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while deleting the course...",
+          details: {"error": e.toString(), "stackTrace": s.toString()},
+        ),
+      );
     }
   }
 }
