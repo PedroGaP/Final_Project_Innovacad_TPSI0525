@@ -69,6 +69,8 @@ class RoomRepositoryImpl implements IRoomRepository {
     try {
       db = await MysqlConfiguration.connect();
 
+      await db.startTrans();
+
       await db.insert(
         table: table,
         insertData: {"room_name": dto.roomName, "capacity": dto.capacity},
@@ -77,6 +79,8 @@ class RoomRepositoryImpl implements IRoomRepository {
       final created =
           await db.getOne(table: table, where: {"room_name": dto.roomName})
               as Map<String, dynamic>;
+
+      await db.commit();
 
       if (created.isEmpty)
         return Result.failure(
