@@ -10,21 +10,22 @@ class ClassServiceImpl implements IClassService {
   ClassServiceImpl(this._repository);
 
   @override
-  Future<Result<List<OutputClassDao>>> getAll() async => _repository.getAll();
+  Future<Result<List<OutputClassDao>>> getAll() async =>
+      await _repository.getAll();
 
   @override
   Future<Result<OutputClassDao>> getById(String id) async =>
-      _repository.getById(id);
+      await _repository.getById(id);
 
   @override
   Future<Result<OutputClassDao>> create(CreateClassDto dto) async =>
-      _repository.create(dto);
+      await _repository.create(dto);
 
   @override
   Future<Result<OutputClassDao>> update(String id, UpdateClassDto dto) async =>
-      _repository.update(id, dto);
+      await _repository.update(id, dto);
 
   @override
   Future<Result<OutputClassDao>> delete(String id) async =>
-      _repository.delete(id);
+      await _repository.delete(id);
 }

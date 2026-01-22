@@ -12,24 +12,24 @@ class CourseModuleServiceImpl implements ICourseModuleService {
 
   @override
   Future<Result<List<OutputCourseModuleDao>>> getAll() async =>
-      _repository.getAll();
+      await _repository.getAll();
 
   @override
   Future<Result<OutputCourseModuleDao>> getById(String id) async =>
-      _repository.getById(id);
+      await _repository.getById(id);
 
   @override
   Future<Result<OutputCourseModuleDao>> create(
     CreateCourseModuleDto dto,
-  ) async => _repository.create(dto);
+  ) async => await _repository.create(dto);
 
   @override
   Future<Result<OutputCourseModuleDao>> update(
     String id,
     UpdateCourseModuleDto dto,
-  ) async => _repository.update(id, dto);
+  ) async => await _repository.update(id, dto);
 
   @override
   Future<Result<OutputCourseModuleDao>> delete(String id) async =>
-      _repository.delete(id);
+      await _repository.delete(id);
 }

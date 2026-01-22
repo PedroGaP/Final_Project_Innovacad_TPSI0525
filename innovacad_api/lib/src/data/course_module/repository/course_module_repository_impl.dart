@@ -12,48 +12,53 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
   @override
   Future<Result<List<OutputCourseModuleDao>>> getAll() async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
+
       final results = await db.getAll(table: table);
 
-      final items = results.map((row) {
-        return OutputCourseModuleDao(
-          coursesModulesId: row["id"].toString(), // Assuming 'id' is PK
-          courseId: row["course_id"].toString(),
-          moduleId: row["module_id"].toString(),
-          sequenceCourseModuleId: row["sequence_course_module_id"]?.toString(),
-        );
+      final items = results.map((data) {
+        return OutputCourseModuleDao.fromJson(data);
       }).toList();
 
       return Result.success(items);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while fetching the course modules...",
+          details: {"error": e.toString(), "stackTrace": s.toString()},
+        ),
+      );
     }
   }
 
   @override
   Future<Result<OutputCourseModuleDao>> getById(String id) async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
-      final result = await db.getOne(table: table, where: {"id": id});
 
-      if (result.isEmpty) {
+      final result =
+          await db.getOne(table: table, where: {"courses_modules_id": id})
+              as Map<String, dynamic>;
+
+      if (result.isEmpty)
         return Result.failure(
-          AppError(AppErrorType.notFound, "CourseModule association not found"),
+          AppError(AppErrorType.notFound, "CourseModule not found"),
         );
-      }
 
-      final dao = OutputCourseModuleDao(
-        coursesModulesId: result["id"].toString(),
-        courseId: result["course_id"].toString(),
-        moduleId: result["module_id"].toString(),
-        sequenceCourseModuleId: result["sequence_course_module_id"]?.toString(),
+      return Result.success(OutputCourseModuleDao.fromJson(result));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while fetching the course module...",
+          details: {"error": e.toString(), "stackTrace": s.toString()},
+        ),
       );
-
-      return Result.success(dao);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
 
@@ -62,8 +67,11 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
     CreateCourseModuleDto dto,
   ) async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
+
+      await db.startTrans();
 
       await db.insert(
         table: table,
@@ -74,36 +82,30 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
         },
       );
 
-      // Retrieval strategy: Assuming (course_id, module_id) is unique enough for now?
-      // Risk: duplicates allowed? A join table usually implies uniqueness but old entity didn't specify.
-      // We will query by course_id and module_id. If multiple, we might get one.
-      // Ideally use insert ID.
+      final created =
+          await db.getOne(
+                table: table,
+                where: {"course_id": dto.courseId, "module_id": dto.moduleId},
+              )
+              as Map<String, dynamic>;
 
-      final created = await db.getOne(
-        table: table,
-        where: {"course_id": dto.courseId, "module_id": dto.moduleId},
-      );
-
-      if (created.isEmpty) {
+      if (created.isEmpty)
         return Result.failure(
           AppError(
             AppErrorType.internal,
-            "Created association could not be retrieved",
+            "Created course module could not be retrieved",
           ),
         );
-      }
 
-      return Result.success(
-        OutputCourseModuleDao(
-          coursesModulesId: created["id"].toString(),
-          courseId: created["course_id"].toString(),
-          moduleId: created["module_id"].toString(),
-          sequenceCourseModuleId: created["sequence_course_module_id"]
-              ?.toString(),
+      return Result.success(OutputCourseModuleDao.fromJson(created));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while creating the course module...",
+          details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
 
@@ -113,24 +115,47 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
     UpdateCourseModuleDto dto,
   ) async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
 
+      final existingCourseModule = await getById(id);
+
+      if (existingCourseModule.isFailure || existingCourseModule.data == null)
+        return existingCourseModule;
+
       final updateData = <String, dynamic>{};
-      if (dto.courseId != null) updateData["course_id"] = dto.courseId;
-      if (dto.moduleId != null) updateData["module_id"] = dto.moduleId;
-      if (dto.sequenceCourseModuleId != null)
+
+      if (dto.courseId != null &&
+          dto.courseId != existingCourseModule.data!.courseId)
+        updateData["course_id"] = dto.courseId;
+
+      if (dto.moduleId != null &&
+          dto.moduleId != existingCourseModule.data!.moduleId)
+        updateData["module_id"] = dto.moduleId;
+
+      if (dto.sequenceCourseModuleId != null &&
+          dto.sequenceCourseModuleId !=
+              existingCourseModule.data!.sequenceCourseModuleId)
         updateData["sequence_course_module_id"] = dto.sequenceCourseModuleId;
 
-      if (updateData.isEmpty) {
-        return getById(id);
-      }
+      if (updateData.isEmpty) return existingCourseModule;
 
-      await db.update(table: table, updateData: updateData, where: {"id": id});
+      await db.update(
+        table: table,
+        updateData: updateData,
+        where: {"courses_modules_id": id},
+      );
 
-      return getById(id);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+      return await getById(id);
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while updating the course module...",
+          details: {"error": e.toString(), "stacktrace": s.toString()},
+        ),
+      );
     }
   }
 
@@ -138,15 +163,24 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
   Future<Result<OutputCourseModuleDao>> delete(String id) async {
     MysqlUtils? db;
     try {
-      final existingRes = await getById(id);
-      if (existingRes.isFailure) return existingRes;
+      final existingCourseModule = await getById(id);
+
+      if (existingCourseModule.isFailure || existingCourseModule.data == null)
+        return existingCourseModule;
 
       db = await MysqlConfiguration.connect();
-      await db.delete(table: table, where: {"id": id});
 
-      return existingRes;
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+      await db.delete(table: table, where: {"courses_modules_idid": id});
+
+      return existingCourseModule;
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while deleting the course module...",
+          details: {"error": e.toString(), "stacktrace": s.toString()},
+        ),
+      );
     }
   }
 }

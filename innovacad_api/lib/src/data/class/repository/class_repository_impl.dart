@@ -14,79 +14,61 @@ class ClassRepositoryImpl implements IClassRepository {
     MysqlUtils? db;
     try {
       db = await MysqlConfiguration.connect();
+
       final results = await db.getAll(table: table);
 
-      final classes = results.map((row) {
-        // Enum conversion: DB string -> Enum
-        final statusStr = row["status"];
-        final status = ClassStatusEnum.values.firstWhere(
-          (e) => e.toString().split('.').last == statusStr,
-          orElse: () => ClassStatusEnum.starting, // Default or error?
-        );
-
-        final start = DateTime.parse(row["start_date_timestamp"].toString());
-        final end = DateTime.parse(row["end_date_timestamp"].toString());
-
-        return OutputClassDao(
-          classId: row["id"].toString(),
-          courseId: row["course_id"].toString(),
-          location: row["location"],
-          identifier: row["identifier"],
-          status: status,
-          startDateTimestamp: start,
-          endDateTimestamp: end,
-        );
+      final classes = results.map((data) {
+        return OutputClassDao.fromJson(data);
       }).toList();
 
       return Result.success(classes);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while fetching the classes...",
+          details: {"error": e.toString(), "stacktrace": s.toString()},
+        ),
+      );
     }
   }
 
   @override
   Future<Result<OutputClassDao>> getById(String id) async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
-      final result = await db.getOne(table: table, where: {"id": id});
 
-      if (result.isEmpty) {
+      final result =
+          await db.getOne(table: table, where: {"class_id": id})
+              as Map<String, dynamic>;
+
+      if (result.isEmpty)
         return Result.failure(
           AppError(AppErrorType.notFound, "Class not found"),
         );
-      }
 
-      final statusStr = result["status"];
-      final status = ClassStatusEnum.values.firstWhere(
-        (e) => e.toString().split('.').last == statusStr,
-        orElse: () => ClassStatusEnum.starting,
+      return Result.success(OutputClassDao.fromJson(result));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while fetching the class...",
+          details: {"error": e.toString(), "stacktrace": s.toString()},
+        ),
       );
-
-      final start = DateTime.parse(result["start_date_timestamp"].toString());
-      final end = DateTime.parse(result["end_date_timestamp"].toString());
-
-      final dao = OutputClassDao(
-        classId: result["id"].toString(),
-        courseId: result["course_id"].toString(),
-        location: result["location"],
-        identifier: result["identifier"],
-        status: status,
-        startDateTimestamp: start,
-        endDateTimestamp: end,
-      );
-
-      return Result.success(dao);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
 
   @override
   Future<Result<OutputClassDao>> create(CreateClassDto dto) async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
+
+      await db.startTrans();
 
       await db.insert(
         table: table,
@@ -94,98 +76,116 @@ class ClassRepositoryImpl implements IClassRepository {
           "course_id": dto.courseId,
           "location": dto.location,
           "identifier": dto.identifier,
-          "status": dto.status.toString().split('.').last, // Store as string
-          "start_date_timestamp": dto.startDateTimestamp.toIso8601String(),
-          "end_date_timestamp": dto.endDateTimestamp.toIso8601String(),
+          "status": dto.status,
         },
       );
 
-      // Retrieval: identifier likely unique?
-      final created = await db.getOne(
-        table: table,
-        where: {"identifier": dto.identifier},
-      );
+      final created =
+          await db.getOne(table: table, where: {"identifier": dto.identifier})
+              as Map<String, dynamic>;
 
-      if (created.isEmpty) {
+      if (created.isEmpty)
         return Result.failure(
           AppError(
             AppErrorType.internal,
             "Created class could not be retrieved",
           ),
         );
-      }
 
-      // Reuse logic or construct directly
-      final statusStr = created["status"];
-      final status = ClassStatusEnum.values.firstWhere(
-        (e) => e.toString().split('.').last == statusStr,
-        orElse: () => ClassStatusEnum.starting,
-      );
+      await db.commit();
 
-      return Result.success(
-        OutputClassDao(
-          classId: created["id"].toString(),
-          courseId: created["course_id"].toString(),
-          location: created["location"],
-          identifier: created["identifier"],
-          status: status,
-          startDateTimestamp: DateTime.parse(
-            created["start_date_timestamp"].toString(),
-          ),
-          endDateTimestamp: DateTime.parse(
-            created["end_date_timestamp"].toString(),
-          ),
+      return Result.success(OutputClassDao.fromJson(created));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while creating the class...",
+          details: {"error": e.toString(), "stacktrace": s.toString()},
         ),
       );
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
 
   @override
   Future<Result<OutputClassDao>> update(String id, UpdateClassDto dto) async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
 
+      final existingClass = await getById(id);
+
+      if (existingClass.isFailure || existingClass.data == null)
+        return existingClass;
+
       final updateData = <String, dynamic>{};
-      if (dto.courseId != null) updateData["course_id"] = dto.courseId;
-      if (dto.location != null) updateData["location"] = dto.location;
-      if (dto.identifier != null) updateData["identifier"] = dto.identifier;
-      if (dto.status != null)
+
+      if (dto.courseId != null && dto.courseId != existingClass.data!.courseId)
+        updateData["course_id"] = dto.courseId;
+
+      if (dto.location != null && dto.location != existingClass.data!.location)
+        updateData["location"] = dto.location;
+
+      if (dto.identifier != null &&
+          dto.identifier != existingClass.data!.identifier)
+        updateData["identifier"] = dto.identifier;
+
+      if (dto.status != null && dto.status != existingClass.data!.status)
         updateData["status"] = dto.status.toString().split('.').last;
-      if (dto.startDateTimestamp != null)
+
+      if (dto.startDateTimestamp != null &&
+          dto.startDateTimestamp != existingClass.data!.startDateTimestamp)
         updateData["start_date_timestamp"] = dto.startDateTimestamp!
             .toIso8601String();
-      if (dto.endDateTimestamp != null)
+
+      if (dto.endDateTimestamp != null &&
+          dto.endDateTimestamp != existingClass.data!.endDateTimestamp)
         updateData["end_date_timestamp"] = dto.endDateTimestamp!
             .toIso8601String();
 
-      if (updateData.isEmpty) {
-        return getById(id);
-      }
+      if (updateData.isEmpty) return existingClass;
 
-      await db.update(table: table, updateData: updateData, where: {"id": id});
+      await db.update(
+        table: table,
+        updateData: updateData,
+        where: {"class_id": id},
+      );
 
-      return getById(id);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+      return await getById(id);
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while updating the class...",
+          details: {"error": e.toString(), "stacktrace": s.toString()},
+        ),
+      );
     }
   }
 
   @override
   Future<Result<OutputClassDao>> delete(String id) async {
     MysqlUtils? db;
+
     try {
-      final existingRes = await getById(id);
-      if (existingRes.isFailure) return existingRes;
+      final existingClass = await getById(id);
+
+      if (existingClass.isFailure || existingClass.data == null)
+        return existingClass;
 
       db = await MysqlConfiguration.connect();
-      await db.delete(table: table, where: {"id": id});
 
-      return existingRes;
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+      await db.delete(table: table, where: {"class_id": id});
+
+      return existingClass;
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while deleting the class...",
+          details: {"error": e.toString(), "stacktrace": s.toString()},
+        ),
+      );
     }
   }
 }
