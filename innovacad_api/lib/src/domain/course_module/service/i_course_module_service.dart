@@ -5,6 +5,9 @@ abstract class ICourseModuleService {
   Future<Result<List<OutputCourseModuleDao>>> getAll();
   Future<Result<OutputCourseModuleDao>> getById(String id);
   Future<Result<OutputCourseModuleDao>> create(CreateCourseModuleDto dto);
-  Future<Result<OutputCourseModuleDao>> update(UpdateCourseModuleDto dto);
-  Future<Result<OutputCourseModuleDao>> delete(DeleteCourseModuleDto dto);
+  Future<Result<OutputCourseModuleDao>> update(
+    String id,
+    UpdateCourseModuleDto dto,
+  );
+  Future<Result<OutputCourseModuleDao>> delete(String id);
 }

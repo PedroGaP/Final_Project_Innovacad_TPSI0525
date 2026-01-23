@@ -30,7 +30,7 @@ class EmailController {
         ..subject = dto.subject
         ..html = dto.body;
 
-      final sendReport = await send(message, smtpServer);
+      await send(message, smtpServer);
 
       return resultToResponse(Result.success("Email sent successfully!"));
     } on MailerException catch (e, s) {

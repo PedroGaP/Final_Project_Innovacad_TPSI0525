@@ -1,7 +1,7 @@
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
-import 'package:innovacad_api/src/domain/enrollment/repository/i_enrollment_repository.dart';
+import 'package:innovacad_api/src/domain/domain.dart';
 import 'package:mysql_utils/mysql_utils.dart';
 import 'package:vaden/vaden.dart';
 
@@ -12,126 +12,175 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
   @override
   Future<Result<List<OutputEnrollmentDao>>> getAll() async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
+
       final results = await db.getAll(table: table);
-      
-      final items = results.map((row) {
-         return OutputEnrollmentDao(
-            enrollmentId: row["id"].toString(),
-            classId: row["class_id"].toString(),
-            traineeId: row["trainee_id"].toString(),
-            finalGrade: row["final_grade"] is num ? (row["final_grade"] as num).toDouble() : double.parse(row["final_grade"].toString())
-         );
+
+      final items = results.map((data) {
+        return OutputEnrollmentDao.fromJson(data);
       }).toList();
-      
+
       return Result.success(items);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while fetching the enrollments...",
+          details: {"error": e.toString(), "stacktrace": s.toString()},
+        ),
+      );
     }
   }
 
   @override
   Future<Result<OutputEnrollmentDao>> getById(String id) async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
-      final result = await db.getOne(table: table, where: {"id": id});
-      
-      if (result.isEmpty) {
-         return Result.failure(AppError(AppErrorType.notFound, "Enrollment not found"));
-      }
 
-      final dao = OutputEnrollmentDao(
-         enrollmentId: result["id"].toString(),
-         classId: result["class_id"].toString(),
-         traineeId: result["trainee_id"].toString(),
-         finalGrade: result["final_grade"] is num ? (result["final_grade"] as num).toDouble() : double.parse(result["final_grade"].toString())
+      final result =
+          await db.getOne(table: table, where: {"enrollment_id": id})
+              as Map<String, dynamic>;
+
+      if (result.isEmpty)
+        return Result.failure(
+          AppError(AppErrorType.notFound, "Enrollment not found"),
+        );
+
+      return Result.success(OutputEnrollmentDao.fromJson(result));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while fetching the enrollment...",
+          details: {"error": e.toString(), "stacktrace": s.toString()},
+        ),
       );
-      
-      return Result.success(dao);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
 
   @override
   Future<Result<OutputEnrollmentDao>> create(CreateEnrollmentDto dto) async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
-      
+
+      await db.startTrans();
+
       await db.insert(
-         table: table,
-         insertData: {
-            "class_id": dto.classId,
-            "trainee_id": dto.traineeId,
-            "final_grade": dto.finalGrade
-         }
+        table: table,
+        insertData: {
+          "class_id": dto.classId,
+          "trainee_id": dto.traineeId,
+          "final_grade": dto.finalGrade,
+        },
       );
-      
-      // Retrieval: class_id + trainee_id should be unique?
-      final created = await db.getOne(table: table, where: {
-         "class_id": dto.classId, 
-         "trainee_id": dto.traineeId
-      }); 
-       
-      if (created.isEmpty) {
-          return Result.failure(AppError(AppErrorType.internal, "Created Enrollment could not be retrieved"));
-      }
-      
-      return Result.success(OutputEnrollmentDao(
-         enrollmentId: created["id"].toString(), 
-         classId: created["class_id"].toString(),
-         traineeId: created["trainee_id"].toString(),
-         finalGrade: created["final_grade"] is num ? (created["final_grade"] as num).toDouble() : double.parse(created["final_grade"].toString())
-      ));
-      
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+
+      final created =
+          await db.getOne(
+                table: table,
+                where: {"class_id": dto.classId, "trainee_id": dto.traineeId},
+              )
+              as Map<String, dynamic>;
+
+      if (created.isEmpty)
+        return Result.failure(
+          AppError(
+            AppErrorType.internal,
+            "Created Enrollment could not be retrieved",
+          ),
+        );
+
+      await db.commit();
+
+      return Result.success(OutputEnrollmentDao.fromJson(created));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while creating the enrollment...",
+          details: {"error": e.toString(), "stacktrace": s.toString()},
+        ),
+      );
     }
   }
 
   @override
-  Future<Result<OutputEnrollmentDao>> update(UpdateEnrollmentDto dto) async {
+  Future<Result<OutputEnrollmentDao>> update(
+    String id,
+    UpdateEnrollmentDto dto,
+  ) async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
-      
+
+      final existingEnrollment = await getById(id);
+
+      if (existingEnrollment.isFailure || existingEnrollment.data == null)
+        return existingEnrollment;
+
       final updateData = <String, dynamic>{};
-      if (dto.classId != null) updateData["class_id"] = dto.classId;
-      if (dto.traineeId != null) updateData["trainee_id"] = dto.traineeId;
-      if (dto.finalGrade != null) updateData["final_grade"] = dto.finalGrade;
-      
-      if (updateData.isEmpty) {
-          return getById(dto.enrollmentId);
-      }
-      
+
+      if (dto.classId != null &&
+          dto.classId != existingEnrollment.data!.classId)
+        updateData["class_id"] = dto.classId;
+
+      if (dto.traineeId != null ||
+          dto.traineeId != existingEnrollment.data!.traineeId)
+        updateData["trainee_id"] = dto.traineeId;
+
+      if (dto.finalGrade != null ||
+          dto.finalGrade != existingEnrollment.data!.finalGrade)
+        updateData["final_grade"] = dto.finalGrade;
+
+      if (updateData.isEmpty) return existingEnrollment;
+
       await db.update(
-         table: table,
-         updateData: updateData,
-         where: {"id": dto.enrollmentId}
+        table: table,
+        updateData: updateData,
+        where: {"enrollment_id": id},
       );
-      
-      return getById(dto.enrollmentId);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+
+      return await getById(id);
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while updating the enrollment...",
+          details: {"error": e.toString(), "stackTrace": s.toString()},
+        ),
+      );
     }
   }
 
   @override
-  Future<Result<OutputEnrollmentDao>> delete(DeleteEnrollmentDto dto) async {
+  Future<Result<OutputEnrollmentDao>> delete(String id) async {
     MysqlUtils? db;
+
     try {
-      final existingRes = await getById(dto.enrollmentId);
-      if (existingRes.isFailure) return existingRes;
-      
+      final existingEnrollment = await getById(id);
+
+      if (existingEnrollment.isFailure || existingEnrollment.data == null)
+        return existingEnrollment;
+
       db = await MysqlConfiguration.connect();
-      await db.delete(table: table, where: {"id": dto.enrollmentId});
-      
-      return existingRes;
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+
+      await db.delete(table: table, where: {"enrollment_id": id});
+
+      return existingEnrollment;
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while deleting the enrollment...",
+          details: {"error": e.toString(), "stackTrace": s.toString()},
+        ),
+      );
     }
   }
 }

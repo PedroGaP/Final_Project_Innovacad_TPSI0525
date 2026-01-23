@@ -11,17 +11,24 @@ class ScheduleServiceImpl implements IScheduleService {
   ScheduleServiceImpl(this._repository);
 
   @override
-  Future<Result<List<OutputScheduleDao>>> getAll() async => _repository.getAll();
+  Future<Result<List<OutputScheduleDao>>> getAll() async =>
+      await _repository.getAll();
 
   @override
-  Future<Result<OutputScheduleDao>> getById(String id) async => _repository.getById(id);
+  Future<Result<OutputScheduleDao>> getById(String id) async =>
+      await _repository.getById(id);
 
   @override
-  Future<Result<OutputScheduleDao>> create(CreateScheduleDto dto) async => _repository.create(dto);
+  Future<Result<OutputScheduleDao>> create(CreateScheduleDto dto) async =>
+      await _repository.create(dto);
 
   @override
-  Future<Result<OutputScheduleDao>> update(UpdateScheduleDto dto) async => _repository.update(dto);
+  Future<Result<OutputScheduleDao>> update(
+    String id,
+    UpdateScheduleDto dto,
+  ) async => await _repository.update(id, dto);
 
   @override
-  Future<Result<OutputScheduleDao>> delete(DeleteScheduleDto dto) async => _repository.delete(dto);
+  Future<Result<OutputScheduleDao>> delete(String id) async =>
+      await _repository.delete(id);
 }

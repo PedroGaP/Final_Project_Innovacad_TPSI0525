@@ -1,7 +1,7 @@
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
-import 'package:innovacad_api/src/domain/class_module/repository/i_class_module_repository.dart';
+import 'package:innovacad_api/src/domain/domain.dart';
 import 'package:mysql_utils/mysql_utils.dart';
 import 'package:vaden/vaden.dart';
 
@@ -12,127 +12,178 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
   @override
   Future<Result<List<OutputClassModuleDao>>> getAll() async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
+
       final results = await db.getAll(table: table);
-      
-      final items = results.map((row) {
-         return OutputClassModuleDao(
-            classesModulesId: row["id"].toString(),
-            classId: row["class_id"].toString(),
-            coursesModulesId: row["courses_modules_id"].toString(),
-            currentDuration: row["current_duration"] is int ? row["current_duration"] : int.parse(row["current_duration"].toString())
-         );
+
+      final items = results.map((data) {
+        return OutputClassModuleDao.fromJson(data);
       }).toList();
-      
+
       return Result.success(items);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while fetching the class modules...",
+          details: {"error": e.toString(), "stackTrace": s.toString()},
+        ),
+      );
     }
   }
 
   @override
   Future<Result<OutputClassModuleDao>> getById(String id) async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
-      final result = await db.getOne(table: table, where: {"id": id});
-      
-      if (result.isEmpty) {
-         return Result.failure(AppError(AppErrorType.notFound, "ClassModule not found"));
-      }
 
-      final dao = OutputClassModuleDao(
-         classesModulesId: result["id"].toString(),
-         classId: result["class_id"].toString(),
-         coursesModulesId: result["courses_modules_id"].toString(),
-         currentDuration: result["current_duration"] is int ? result["current_duration"] : int.parse(result["current_duration"].toString())
+      final result =
+          await db.getOne(table: table, where: {"classes_modules_id": id})
+              as Map<String, dynamic>;
+
+      if (result.isEmpty)
+        return Result.failure(
+          AppError(AppErrorType.notFound, "ClassModule not found..."),
+        );
+
+      return Result.success(OutputClassModuleDao.fromJson(result));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while fetching the class module...",
+          details: {"error": e.toString(), "stackTrace": s.toString()},
+        ),
       );
-      
-      return Result.success(dao);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
 
   @override
   Future<Result<OutputClassModuleDao>> create(CreateClassModuleDto dto) async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
-      
+
+      await db.startTrans();
+
       await db.insert(
-         table: table,
-         insertData: {
-            "class_id": dto.classId,
-            "courses_modules_id": dto.coursesModulesId,
-            "current_duration": dto.currentDuration
-         }
+        table: table,
+        insertData: {
+          "class_id": dto.classId,
+          "courses_modules_id": dto.coursesModulesId,
+          "current_duration": dto.currentDuration,
+        },
       );
-      
-      // Retrieval strategy: by unique combo? class_id + courses_modules_id should ideally be unique? 
-      // If not, we might have issues.
-      final created = await db.getOne(table: table, where: {
-         "class_id": dto.classId, 
-         "courses_modules_id": dto.coursesModulesId
-      }); 
-       
-      if (created.isEmpty) {
-          return Result.failure(AppError(AppErrorType.internal, "Created ClassModule could not be retrieved"));
-      }
-      
-      return Result.success(OutputClassModuleDao(
-         classesModulesId: created["id"].toString(), 
-         classId: created["class_id"].toString(), 
-         coursesModulesId: created["courses_modules_id"].toString(),
-         currentDuration: created["current_duration"] is int ? created["current_duration"] : int.parse(created["current_duration"].toString())
-      ));
-      
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+
+      final created =
+          await db.getOne(
+                table: table,
+                where: {
+                  "class_id": dto.classId,
+                  "courses_modules_id": dto.coursesModulesId,
+                  "current_duration": dto.currentDuration,
+                },
+              )
+              as Map<String, dynamic>;
+
+      if (created.isEmpty)
+        return Result.failure(
+          AppError(
+            AppErrorType.internal,
+            "Created ClassModule could not be retrieved...",
+          ),
+        );
+
+      await db.commit();
+
+      return Result.success(OutputClassModuleDao.fromJson(created));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while creating the Class Module...",
+          details: {"error": e.toString(), "stackTrace": s.toString()},
+        ),
+      );
     }
   }
 
   @override
-  Future<Result<OutputClassModuleDao>> update(UpdateClassModuleDto dto) async {
+  Future<Result<OutputClassModuleDao>> update(
+    String id,
+    UpdateClassModuleDto dto,
+  ) async {
     MysqlUtils? db;
+
     try {
       db = await MysqlConfiguration.connect();
-      
+
+      final existingClassModule = await getById(id);
+
+      if (existingClassModule.isFailure || existingClassModule.data == null)
+        return existingClassModule;
+
       final updateData = <String, dynamic>{};
-      if (dto.classId != null) updateData["class_id"] = dto.classId;
-      if (dto.coursesModulesId != null) updateData["courses_modules_id"] = dto.coursesModulesId;
-      if (dto.currentDuration != null) updateData["current_duration"] = dto.currentDuration;
-      
-      if (updateData.isEmpty) {
-          return getById(dto.classesModulesId);
-      }
-      
+
+      if (dto.classId != null &&
+          dto.classId != existingClassModule.data!.classId)
+        updateData["class_id"] = dto.classId;
+
+      if (dto.coursesModulesId != null &&
+          dto.coursesModulesId != existingClassModule.data!.coursesModulesId)
+        updateData["courses_modules_id"] = dto.coursesModulesId;
+
+      if (dto.currentDuration != null &&
+          dto.currentDuration != existingClassModule.data!.currentDuration)
+        updateData["current_duration"] = dto.currentDuration;
+
+      if (updateData.isEmpty) return existingClassModule;
+
       await db.update(
-         table: table,
-         updateData: updateData,
-         where: {"id": dto.classesModulesId}
+        table: table,
+        updateData: updateData,
+        where: {"classes_modules_id": id},
       );
-      
-      return getById(dto.classesModulesId);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+
+      return await getById(id);
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while updating the Class Module...",
+          details: {"error": e.toString(), "stackTrace": s.toString()},
+        ),
+      );
     }
   }
 
   @override
-  Future<Result<OutputClassModuleDao>> delete(DeleteClassModuleDto dto) async {
+  Future<Result<OutputClassModuleDao>> delete(String id) async {
     MysqlUtils? db;
     try {
-      final existingRes = await getById(dto.classesModulesId);
-      if (existingRes.isFailure) return existingRes;
-      
+      final existingClassModule = await getById(id);
+
+      if (existingClassModule.isFailure || existingClassModule.data == null)
+        return existingClassModule;
+
       db = await MysqlConfiguration.connect();
-      await db.delete(table: table, where: {"id": dto.classesModulesId});
-      
-      return existingRes;
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+
+      await db.delete(table: table, where: {"classes_modules_id": id});
+
+      return existingClassModule;
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while deleting the Class Module...",
+          details: {"error": e.toString(), "stackTrace": s.toString()},
+        ),
+      );
     }
   }
 }

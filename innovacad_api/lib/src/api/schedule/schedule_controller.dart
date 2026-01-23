@@ -12,20 +12,17 @@ class ScheduleController {
 
   @Get('/')
   Future<Response> getAll() async {
-    final result = await _service.getAll();
-    return resultToResponse(result);
+    return resultToResponse(await _service.getAll());
   }
 
   @Get('/<id>')
   Future<Response> getById(@Param("id") String id) async {
-    final result = await _service.getById(id);
-    return resultToResponse(result);
+    return resultToResponse(await _service.getById(id));
   }
 
   @Post("/")
   Future<Response> create(@Body() CreateScheduleDto dto) async {
-    final result = await _service.create(dto);
-    return resultToResponse(result);
+    return resultToResponse(await _service.create(dto));
   }
 
   @Put("/<id>")
@@ -33,19 +30,11 @@ class ScheduleController {
     @Param("id") String id,
     @Body() UpdateScheduleDto dto,
   ) async {
-    if (dto.scheduleId != id) {
-       // Validate
-    }
-    final result = await _service.update(dto);
-    return resultToResponse(result);
+    return resultToResponse(await _service.update(id, dto));
   }
 
   @Delete('/<id>')
-  Future<Response> delete(
-    @Param("id") String id,
-    @Body() DeleteScheduleDto dto 
-  ) async {
-      final result = await _service.delete(dto);
-      return resultToResponse(result);
+  Future<Response> delete(@Param("id") String id) async {
+    return resultToResponse(await _service.delete(id));
   }
 }
