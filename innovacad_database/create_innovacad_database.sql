@@ -73,7 +73,7 @@ create table IF NOT EXISTS courses_modules
 
 create table IF NOT EXISTS classes_modules
 (
-    classes_modules_id varchar(36) not null primary key,
+    classes_modules_id varchar(36) default UUID() primary key,
     class_id           varchar(36) not null,
     courses_modules_id varchar(36) not null,
     current_duration   int(3) default 0,
