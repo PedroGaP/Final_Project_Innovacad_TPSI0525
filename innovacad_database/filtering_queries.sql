@@ -96,4 +96,4 @@ from verification;
 select *
 from user;
 
-UPDATE `user` SET `name` = 'joaozinha2' WHERE `id` = 'tqaBTOMYvRRbYDfvjBEaCTKDi95gFwOd'
+describe innovacad_tpsi0525.classes_modules;

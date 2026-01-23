@@ -73,16 +73,16 @@ create table
         FOREIGN KEY (sequence_course_module_id) REFERENCES courses_modules (courses_modules_id)
     );
 
-create table
-    IF NOT EXISTS classes_modules (
-        classes_modules_id varchar(36) not null primary key,
-        class_id varchar(36) not null,
-        courses_modules_id varchar(36) not null,
-        current_duration int (3) default 0,
-        UNIQUE (class_id, courses_modules_id),
-        FOREIGN KEY (class_id) REFERENCES classes (class_id),
-        FOREIGN KEY (courses_modules_id) REFERENCES courses_modules (courses_modules_id)
-    );
+create table IF NOT EXISTS classes_modules
+(
+    classes_modules_id varchar(36) default UUID() primary key,
+    class_id           varchar(36) not null,
+    courses_modules_id varchar(36) not null,
+    current_duration   int(3) default 0,
+    UNIQUE (class_id, courses_modules_id),
+    FOREIGN KEY (class_id) REFERENCES classes (class_id),
+    FOREIGN KEY (courses_modules_id) REFERENCES courses_modules (courses_modules_id)
+);
 
 create table
     IF NOT EXISTS grades (
