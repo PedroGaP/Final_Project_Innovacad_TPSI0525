@@ -9,7 +9,7 @@ part 'output_class_dao.g.dart';
 @DTO()
 @annotation.JsonSerializable()
 class OutputClassDao {
-  @annotation.JsonKey(name: 'id')
+  @annotation.JsonKey(name: 'class_id')
   final String classId;
 
   @annotation.JsonKey(name: 'course_id')

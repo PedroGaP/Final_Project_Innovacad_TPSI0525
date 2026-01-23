@@ -19,6 +19,8 @@ import VerifyEmail from "./pages/VerifyEmail";
 import Verify2FA from "./pages/Verify2FA";
 import ResetPasswordPage from "./pages/ResetPassword";
 import ForgotPasswordPage from "./pages/ForgotPassword";
+import CoursesPage from "./pages/Dashboard/Course";
+import GradesPage from "./pages/Dashboard/Grade";
 
 const routes: RouteDefinition[] = [
   {
@@ -70,6 +72,14 @@ const routes: RouteDefinition[] = [
       {
         path: "/classes",
         component: ClassesPage,
+      },
+      {
+        path: "/courses",
+        component: CoursesPage,
+      },
+      {
+        path: "/grades",
+        component: GradesPage,
       },
     ],
   },

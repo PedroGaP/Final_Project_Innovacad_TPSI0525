@@ -65,9 +65,9 @@ class ClassRepositoryImpl implements IClassRepository {
   Future<Result<OutputClassDao>> create(CreateClassDto dto) async {
     MysqlUtils? db;
 
+    db = await MysqlConfiguration.connect();
+    //db = MysqlUtils(settings: MysqlConfiguration.settings!);
     try {
-      db = await MysqlConfiguration.connect();
-
       await db.startTrans();
 
       await db.insert(
@@ -76,13 +76,17 @@ class ClassRepositoryImpl implements IClassRepository {
           "course_id": dto.courseId,
           "location": dto.location,
           "identifier": dto.identifier,
-          "status": dto.status,
+          "status": dto.status.toString(),
+          "start_date_timestamp": dto.startDateTimestamp.toIso8601String(),
+          "end_date_timestamp": dto.endDateTimestamp.toIso8601String(),
         },
+        debug: true,
       );
 
-      final created =
-          await db.getOne(table: table, where: {"identifier": dto.identifier})
-              as Map<String, dynamic>;
+      final created = await db.getOne(
+        table: table,
+        where: {"identifier": dto.identifier},
+      );
 
       if (created.isEmpty)
         return Result.failure(
@@ -94,7 +98,13 @@ class ClassRepositoryImpl implements IClassRepository {
 
       await db.commit();
 
-      return Result.success(OutputClassDao.fromJson(created));
+      return Result.success(
+        OutputClassDao.fromJson(
+          created
+              .map((k, v) => MapEntry(k.toString(), v))
+              .cast<String, dynamic>(),
+        ),
+      );
     } catch (e, s) {
       return Result.failure(
         AppError(

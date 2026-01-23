@@ -8,7 +8,7 @@ part of 'output_class_dao.dart';
 
 OutputClassDao _$OutputClassDaoFromJson(Map<String, dynamic> json) =>
     OutputClassDao(
-      classId: json['id'] as String,
+      classId: json['class_id'] as String,
       courseId: json['course_id'] as String,
       location: json['location'] as String,
       identifier: json['identifier'] as String,
@@ -23,7 +23,7 @@ OutputClassDao _$OutputClassDaoFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$OutputClassDaoToJson(OutputClassDao instance) =>
     <String, dynamic>{
-      'id': instance.classId,
+      'class_id': instance.classId,
       'course_id': instance.courseId,
       'location': instance.location,
       'identifier': instance.identifier,

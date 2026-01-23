@@ -116,13 +116,15 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
       "id",
       "traineeId",
       "trainerId",
+      "class_Id",
       "token",
       "session_token",
       "image",
       "verified",
       "role",
+      "tojson",
     ];
-    return excludedFields.includes(fieldName);
+    return excludedFields.includes(fieldName.toLocaleLowerCase());
   };
 
   const getEditableFieldKeys = (): string[] => {
@@ -132,7 +134,6 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
   return (
     <dialog id="edit_modal" class="modal modal-open">
       <div class="modal-box w-11/12 max-w-md p-0 overflow-hidden flex flex-col bg-base-100 rounded-xl">
-
         <div class="bg-linear-to-r from-primary to-primary/80 px-6 py-4 flex items-center justify-between shrink-0">
           <div class="flex-1">
             <h3 class="font-bold text-lg text-primary-content">

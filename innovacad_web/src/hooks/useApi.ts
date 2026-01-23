@@ -8,6 +8,13 @@ import {
 } from "@/api/api";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import type { SendVerificationData, SignInData } from "@/types/auth";
+import { Class, type ClassResponseData } from "@/types/class";
+import { Course, type CourseResponseData } from "@/types/course";
+import {
+  Grade,
+  type GradeResponseData,
+  type GradeTypeEnum,
+} from "@/types/grade";
 import {
   Account,
   LinkSocialData,
@@ -46,9 +53,15 @@ export const API_ENDPOINTS = {
     TRAINEES: "/trainees",
     TRAINERS: "/trainers",
   },
+  ENTITY: {
+    CLASS: "/classes",
+    COURSE: "/courses",
+    GRADE: "/grades",
+  },
 } as const;
 
 const baseUrl = "http://localhost:8080";
+//const baseUrl = "http://192.168.1.113:8080";
 const baseWebUrl = "http://localhost:5000";
 const SESSION_COOKIE_KEY = "better-auth.session_data";
 
@@ -790,32 +803,306 @@ export const useApi = () => {
     return res.data;
   };
 
+  /**
+   * Fetch all classes
+   */
+  const fetchClasses = async (): Promise<Class[]> => {
+    const res = await fetchApi<ClassResponseData[]>(
+      API_ENDPOINTS.ENTITY.CLASS,
+      "GET",
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(`Fetch classes failed: ${res.error?.message}`);
+    }
+
+    return res.data.map((item) => new Class(item));
+  };
+
+  /**
+   * Create a new class
+   */
+  const createClass = async (data: {
+    course_id: string | undefined;
+    location: string | undefined;
+    identifier: string | undefined;
+    status: string | undefined;
+    start_date_timestamp: string | undefined;
+    end_date_timestamp: string | undefined;
+  }): Promise<Class> => {
+    const res = await fetchApi<ClassResponseData>(
+      API_ENDPOINTS.ENTITY.CLASS,
+      "POST",
+      data,
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(`Create class failed: ${res.error?.message}`);
+    }
+
+    return new Class(res.data);
+  };
+
+  /*
+   * Delete an existing class
+   */
+  const deleteClass = async (classId: string): Promise<void> => {
+    const res = await fetchApi<void>(
+      `${API_ENDPOINTS.ENTITY.CLASS}/${classId}`,
+      "DELETE",
+    );
+
+    if (res.isError) {
+      throw new Error(`Delete class failed: ${res.error?.message}`);
+    }
+  };
+
+  /*
+   * Update an existing class
+   */
+  const updateClass = async (
+    classId: string,
+    data: {
+      course_id?: string | undefined;
+      location?: string | undefined;
+      identifier?: string | undefined;
+      status?: string | undefined;
+      start_date_timestamp?: string | undefined;
+      end_date_timestamp?: string | undefined;
+    },
+  ): Promise<Class> => {
+    const updateData: Record<string, any> = {};
+
+    if (data.course_id !== undefined) updateData.course_id = data.course_id;
+    if (data.location !== undefined) updateData.location = data.location;
+    if (data.identifier !== undefined) updateData.identifier = data.identifier;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.start_date_timestamp !== undefined)
+      updateData.start_date_timestamp = data.start_date_timestamp;
+    if (data.end_date_timestamp !== undefined)
+      updateData.end_date_timestamp = data.end_date_timestamp;
+
+    const res = await fetchApi<ClassResponseData>(
+      `${API_ENDPOINTS.ENTITY.CLASS}/${classId}`,
+      "PUT",
+      updateData,
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(`Update class failed: ${res.error?.message}`);
+    }
+
+    return new Class(res.data);
+  };
+
+  /**
+   * Fetch all courses
+   */
+  const fetchCourses = async (): Promise<Course[]> => {
+    const res = await fetchApi<CourseResponseData[]>(
+      API_ENDPOINTS.ENTITY.COURSE,
+      "GET",
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Fetch courses failed: ${res.error?.message}`);
+    }
+    const courses = res.data.map((item) => new Course(item));
+    console.log(courses);
+    return courses;
+  };
+
+  /**
+   * Create a new course
+   */
+  const createCourse = async (data: {
+    identifier: string | undefined;
+    name: string | undefined;
+  }): Promise<Course> => {
+    const res = await fetchApi<CourseResponseData>(
+      API_ENDPOINTS.ENTITY.COURSE,
+      "POST",
+      data,
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Create course failed: ${res.error?.message}`);
+    }
+    return new Course(res.data);
+  };
+
+  /**
+   * Update an existing course
+   */
+  const updateCourse = async (
+    courseId: string,
+    data: {
+      identifier?: string | undefined;
+      name?: string | undefined;
+    },
+  ): Promise<Course> => {
+    const updateData: Record<string, any> = {};
+
+    if (data.identifier !== undefined) updateData.identifier = data.identifier;
+    if (data.name !== undefined) updateData.name = data.name;
+
+    const res = await fetchApi<CourseResponseData>(
+      `${API_ENDPOINTS.ENTITY.COURSE}/${courseId}`,
+      "PUT",
+      updateData,
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Update course failed: ${res.error?.message}`);
+    }
+    return new Course(res.data);
+  };
+
+  /**
+   * Delete an existing course
+   */
+  const deleteCourse = async (courseId: string): Promise<void> => {
+    const res = await fetchApi<void>(
+      `${API_ENDPOINTS.ENTITY.COURSE}/${courseId}`,
+      "DELETE",
+    );
+
+    if (res.isError) {
+      throw new Error(`Delete course failed: ${res.error?.message}`);
+    }
+  };
+
+  /**
+   * Fetch all grades
+   */
+  const fetchGrades = async (): Promise<Grade[]> => {
+    const res = await fetchApi<GradeResponseData[]>(
+      `${API_ENDPOINTS.ENTITY.GRADE}`,
+      "GET",
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Fetch grades failed: ${res.error?.message}`);
+    }
+    const grades = res.data.map((item) => new Grade(item));
+    console.log(grades);
+    return grades;
+  };
+
+  /**
+   * Create a new grade
+   */
+  const createGrade = async (data: {
+    class_module_id: string | undefined;
+    trainee_id: string | undefined;
+    grade: string | undefined;
+    grade_type: string | undefined;
+  }): Promise<Grade> => {
+    const res = await fetchApi<GradeResponseData>(
+      `${API_ENDPOINTS.ENTITY.GRADE}`,
+      "POST",
+      data,
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Create grade failed: ${res.error?.message}`);
+    }
+    return new Grade(res.data);
+  };
+
+  /**
+   * Update an existing grade
+   */
+  const updateGrade = async (
+    gradeId: string,
+    data: {
+      class_module_id?: string;
+      trainee_id?: string;
+      grade?: string;
+      grade_type?: string;
+    },
+  ): Promise<Grade> => {
+    const updateData: Record<string, any> = {};
+
+    if (data.class_module_id !== undefined)
+      updateData.class_module_id = data.class_module_id;
+    if (data.trainee_id !== undefined) updateData.trainee_id = data.trainee_id;
+    if (data.grade !== undefined) updateData.grade = data.grade;
+    if (data.grade_type !== undefined) updateData.grade_type = data.grade_type;
+
+    const res = await fetchApi<GradeResponseData>(
+      `${API_ENDPOINTS.ENTITY.GRADE}/${gradeId}`,
+      "PUT",
+      updateData,
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Update grade failed: ${res.error?.message}`);
+    }
+    return new Grade(res.data);
+  };
+
+  /**
+   * Delete an existing grade
+   */
+  const deleteGrade = async (gradeId: string): Promise<void> => {
+    const res = await fetchApi<void>(
+      `${API_ENDPOINTS.ENTITY.GRADE}/${gradeId}`,
+      "DELETE",
+    );
+
+    if (res.isError) {
+      throw new Error(`Delete grade failed: ${res.error?.message}`);
+    }
+  };
+
   return {
+    // Sign In/Up
     signIn,
     signUp,
-    fetchTrainees,
-    fetchTrainers,
-    createTrainee,
-    updateTrainee,
-    deleteTrainee,
-    createTrainer,
-    updateTrainer,
-    deleteTrainer,
-    sendVerificationEmail,
-    verifyEmail,
-    checkUserEmailValidity,
-    getSession,
-    logoutUser,
-    linkSocial,
-    listAccounts,
-    sendEmail,
-    signInSocial,
-    is2FAEnabled,
-    enable2FA,
-    disable2FA,
     send2FA,
     verify2FA,
     requestPasswordReset,
     resetPassword,
+
+    // Email Verification
+    sendVerificationEmail,
+    verifyEmail,
+    checkUserEmailValidity,
+    sendEmail,
+
+    // User
+    getSession,
+    logoutUser,
+    linkSocial,
+    listAccounts,
+    signInSocial,
+    is2FAEnabled,
+    enable2FA,
+    disable2FA,
+
+    // Trainees
+    fetchTrainees,
+    createTrainee,
+    updateTrainee,
+    deleteTrainee,
+
+    // Trainers
+    fetchTrainers,
+    createTrainer,
+    updateTrainer,
+    deleteTrainer,
+
+    // Classes
+    fetchClasses,
+    createClass,
+    updateClass,
+    deleteClass,
+
+    // Courses
+    fetchCourses,
+    createCourse,
+    updateCourse,
+    deleteCourse,
+
+    // Grades
+    fetchGrades,
+    createGrade,
+    updateGrade,
+    deleteGrade,
   };
 };
