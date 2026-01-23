@@ -28,7 +28,13 @@ const DashboardLayout = (props: any) => {
       path: "",
     },
     {
-      icon: "Users",
+      icon: "Calendar",
+      size: 22,
+      path: "schedule",
+      title: "Schedule",
+    },
+    {
+      icon: "CircleUser",
       size: 22,
       path: "user",
       title: "Users",
@@ -49,6 +55,48 @@ const DashboardLayout = (props: any) => {
           role: "admin",
         },
       ],
+    },
+    {
+      icon: "School",
+      size: 22,
+      path: "courses",
+      title: "Courses",
+    },
+    {
+      icon: "Users",
+      size: 22,
+      path: "classes",
+      title: "Classes",
+    },
+    {
+      icon: "Book",
+      size: 22,
+      path: "modules",
+      title: "Modules",
+    },
+    {
+      icon: "Armchair",
+      size: 22,
+      path: "rooms",
+      title: "Rooms",
+    },
+    {
+      icon: "Sigma",
+      size: 22,
+      path: "grades",
+      title: "Grades",
+    },
+    {
+      icon: "BookUser",
+      size: 22,
+      path: "enrollments",
+      title: "Enrollments",
+    },
+    {
+      icon: "CalendarDays",
+      size: 22,
+      path: "availabilities",
+      title: "Availabilities",
     },
   ];
 

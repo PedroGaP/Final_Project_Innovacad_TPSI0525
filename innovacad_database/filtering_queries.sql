@@ -97,3 +97,6 @@ select *
 from user;
 
 describe innovacad_tpsi0525.classes_modules;
+
+INSERT INTO `classes` (`course_id`, `location`, `identifier`, `status`, `start_date_timestamp`, `end_date_timestamp`)
+VALUES ('834f65af-f8a1-11f0-adbc-e6c93dd26891', 'PAL', '0525', 'starting',' 2026-01-23T00:00:00.000', '2026-02-07T00:00:00.000');

@@ -2,16 +2,17 @@ import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
 import 'package:innovacad_api/src/data/class/enum/class_status_enum.dart';
 export 'package:innovacad_api/src/data/class/enum/class_status_enum.dart';
-import 'package:vaden/vaden.dart';
+import 'package:vaden/vaden.dart' as v;
 import 'package:json_annotation/json_annotation.dart' as annotation;
 import 'package:json_annotation/json_annotation.dart';
 
 part 'create_class_dto.g.dart';
 
-@DTO()
+@v.DTO()
 @annotation.JsonSerializable()
 class CreateClassDto {
   @annotation.JsonKey(name: 'course_id')
+  @v.JsonKey('course_id')
   final String courseId;
 
   @annotation.JsonKey(name: 'location')
@@ -24,10 +25,12 @@ class CreateClassDto {
   final ClassStatusEnum status;
 
   @annotation.JsonKey(name: 'start_date_timestamp')
+  @v.JsonKey('start_date_timestamp')
   @DateTimeConverter()
   final DateTime startDateTimestamp;
 
   @annotation.JsonKey(name: 'end_date_timestamp')
+  @v.JsonKey('end_date_timestamp')
   @DateTimeConverter()
   final DateTime endDateTimestamp;
 
