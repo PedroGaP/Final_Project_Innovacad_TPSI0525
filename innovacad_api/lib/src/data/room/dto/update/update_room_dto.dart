@@ -12,7 +12,26 @@ class UpdateRoomDto {
   @annotation.JsonKey(name: 'capacity')
   final int? capacity;
 
-  UpdateRoomDto({this.roomName, this.capacity});
+  @annotation.JsonKey(name: 'has_computers')
+  final bool? hasComputers;
+
+  @annotation.JsonKey(name: 'has_projector')
+  final bool? hasProjector;
+
+  @annotation.JsonKey(name: 'has_whiteboard')
+  final bool? hasWhiteboard;
+
+  @annotation.JsonKey(name: 'has_smartboard')
+  final bool? hasSmartboard;
+
+  UpdateRoomDto({
+    this.roomName,
+    this.capacity,
+    this.hasComputers,
+    this.hasProjector,
+    this.hasWhiteboard,
+    this.hasSmartboard,
+  });
 
   Map<String, dynamic> toJson() => _$UpdateRoomDtoToJson(this);
 

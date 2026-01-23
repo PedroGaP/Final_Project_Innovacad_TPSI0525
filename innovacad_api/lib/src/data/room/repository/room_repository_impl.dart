@@ -73,7 +73,14 @@ class RoomRepositoryImpl implements IRoomRepository {
 
       await db.insert(
         table: table,
-        insertData: {"room_name": dto.roomName, "capacity": dto.capacity},
+        insertData: {
+          "room_name": dto.roomName,
+          "capacity": dto.capacity,
+          "has_computers": dto.hasComputers,
+          "has_projector": dto.hasProjector,
+          "has_whiteboard": dto.hasWhiteboard,
+          "has_smartboard": dto.hasSmartboard,
+        },
       );
 
       final created =
@@ -120,6 +127,22 @@ class RoomRepositoryImpl implements IRoomRepository {
 
       if (dto.capacity != null && existingRoom.data!.capacity != dto.capacity)
         updateData["capacity"] = dto.capacity;
+
+      if (dto.hasComputers != null &&
+          existingRoom.data!.hasComputers != dto.hasComputers)
+        updateData["has_computers"] = dto.hasComputers;
+
+      if (dto.hasProjector != null &&
+          existingRoom.data!.hasProjector != dto.hasProjector)
+        updateData["has_projector"] = dto.hasProjector;
+
+      if (dto.hasWhiteboard != null &&
+          existingRoom.data!.hasWhiteboard != dto.hasWhiteboard)
+        updateData["has_whiteboard"] = dto.hasWhiteboard;
+
+      if (dto.hasSmartboard != null &&
+          existingRoom.data!.hasSmartboard != dto.hasSmartboard)
+        updateData["has_smartboard"] = dto.hasSmartboard;
 
       if (updateData.isEmpty) return existingRoom;
 
