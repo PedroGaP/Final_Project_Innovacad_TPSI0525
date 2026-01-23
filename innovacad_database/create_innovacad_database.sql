@@ -58,7 +58,11 @@ create table
     IF NOT EXISTS rooms (
         room_id int primary key auto_increment,
         room_name varchar(10) unique not null,
-        capacity int not null
+        capacity int not null,
+        has_computers bool not null default false,
+        has_projector bool not null default false,
+        has_whiteboard bool not null default false,
+        has_smartboard bool not null default false,
     );
 
 create table
