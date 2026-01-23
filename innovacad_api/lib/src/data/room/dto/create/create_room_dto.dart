@@ -12,7 +12,26 @@ class CreateRoomDto {
   @annotation.JsonKey(name: 'capacity')
   final int capacity;
 
-  CreateRoomDto({required this.roomName, required this.capacity});
+  @annotation.JsonKey(name: 'has_computers')
+  final bool hasComputers;
+
+  @annotation.JsonKey(name: 'has_projector')
+  final bool hasProjector;
+
+  @annotation.JsonKey(name: 'has_whiteboard')
+  final bool hasWhiteboard;
+
+  @annotation.JsonKey(name: 'has_smartboard')
+  final bool hasSmartboard;
+
+  CreateRoomDto({
+    required this.roomName,
+    required this.capacity,
+    required this.hasComputers,
+    required this.hasProjector,
+    required this.hasWhiteboard,
+    required this.hasSmartboard,
+  });
 
   Map<String, dynamic> toJson() => _$CreateRoomDtoToJson(this);
 
