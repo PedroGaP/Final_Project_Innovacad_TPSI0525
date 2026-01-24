@@ -21,6 +21,7 @@ import ResetPasswordPage from "./pages/ResetPassword";
 import ForgotPasswordPage from "./pages/ForgotPassword";
 import CoursesPage from "./pages/Dashboard/Course";
 import GradesPage from "./pages/Dashboard/Grade";
+import RoomsPage from "./pages/Dashboard/Room";
 
 const routes: RouteDefinition[] = [
   {
@@ -80,6 +81,10 @@ const routes: RouteDefinition[] = [
       {
         path: "/grades",
         component: GradesPage,
+      },
+      {
+        path: "/rooms",
+        component: RoomsPage,
       },
     ],
   },

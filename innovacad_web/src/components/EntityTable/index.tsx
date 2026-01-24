@@ -60,25 +60,33 @@ export default function EntityTable<T>({
   });
 
   const generateTableData = (field: FieldType<T>, entity: any) => {
-    let tableData: any =
-      field.customGeneration && field.customGeneration(entity);
+    const customGeneration = field.customGeneration;
+    let tableData: any = customGeneration && customGeneration(entity);
+    const fieldValue = entity[field.fieldName];
+    const fieldValueType = typeof fieldValue;
 
-    if (!tableData) {
-      tableData = entity[field.fieldName];
-    }
+    if (!tableData) tableData = fieldValue;
 
-    if (field.capitalizeValue) {
-      tableData = capitalize(String(tableData));
-    }
+    if (field.capitalizeValue) tableData = capitalize(String(tableData));
 
-    if (
-      !entity[field.fieldName] &&
-      typeof entity[field.fieldName] != "boolean"
-    ) {
-      return <td>N/A</td>;
-    }
+    if (!fieldValue && fieldValueType != "boolean") return <td>N/A</td>;
 
-    if (field.canCopy) {
+    if (!customGeneration && fieldValueType == "boolean")
+      return (
+        <td>
+          <div
+            class="badge"
+            classList={{
+              "badge-warning": !fieldValue,
+              "badge-success": fieldValue,
+            }}
+          >
+            {fieldValue ? "Yes" : "No"}
+          </div>
+        </td>
+      );
+
+    if (field.canCopy)
       tableData = (
         <CopyToClipboard val={String(entity[field.fieldName])}>
           <div class="overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-300 pb-1 text-xs font-mono max-w-52">
@@ -86,7 +94,6 @@ export default function EntityTable<T>({
           </div>
         </CopyToClipboard>
       );
-    }
 
     return (
       <td

@@ -1,4 +1,4 @@
-import 'package:vaden/vaden.dart' as vaden
+import 'package:vaden/vaden.dart' as vaden;
 import 'package:json_annotation/json_annotation.dart' as annotation;
 
 part 'create_room_dto.g.dart';
