@@ -1,4 +1,4 @@
-type RoomResponseData = {
+export type RoomResponseData = {
   room_id: number | undefined;
   room_name: string | undefined;
   capacity: number | undefined;

@@ -232,17 +232,6 @@ const TraineePage = () => {
           formattedName: "Verified",
           fieldName: "verified",
           smaller: true,
-          customGeneration: (e: Trainee) => (
-            <div
-              class="badge"
-              classList={{
-                "badge-warning": !e.verified,
-                "badge-success": e.verified,
-              }}
-            >
-              {e.verified ? "Yes" : "No"}
-            </div>
-          ),
         },
       ]}
     />

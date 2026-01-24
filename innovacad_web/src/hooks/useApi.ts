@@ -15,6 +15,7 @@ import {
   type GradeResponseData,
   type GradeTypeEnum,
 } from "@/types/grade";
+import { Room, type RoomResponseData } from "@/types/room";
 import {
   Account,
   LinkSocialData,
@@ -57,6 +58,7 @@ export const API_ENDPOINTS = {
     CLASS: "/classes",
     COURSE: "/courses",
     GRADE: "/grades",
+    ROOM: "/rooms",
   },
 } as const;
 
@@ -1050,6 +1052,101 @@ export const useApi = () => {
     }
   };
 
+  /**
+   * Fetch all rooms
+   */
+  const fetchRooms = async (): Promise<Room[]> => {
+    const res = await fetchApi<RoomResponseData[]>(
+      `${API_ENDPOINTS.ENTITY.ROOM}`,
+      "GET",
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Fetch rooms failed: ${res.error?.message}`);
+    }
+    const rooms = res.data.map((item) => new Room(item));
+    console.log(rooms);
+    return rooms;
+  };
+
+  /**
+   * Create a new room
+   */
+  const createRoom = async (data: {
+    room_name: string | undefined;
+    capacity: number | undefined;
+    has_computers: boolean | undefined;
+    has_projector: boolean | undefined;
+    has_whiteboard: boolean | undefined;
+    has_smartboard: boolean | undefined;
+  }): Promise<Room> => {
+    const res = await fetchApi<RoomResponseData>(
+      `${API_ENDPOINTS.ENTITY.ROOM}`,
+      "POST",
+      data,
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Create room failed: ${res.error?.message}`);
+    }
+    return new Room(res.data);
+  };
+
+  /**
+   * Update an existing grade
+   */
+  const updateRoom = async (
+    roomId: string,
+    data: {
+      room_name?: string;
+      capacity?: number;
+      has_computers?: boolean;
+      has_projector?: boolean;
+      has_whiteboard?: boolean;
+      has_smartboard?: boolean;
+    },
+  ): Promise<Room> => {
+    const updateData: Record<string, any> = {};
+
+    if (data.room_name !== undefined) updateData.room_name = data.room_name;
+
+    if (data.capacity !== undefined) updateData.capacity = data.capacity;
+
+    if (data.has_computers !== undefined)
+      updateData.has_computers = data.has_computers;
+
+    if (data.has_projector !== undefined)
+      updateData.has_projector = data.has_projector;
+
+    if (data.has_whiteboard !== undefined)
+      updateData.has_whiteboard = data.has_whiteboard;
+
+    if (data.has_smartboard !== undefined)
+      updateData.has_smartboard = data.has_smartboard;
+
+    const res = await fetchApi<RoomResponseData>(
+      `${API_ENDPOINTS.ENTITY.ROOM}/${roomId}`,
+      "PUT",
+      updateData,
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Update room failed: ${res.error?.message}`);
+    }
+    return new Room(res.data);
+  };
+
+  /**
+   * Delete an existing grade
+   */
+  const deleteRoom = async (roomId: string): Promise<void> => {
+    const res = await fetchApi<void>(
+      `${API_ENDPOINTS.ENTITY.ROOM}/${roomId}`,
+      "DELETE",
+    );
+
+    if (res.isError) {
+      throw new Error(`Delete room failed: ${res.error?.message}`);
+    }
+  };
+
   return {
     // Sign In/Up
     signIn,
@@ -1104,5 +1201,11 @@ export const useApi = () => {
     createGrade,
     updateGrade,
     deleteGrade,
+
+    // Rooms
+    fetchRooms,
+    createRoom,
+    updateRoom,
+    deleteRoom,
   };
 };
