@@ -66,7 +66,7 @@ class ClassRepositoryImpl implements IClassRepository {
     MysqlUtils? db;
 
     db = await MysqlConfiguration.connect();
-    //db = MysqlUtils(settings: MysqlConfiguration.settings!);
+
     try {
       await db.startTrans();
 
@@ -76,7 +76,7 @@ class ClassRepositoryImpl implements IClassRepository {
           "course_id": dto.courseId,
           "location": dto.location,
           "identifier": dto.identifier,
-          "status": dto.status.toString(),
+          "status": dto.status.name,
           "start_date_timestamp": dto.startDateTimestamp.toIso8601String(),
           "end_date_timestamp": dto.endDateTimestamp.toIso8601String(),
         },

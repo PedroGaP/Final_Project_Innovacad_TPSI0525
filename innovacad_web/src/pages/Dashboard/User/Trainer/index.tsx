@@ -12,10 +12,21 @@ import { newPasswordEmail } from "@/components/NewPasswordEmail";
 
 const PAGE_SIZE = 10;
 
-const epochToDate = (epoch: number | string): string => {
-  if (!epoch) return "";
+const epochToDateTime = (epoch: number | string): string => {
+  if (!epoch || isNaN(Number(epoch)) || Number(epoch) <= 0) return "";
+
   const date = new Date(Number(epoch));
-  return date.toISOString().split("T")[0];
+  if (isNaN(date.getTime())) return "";
+
+  const pad = (n: number) => n.toString().padStart(2, "0");
+
+  const yyyy = date.getFullYear();
+  const mm = pad(date.getMonth() + 1);
+  const dd = pad(date.getDate());
+  const hh = pad(date.getHours());
+  const min = pad(date.getMinutes());
+
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
 };
 
 const createEmptyTrainer = (): Trainer =>
@@ -230,7 +241,7 @@ const TrainerPage = () => {
   };
 
   const handleEditClick = (user: Trainer) => {
-    const dateStr = epochToDate(user.birthdayDate!);
+    const dateStr = epochToDateTime(user.birthdayDate!);
     const trainerClone = { ...user, birthdayDate: dateStr } as any as Trainer;
     setOriginalTrainer(trainerClone);
     setEditingUser(trainerClone);

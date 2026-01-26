@@ -20,13 +20,21 @@ const createEmptyTrainee = (): Trainee =>
     session_token: "",
   }) as unknown as Trainee;
 
-const epochToDate = (epoch: number | string): string => {
+const epochToDateTime = (epoch: number | string): string => {
   if (!epoch || isNaN(Number(epoch)) || Number(epoch) <= 0) return "";
 
   const date = new Date(Number(epoch));
   if (isNaN(date.getTime())) return "";
 
-  return date.toISOString().split("T")[0];
+  const pad = (n: number) => n.toString().padStart(2, "0");
+
+  const yyyy = date.getFullYear();
+  const mm = pad(date.getMonth() + 1);
+  const dd = pad(date.getDate());
+  const hh = pad(date.getHours());
+  const min = pad(date.getMinutes());
+
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
 };
 
 const validateTrainee = (
@@ -177,7 +185,7 @@ const TraineePage = () => {
       data={usersData}
       handleEditClick={(user) => ({
         ...user,
-        birthdayDate: epochToDate(user.birthdayDate!),
+        birthdayDate: epochToDateTime(user.birthdayDate!),
       })}
       handleAddClick={() => createEmptyTrainee()}
       confirmDelete={confirmDelete}
@@ -220,7 +228,7 @@ const TraineePage = () => {
         {
           formattedName: "Birthday Date",
           fieldName: "birthdayDate",
-          customGeneration: (e: Trainee) => epochToDate(e.birthdayDate!),
+          customGeneration: (e: Trainee) => epochToDateTime(e.birthdayDate!),
         },
         {
           formattedName: "Role",

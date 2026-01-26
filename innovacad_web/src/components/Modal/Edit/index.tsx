@@ -61,6 +61,27 @@ const getAutocompleteValue = (fieldName: string): string => {
   return "off";
 };
 
+const formatDateForInput = (val: any): string => {
+  if (!val) return "";
+
+  const numericVal =
+    typeof val === "string" && /^\d+$/.test(val)
+      ? Number.parseInt(val, 10)
+      : val;
+
+  const date = new Date(numericVal);
+
+  if (isNaN(date.getTime())) return "";
+
+  const YYYY = date.getFullYear();
+  const MM = String(date.getMonth() + 1).padStart(2, "0");
+  const DD = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+
+  return `${YYYY}-${MM}-${DD}T${hh}:${mm}`;
+};
+
 const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
   const [formData, setFormData] = createSignal<T>(props.value);
   const [loading, setLoading] = createSignal(false);
@@ -92,13 +113,20 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
   };
 
   const getFieldType = (fieldName: string, value: any): string => {
-    if (fieldName.toLowerCase().includes("email")) return "email";
+    const f = fieldName.toLowerCase();
+    if (f.includes("email")) return "email";
+
     if (
-      fieldName.toLowerCase().includes("date") ||
-      fieldName.toLowerCase().includes("birthday")
-    )
-      return "date";
-    if (fieldName.toLowerCase().includes("password")) return "password";
+      f.includes("date") ||
+      f.includes("birthday") ||
+      f.includes("time") ||
+      f.includes("createdAt") ||
+      f.includes("updatedAt")
+    ) {
+      return "datetime-local";
+    }
+
+    if (f.includes("password")) return "password";
     if (typeof value === "boolean") return "checkbox";
     if (typeof value === "number") return "number";
     return "text";
@@ -199,10 +227,22 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
                       autocomplete={getAutocompleteValue(fieldName) as string}
                       placeholder={`Enter ${getFieldLabel(fieldName).toLowerCase()}`}
                       class="input input-bordered w-full focus:input-primary"
-                      value={String(fieldValue() || "")}
-                      onInput={(e) =>
-                        handleInputChange(fieldName, e.currentTarget.value)
+                      value={
+                        fieldType === "datetime-local"
+                          ? formatDateForInput(fieldValue())
+                          : String(fieldValue() || "")
                       }
+                      onInput={(e) => {
+                        const val = e.currentTarget.value;
+                        if (fieldType === "datetime-local") {
+                          const timestamp = new Date(val).getTime();
+                          if (!isNaN(timestamp)) {
+                            handleInputChange(fieldName, timestamp);
+                          }
+                        } else {
+                          handleInputChange(fieldName, val);
+                        }
+                      }}
                       disabled={isFieldDisabled(fieldName)}
                     />
                   </div>

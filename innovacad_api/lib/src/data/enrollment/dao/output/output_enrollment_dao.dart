@@ -16,7 +16,7 @@ class OutputEnrollmentDao {
   final String traineeId;
 
   @annotation.JsonKey(name: 'final_grade')
-  final double finalGrade;
+  final String finalGrade;
 
   OutputEnrollmentDao({
     required this.enrollmentId,

@@ -142,6 +142,7 @@ create table
         class_id varchar(36) not null,
         trainee_id varchar(36) not null,
         final_grade decimal(4, 2) default 00.00,
+        UNIQUE (class_id, trainee_id),
         FOREIGN KEY (class_id) REFERENCES classes (class_id) ON DELETE CASCADE,
         FOREIGN KEY (trainee_id) REFERENCES trainees (trainee_id) ON DELETE CASCADE
     );
