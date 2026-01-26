@@ -23,6 +23,7 @@ import CoursesPage from "./pages/Dashboard/Course";
 import GradesPage from "./pages/Dashboard/Grade";
 import RoomsPage from "./pages/Dashboard/Room";
 import ModulesPage from "./pages/Dashboard/Module";
+import { EventCalendar } from "./components/EventCalendar";
 
 const routes: RouteDefinition[] = [
   {
@@ -90,6 +91,10 @@ const routes: RouteDefinition[] = [
       {
         path: "/modules",
         component: ModulesPage,
+      },
+      {
+        path: "/calendar",
+        component: EventCalendar,
       },
     ],
   },

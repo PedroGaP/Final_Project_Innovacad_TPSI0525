@@ -30,7 +30,7 @@ const DashboardLayout = (props: any) => {
     {
       icon: "Calendar",
       size: 22,
-      path: "schedule",
+      path: "calendar",
       title: "Schedule",
     },
     {
