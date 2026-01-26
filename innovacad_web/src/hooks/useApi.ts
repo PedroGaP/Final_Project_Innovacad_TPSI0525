@@ -10,6 +10,7 @@ import { useUserDetails } from "@/providers/UserDetailsProvider";
 import type { SendVerificationData, SignInData } from "@/types/auth";
 import { Class, type ClassResponseData } from "@/types/class";
 import { Course, type CourseResponseData } from "@/types/course";
+import { Enrollment, type EnrollmentResponseData } from "@/types/enrollment";
 import {
   Grade,
   type GradeResponseData,
@@ -61,6 +62,7 @@ export const API_ENDPOINTS = {
     GRADE: "/grades",
     ROOM: "/rooms",
     MODULE: "/modules",
+    ENROLLMENT: "/enrollments",
   },
 } as const;
 
@@ -1244,6 +1246,86 @@ export const useApi = () => {
     }
   };
 
+  /**
+   * Fetch all enrollments
+   */
+  const fetchEnrollments = async (): Promise<Enrollment[]> => {
+    const res = await fetchApi<EnrollmentResponseData[]>(
+      `${API_ENDPOINTS.ENTITY.ENROLLMENT}`,
+      "GET",
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Fetch enrollment failed: ${res.error?.message}`);
+    }
+    const rooms = res.data.map((item) => new Enrollment(item));
+    console.log(rooms);
+    return rooms;
+  };
+
+  /**
+   * Create a new enrollment
+   */
+  const createEnrollment = async (data: {
+    class_id: string | undefined;
+    trainee_id: string | undefined;
+    final_grade: string | undefined;
+  }): Promise<Enrollment> => {
+    const res = await fetchApi<EnrollmentResponseData>(
+      `${API_ENDPOINTS.ENTITY.ENROLLMENT}`,
+      "POST",
+      data,
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Create enrollment failed: ${res.error?.message}`);
+    }
+    return new Enrollment(res.data);
+  };
+
+  /**
+   * Update an existing enrollment
+   */
+  const updateEnrollment = async (
+    enrollmentId: string,
+    data: {
+      class_id?: string;
+      trainee_id?: string;
+      final_grade?: string;
+    },
+  ): Promise<Enrollment> => {
+    const updateData: Record<string, any> = {};
+
+    if (data.class_id !== undefined) updateData.class_id = data.class_id;
+
+    if (data.trainee_id !== undefined) updateData.trainee_id = data.trainee_id;
+
+    if (data.final_grade !== undefined)
+      updateData.final_grade = data.final_grade;
+
+    const res = await fetchApi<EnrollmentResponseData>(
+      `${API_ENDPOINTS.ENTITY.ENROLLMENT}/${enrollmentId}`,
+      "PUT",
+      updateData,
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Update enrollment failed: ${res.error?.message}`);
+    }
+    return new Enrollment(res.data);
+  };
+
+  /**
+   * Delete an existing enrollment
+   */
+  const deleteEnrollment = async (enrollmentId: string): Promise<void> => {
+    const res = await fetchApi<void>(
+      `${API_ENDPOINTS.ENTITY.ENROLLMENT}/${enrollmentId}`,
+      "DELETE",
+    );
+
+    if (res.isError) {
+      throw new Error(`Delete enrollment failed: ${res.error?.message}`);
+    }
+  };
+
   return {
     // Sign In/Up
     signIn,
@@ -1310,5 +1392,11 @@ export const useApi = () => {
     createModule,
     updateModule,
     deleteModule,
+
+    // Enrollments
+    fetchEnrollments,
+    createEnrollment,
+    updateEnrollment,
+    deleteEnrollment,
   };
 };

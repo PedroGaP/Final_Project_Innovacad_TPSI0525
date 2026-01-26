@@ -1,4 +1,4 @@
-type EnrollmentResponseData = {
+export type EnrollmentResponseData = {
   enrollment_id: string | undefined;
   class_id: string | undefined;
   trainee_id: string | undefined;
