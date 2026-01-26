@@ -69,7 +69,7 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
     try {
       db = await MysqlConfiguration.connect();
 
-      await db.startTrans();
+      //await db.startTrans();
 
       await db.insert(
         table: table,
@@ -99,7 +99,7 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
           ),
         );
 
-      await db.commit();
+      //      await db.commit();
 
       return Result.success(OutputClassModuleDao.fromJson(created));
     } catch (e, s) {
