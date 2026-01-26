@@ -8,6 +8,10 @@ import {
 } from "@/api/api";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import type { SendVerificationData, SignInData } from "@/types/auth";
+import {
+  Availability,
+  type AvailabilityResponseData,
+} from "@/types/availability";
 import { Class, type ClassResponseData } from "@/types/class";
 import { Course, type CourseResponseData } from "@/types/course";
 import { Enrollment, type EnrollmentResponseData } from "@/types/enrollment";
@@ -63,6 +67,7 @@ export const API_ENDPOINTS = {
     ROOM: "/rooms",
     MODULE: "/modules",
     ENROLLMENT: "/enrollments",
+    AVAILABILITY: "/availabilities",
   },
 } as const;
 
@@ -1326,6 +1331,81 @@ export const useApi = () => {
     }
   };
 
+  /**
+   * Fetch all availabilities
+   */
+  const fetchAvailabilities = async (): Promise<Availability[]> => {
+    const res = await fetchApi<AvailabilityResponseData[]>(
+      `${API_ENDPOINTS.ENTITY.AVAILABILITY}`,
+      "GET",
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Fetch availabilities failed: ${res.error?.message}`);
+    }
+    const rooms = res.data.map((item) => new Availability(item));
+    console.log(rooms);
+    return rooms;
+  };
+
+  /**
+   * Create a new availability
+   */
+  const createAvailability = async (data: {
+    trainer_id: string | undefined;
+    status: string | undefined;
+  }): Promise<Availability> => {
+    const res = await fetchApi<AvailabilityResponseData>(
+      `${API_ENDPOINTS.ENTITY.AVAILABILITY}`,
+      "POST",
+      data,
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Create availability failed: ${res.error?.message}`);
+    }
+    return new Availability(res.data);
+  };
+
+  /**
+   * Update an existing availability
+   */
+  const updateAvailability = async (
+    availabilityId: string,
+    data: {
+      trainer_id?: string;
+      status?: string;
+    },
+  ): Promise<Availability> => {
+    const updateData: Record<string, any> = {};
+
+    if (data.trainer_id !== undefined) updateData.trainer_id = data.trainer_id;
+
+    if (data.status !== undefined) updateData.status = data.status;
+
+    const res = await fetchApi<AvailabilityResponseData>(
+      `${API_ENDPOINTS.ENTITY.AVAILABILITY}/${availabilityId}`,
+      "PUT",
+      updateData,
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Update availability failed: ${res.error?.message}`);
+    }
+    return new Availability(res.data);
+  };
+
+  /**
+   * Delete an existing availability
+   */
+  const deleteAvailability = async (availabilityId: string): Promise<void> => {
+    const res = await fetchApi<void>(
+      `${API_ENDPOINTS.ENTITY.AVAILABILITY}/${availabilityId}`,
+      "DELETE",
+    );
+
+    if (res.isError) {
+      throw new Error(`Delete availability failed: ${res.error?.message}`);
+    }
+  };
+
   return {
     // Sign In/Up
     signIn,
@@ -1398,5 +1478,11 @@ export const useApi = () => {
     createEnrollment,
     updateEnrollment,
     deleteEnrollment,
+
+    // Availabilities
+    fetchAvailabilities,
+    createAvailability,
+    updateAvailability,
+    deleteAvailability,
   };
 };
