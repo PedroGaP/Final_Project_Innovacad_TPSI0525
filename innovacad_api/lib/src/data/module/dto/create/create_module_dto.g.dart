@@ -10,7 +10,18 @@ CreateModuleDto _$CreateModuleDtoFromJson(Map<String, dynamic> json) =>
     CreateModuleDto(
       name: json['name'] as String,
       duration: (json['duration'] as num).toInt(),
+      hasComputers: json['has_computers'] as bool,
+      hasProjector: json['has_projector'] as bool,
+      hasWhiteboard: json['has_whiteboard'] as bool,
+      hasSmartboard: json['has_smartboard'] as bool,
     );
 
 Map<String, dynamic> _$CreateModuleDtoToJson(CreateModuleDto instance) =>
-    <String, dynamic>{'name': instance.name, 'duration': instance.duration};
+    <String, dynamic>{
+      'name': instance.name,
+      'duration': instance.duration,
+      'has_computers': instance.hasComputers,
+      'has_projector': instance.hasProjector,
+      'has_whiteboard': instance.hasWhiteboard,
+      'has_smartboard': instance.hasSmartboard,
+    };

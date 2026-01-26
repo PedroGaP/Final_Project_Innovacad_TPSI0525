@@ -76,7 +76,14 @@ class ModuleRepositoryImpl implements IModuleRepository {
 
       await db.insert(
         table: table,
-        insertData: {"name": dto.name, "duration": dto.duration},
+        insertData: {
+          "name": dto.name,
+          "duration": dto.duration,
+          "has_computers": dto.hasComputers,
+          "has_projector": dto.hasProjector,
+          "has_whiteboard": dto.hasWhiteboard,
+          "has_smartboard": dto.hasSmartboard,
+        },
       );
 
       final created =
@@ -124,6 +131,22 @@ class ModuleRepositoryImpl implements IModuleRepository {
 
       if (dto.duration != null && existingModule.data!.duration != dto.duration)
         updateData["duration"] = dto.duration;
+
+      if (dto.hasComputers != null &&
+          existingModule.data!.hasComputers != dto.hasComputers)
+        updateData["has_computers"] = dto.hasComputers;
+
+      if (dto.hasProjector != null &&
+          existingModule.data!.hasProjector != dto.hasProjector)
+        updateData["has_projector"] = dto.hasProjector;
+
+      if (dto.hasWhiteboard != null &&
+          existingModule.data!.hasWhiteboard != dto.hasWhiteboard)
+        updateData["has_whiteboard"] = dto.hasWhiteboard;
+
+      if (dto.hasSmartboard != null &&
+          existingModule.data!.hasSmartboard != dto.hasSmartboard)
+        updateData["has_smartboard"] = dto.hasSmartboard;
 
       if (updateData.isEmpty) return existingModule;
 
