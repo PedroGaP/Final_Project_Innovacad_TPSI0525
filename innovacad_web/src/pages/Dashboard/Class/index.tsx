@@ -14,13 +14,21 @@ const createEmptyClass = (): Class =>
     end_date_timestamp: "",
   }) as unknown as Class;
 
-const epochToDate = (epoch: number | string): string => {
+const epochToDateTime = (epoch: number | string): string => {
   if (!epoch || isNaN(Number(epoch)) || Number(epoch) <= 0) return "";
 
   const date = new Date(Number(epoch));
   if (isNaN(date.getTime())) return "";
 
-  return date.toISOString().split("T")[0];
+  const pad = (n: number) => n.toString().padStart(2, "0");
+
+  const yyyy = date.getFullYear();
+  const mm = pad(date.getMonth() + 1);
+  const dd = pad(date.getDate());
+  const hh = pad(date.getHours());
+  const min = pad(date.getMinutes());
+
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
 };
 
 const validateClass = (klass: Class): { valid: boolean; errors: string[] } => {
@@ -210,13 +218,13 @@ const ClassesPage = () => {
           formattedName: "Start Date",
           fieldName: "start_date_timestamp",
           customGeneration: (e: Class) =>
-            epochToDate(String(e.start_date_timestamp!)),
+            epochToDateTime(String(e.start_date_timestamp!)),
         },
         {
           formattedName: "End Date",
           fieldName: "end_date_timestamp",
           customGeneration: (e: Class) =>
-            epochToDate(String(e.end_date_timestamp!)),
+            epochToDateTime(String(e.end_date_timestamp!)),
         },
       ]}
     ></EntityTable>

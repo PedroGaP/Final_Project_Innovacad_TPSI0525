@@ -24,6 +24,7 @@ import GradesPage from "./pages/Dashboard/Grade";
 import RoomsPage from "./pages/Dashboard/Room";
 import ModulesPage from "./pages/Dashboard/Module";
 import EnrollmentsPage from "./pages/Dashboard/Enrollment";
+import AvailabilitiesPage from "./pages/Dashboard/Availability";
 
 const routes: RouteDefinition[] = [
   {
@@ -95,6 +96,10 @@ const routes: RouteDefinition[] = [
       {
         path: "/enrollments",
         component: EnrollmentsPage,
+      },
+      {
+        path: "/availabilities",
+        component: AvailabilitiesPage,
       },
     ],
   },
