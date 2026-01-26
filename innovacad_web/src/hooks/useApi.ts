@@ -15,6 +15,7 @@ import {
   type GradeResponseData,
   type GradeTypeEnum,
 } from "@/types/grade";
+import { Module, type ModuleResponseData } from "@/types/module";
 import { Room, type RoomResponseData } from "@/types/room";
 import {
   Account,
@@ -59,6 +60,7 @@ export const API_ENDPOINTS = {
     COURSE: "/courses",
     GRADE: "/grades",
     ROOM: "/rooms",
+    MODULE: "/modules",
   },
 } as const;
 
@@ -1147,6 +1149,101 @@ export const useApi = () => {
     }
   };
 
+  /**
+   * Fetch all modules
+   */
+  const fetchModules = async (): Promise<Module[]> => {
+    const res = await fetchApi<ModuleResponseData[]>(
+      `${API_ENDPOINTS.ENTITY.MODULE}`,
+      "GET",
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Fetch modules failed: ${res.error?.message}`);
+    }
+    const rooms = res.data.map((item) => new Module(item));
+    console.log(rooms);
+    return rooms;
+  };
+
+  /**
+   * Create a new module
+   */
+  const createModule = async (data: {
+    name: string | undefined;
+    duration: number | undefined;
+    has_computers: boolean | undefined;
+    has_projector: boolean | undefined;
+    has_whiteboard: boolean | undefined;
+    has_smartboard: boolean | undefined;
+  }): Promise<Module> => {
+    const res = await fetchApi<ModuleResponseData>(
+      `${API_ENDPOINTS.ENTITY.MODULE}`,
+      "POST",
+      data,
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Create module failed: ${res.error?.message}`);
+    }
+    return new Module(res.data);
+  };
+
+  /**
+   * Update an existing module
+   */
+  const updateModule = async (
+    moduleId: string,
+    data: {
+      name?: string;
+      duration?: number;
+      has_computers?: boolean;
+      has_projector?: boolean;
+      has_whiteboard?: boolean;
+      has_smartboard?: boolean;
+    },
+  ): Promise<Module> => {
+    const updateData: Record<string, any> = {};
+
+    if (data.name !== undefined) updateData.name = data.name;
+
+    if (data.duration !== undefined) updateData.duration = data.duration;
+
+    if (data.has_computers !== undefined)
+      updateData.has_computers = data.has_computers;
+
+    if (data.has_projector !== undefined)
+      updateData.has_projector = data.has_projector;
+
+    if (data.has_whiteboard !== undefined)
+      updateData.has_whiteboard = data.has_whiteboard;
+
+    if (data.has_smartboard !== undefined)
+      updateData.has_smartboard = data.has_smartboard;
+
+    const res = await fetchApi<ModuleResponseData>(
+      `${API_ENDPOINTS.ENTITY.MODULE}/${moduleId}`,
+      "PUT",
+      updateData,
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Update module failed: ${res.error?.message}`);
+    }
+    return new Module(res.data);
+  };
+
+  /**
+   * Delete an existing module
+   */
+  const deleteModule = async (moduleId: string): Promise<void> => {
+    const res = await fetchApi<void>(
+      `${API_ENDPOINTS.ENTITY.MODULE}/${moduleId}`,
+      "DELETE",
+    );
+
+    if (res.isError) {
+      throw new Error(`Delete module failed: ${res.error?.message}`);
+    }
+  };
+
   return {
     // Sign In/Up
     signIn,
@@ -1207,5 +1304,11 @@ export const useApi = () => {
     createRoom,
     updateRoom,
     deleteRoom,
+
+    // Modules
+    fetchModules,
+    createModule,
+    updateModule,
+    deleteModule,
   };
 };

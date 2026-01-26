@@ -22,6 +22,7 @@ import ForgotPasswordPage from "./pages/ForgotPassword";
 import CoursesPage from "./pages/Dashboard/Course";
 import GradesPage from "./pages/Dashboard/Grade";
 import RoomsPage from "./pages/Dashboard/Room";
+import ModulesPage from "./pages/Dashboard/Module";
 
 const routes: RouteDefinition[] = [
   {
@@ -85,6 +86,10 @@ const routes: RouteDefinition[] = [
       {
         path: "/rooms",
         component: RoomsPage,
+      },
+      {
+        path: "/modules",
+        component: ModulesPage,
       },
     ],
   },
