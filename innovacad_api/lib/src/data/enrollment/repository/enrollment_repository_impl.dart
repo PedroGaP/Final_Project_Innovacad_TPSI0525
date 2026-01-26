@@ -76,7 +76,7 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
         insertData: {
           "class_id": dto.classId,
           "trainee_id": dto.traineeId,
-          "final_grade": dto.finalGrade,
+          "final_grade": dto.finalGradeDouble,
         },
       );
 
@@ -136,7 +136,7 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
 
       if (dto.finalGrade != null ||
           dto.finalGrade != existingEnrollment.data!.finalGrade)
-        updateData["final_grade"] = dto.finalGrade;
+        updateData["final_grade"] = dto.finalGradeDouble;
 
       if (updateData.isEmpty) return existingEnrollment;
 
