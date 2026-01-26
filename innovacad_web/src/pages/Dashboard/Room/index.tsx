@@ -2,7 +2,6 @@ import { createResource } from "solid-js";
 import type { Room } from "@/types/room";
 import { useApi } from "@/hooks/useApi";
 import toast from "solid-toast";
-import { newPasswordEmail } from "@/components/NewPasswordEmail";
 import EntityTable from "@/components/EntityTable";
 
 const createEmptyRoom = (): Room =>
