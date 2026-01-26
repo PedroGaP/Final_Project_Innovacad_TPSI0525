@@ -15,10 +15,26 @@ class OutputModuleDao {
   @annotation.JsonKey(name: 'duration')
   final int duration;
 
+  @annotation.JsonKey(name: 'has_computers')
+  final bool hasComputers;
+
+  @annotation.JsonKey(name: 'has_projector')
+  final bool hasProjector;
+
+  @annotation.JsonKey(name: 'has_whiteboard')
+  final bool hasWhiteboard;
+
+  @annotation.JsonKey(name: 'has_smartboard')
+  final bool hasSmartboard;
+
   OutputModuleDao({
     required this.moduleId,
     required this.name,
     required this.duration,
+    required this.hasComputers,
+    required this.hasProjector,
+    required this.hasWhiteboard,
+    required this.hasSmartboard,
   });
 
   Map<String, dynamic> toJson() => _$OutputModuleDaoToJson(this);
