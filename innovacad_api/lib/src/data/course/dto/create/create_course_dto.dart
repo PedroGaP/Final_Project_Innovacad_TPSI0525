@@ -1,3 +1,4 @@
+import 'package:innovacad_api/src/data/module/dto/link/link_module_dto.dart';
 import 'package:vaden/vaden.dart';
 import 'package:json_annotation/json_annotation.dart' as annotation;
 
@@ -12,7 +13,18 @@ class CreateCourseDto {
   @annotation.JsonKey(name: 'name')
   final String name;
 
-  CreateCourseDto({required this.identifier, required this.name});
+  @annotation.JsonKey(name: 'add_modules_ids')
+  final List<LinkModuleDto>? addModulesIds;
+
+  @annotation.JsonKey(name: 'remove_courses_modules_ids')
+  final List<String>? removeCoursesModulesIds;
+
+  CreateCourseDto({
+    required this.identifier,
+    required this.name,
+    this.addModulesIds,
+    this.removeCoursesModulesIds,
+  });
 
   Map<String, dynamic> toJson() => _$CreateCourseDtoToJson(this);
 

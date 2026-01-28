@@ -1,10 +1,22 @@
-import { type Component, onMount, onCleanup, createSignal } from "solid-js";
+import {
+  onMount,
+  onCleanup,
+  createSignal,
+  createResource,
+  createEffect,
+  Show,
+} from "solid-js";
 import { Calendar, type EventInput } from "@fullcalendar/core";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import type { Class } from "@/types/class";
+import { useApi } from "@/hooks/useApi";
 
-// Helper para criar eventos
+type Props = {
+  selectedClass: Class | null;
+};
+
 const createEvent = (
   title: string,
   start: string,
@@ -25,38 +37,53 @@ const createEvent = (
   };
 };
 
-// Dados de exemplo
-const initialEvents: EventInput[] = [
-  createEvent(
-    "Reunião de Equipa",
-    new Date(new Date().setHours(9, 0, 0, 0)).toISOString(),
-    new Date(new Date().setHours(10, 30, 0, 0)).toISOString(),
-    ["bg-primary", "border-primary", "text-primary-content"],
-    "0.23",
-    "Ana Silva",
-  ),
-  createEvent(
-    "Almoço",
-    new Date(new Date().setHours(13, 0, 0, 0)).toISOString(),
-    new Date(new Date().setHours(14, 0, 0, 0)).toISOString(),
-    ["bg-accent", "border-accent", "text-accent-content"],
-    "Cantina",
-    "s",
-  ),
-  createEvent(
-    "Workshop SolidJS",
-    new Date(new Date().setHours(15, 0, 0, 0)).toISOString(),
-    new Date(new Date().setHours(17, 0, 0, 0)).toISOString(),
-    ["bg-secondary", "border-secondary", "text-secondary-content"],
-    "0.21",
-    "João Silva",
-  ),
-];
+export const EventCalendar = (props: Props) => {
+  const { selectedClass } = props;
+  const { fetchSchedules } = useApi();
+  const [loading, setLoading] = createSignal(false);
+  const [events, setEvents] = createSignal([] as EventInput[]);
+  const [schedules, { refetch }] = createResource(
+    () =>
+      fetchSchedules(selectedClass?.class_id ?? null) || Promise.resolve([]),
+  );
 
-export const EventCalendar: Component = () => {
+  createEffect(async () => {
+    if (!selectedClass) return;
+
+    setLoading(true);
+
+    const fetchedSchedules = await refetch();
+
+    if (!fetchedSchedules) {
+      setLoading(false);
+      return;
+    }
+
+    const newEvents: EventInput[] = fetchedSchedules.map((schedule) => {
+      const start = schedule.start_time ?? "";
+      const end = schedule.end_time ?? "";
+      const classNames = [
+        "bg-primary/20",
+        "border-primary",
+        "text-primary-content",
+      ];
+      return createEvent(
+        schedule.module_name || "Sessão Sem Nome",
+        start,
+        end,
+        classNames,
+        schedule.room_name,
+        schedule.trainer_name,
+      );
+    });
+
+    setEvents(newEvents);
+
+    setLoading(false);
+  });
+
   let calendarEl: HTMLDivElement | undefined;
   let calendar: Calendar | undefined;
-  const [events] = createSignal(initialEvents);
 
   onMount(() => {
     if (!calendarEl) return;
@@ -135,11 +162,9 @@ export const EventCalendar: Component = () => {
   });
 
   return (
-    <div class="card w-full h-[80vh] bg-base-100 shadow-xl border border-base-300">
-      <div class="card-body p-4 relative">
-        <style>
-          {`
-            /* Estilos DaisyUI para o Calendário */
+    <>
+      <style>
+        {`
             .fc .fc-toolbar-title {
               color: var(--fallback-bc, oklch(var(--bc)));
               font-size: 1.5rem;
@@ -172,15 +197,22 @@ export const EventCalendar: Component = () => {
               text-align: center;
             }
             
-            /* Remove padding interno padrão do evento para o nosso layout flex funcionar bem */
             .fc-event-main {
               padding: 0 !important;
             }
           `}
-        </style>
+      </style>
 
+      <Show
+        when={!loading()}
+        fallback={
+          <div class="absolute inset-0 flex items-center justify-center bg-black/20 z-10">
+            <div class="loading loading-spinner loading-lg"></div>
+          </div>
+        }
+      >
         <div ref={calendarEl!} class="h-full w-full" />
-      </div>
-    </div>
+      </Show>
+    </>
   );
 };

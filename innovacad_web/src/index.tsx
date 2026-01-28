@@ -26,6 +26,7 @@ import ModulesPage from "./pages/Dashboard/Module";
 import { EventCalendar } from "./components/EventCalendar";
 import EnrollmentsPage from "./pages/Dashboard/Enrollment";
 import AvailabilitiesPage from "./pages/Dashboard/Availability";
+import Calendar from "./pages/Dashboard/Calendar";
 
 const routes: RouteDefinition[] = [
   {
@@ -96,7 +97,7 @@ const routes: RouteDefinition[] = [
       },
       {
         path: "/calendar",
-        component: EventCalendar,
+        component: Calendar,
       },
       {
         path: "/enrollments",

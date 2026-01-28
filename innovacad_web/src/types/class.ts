@@ -10,6 +10,11 @@ export const ClassStatusEnumLookUp = {
   STARTING: ClassStatusEnum.STARTING,
 };
 
+export type ClassModule = {
+  courses_modules_id: string;
+  current_duration?: number;
+};
+
 export type ClassResponseData = {
   class_id: string | undefined;
   course_id: string | undefined;
@@ -18,6 +23,7 @@ export type ClassResponseData = {
   status: ClassStatusEnum | undefined;
   start_date_timestamp: number | undefined;
   end_date_timestamp: number | undefined;
+  modules?: ClassModule[];
 };
 
 export class Class {
@@ -28,6 +34,7 @@ export class Class {
   status: ClassStatusEnum | undefined;
   start_date_timestamp: number | undefined;
   end_date_timestamp: number | undefined;
+  modules: ClassModule[];
 
   constructor(data: ClassResponseData) {
     this.class_id = data.class_id;
@@ -37,6 +44,7 @@ export class Class {
     this.identifier = data.identifier;
     this.start_date_timestamp = data.start_date_timestamp;
     this.end_date_timestamp = data.end_date_timestamp;
+    this.modules = data.modules || [];
   }
 
   toJson = (): string => JSON.stringify(this);

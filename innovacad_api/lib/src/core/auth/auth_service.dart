@@ -12,9 +12,7 @@ class AuthService extends JwtService {
   });
 
   factory AuthService.withSettings(ApplicationSettings settings) {
-    // Safely cast the list to List<String>
     final audiencesList = settings['security']['audiences']; 
-    // Ensuring it's a list before casting, defaulting to empty if null
     final List<String> audiences = (audiencesList is List) 
         ? audiencesList.cast<String>() 
         : const <String>[];
@@ -37,8 +35,7 @@ class AuthService extends JwtService {
     if (cleaned.toLowerCase().startsWith('bearer ')) {
       cleaned = cleaned.substring(7).trim();
     }
-    // Simple basic cleaning, be careful not to break base64url characters
-    // The user's regex was r'[^a-zA-Z0-9\.\-_]' which seems fine for JWT segments
+
     cleaned = cleaned
         .replaceAll('=', '')
         .replaceAll(RegExp(r'[^a-zA-Z0-9\.\-_]'), '');

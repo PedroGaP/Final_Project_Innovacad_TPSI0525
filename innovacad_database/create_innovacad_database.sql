@@ -76,8 +76,8 @@ create table
         module_id varchar(36) not null,
         sequence_course_module_id varchar(36),
         UNIQUE (course_id, module_id),
-        FOREIGN KEY (course_id) REFERENCES courses (course_id),
-        FOREIGN KEY (module_id) REFERENCES modules (module_id),
+        FOREIGN KEY (course_id) REFERENCES courses (course_id) ON DELETE CASCADE,
+        FOREIGN KEY (module_id) REFERENCES modules (module_id) ON DELETE CASCADE,
         FOREIGN KEY (sequence_course_module_id) REFERENCES courses_modules (courses_modules_id)
     );
 
@@ -106,35 +106,50 @@ create table
         FOREIGN KEY (class_module_id) REFERENCES classes_modules (classes_modules_id) ON DELETE CASCADE
     );
 
-create table
-    IF NOT EXISTS availabilities (
-        availability_id varchar(36) default UUID () primary key,
-        trainer_id varchar(36) not null,
-        status ENUM ('free', 'partial', 'full') not null default 'free',
-        start_date_timestamp timestamp not null,
-        end_date_timestamp timestamp not null,
-        FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id) ON DELETE CASCADE
-    );
+CREATE TABLE IF NOT EXISTS ref_slots (
+    slot_number TINYINT PRIMARY KEY,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL
+);
 
-create table
-    IF NOT EXISTS schedules (
-        schedule_id varchar(36) default UUID () primary key,
-        -- class_id             varchar(36) not null,
-        -- module_id            varchar(36) not null,
-        class_module_id varchar(36) not null,
-        trainer_id varchar(36) not null,
-        availability_id varchar(36) not null,
-        room_id int,
-        online boolean default false,
-        start_date_timestamp timestamp not null,
-        end_date_timestamp timestamp not null,
-        -- FOREIGN KEY (class_id) REFERENCES classes (class_id),
-        -- FOREIGN KEY (module_id) REFERENCES modules (module_id),
-        FOREIGN KEY (class_module_id) REFERENCES classes_modules (classes_modules_id),
-        FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id) ON DELETE CASCADE,
-        FOREIGN KEY (room_id) REFERENCES rooms (room_id),
-        FOREIGN KEY (availability_id) REFERENCES availabilities (availability_id)
-    );
+CREATE TABLE IF NOT EXISTS availabilities (
+    availability_id VARCHAR(36) DEFAULT (UUID()) PRIMARY KEY,
+    trainer_id VARCHAR(36) NOT NULL,
+    date_day TIMESTAMP NOT NULL,
+    slot_number TINYINT NOT NULL,
+    is_booked TINYINT(1) DEFAULT 0,
+    
+    FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id) ON DELETE CASCADE,
+    FOREIGN KEY (slot_number) REFERENCES ref_slots (slot_number),
+    UNIQUE KEY unique_trainer_slot (trainer_id, date_day, slot_number)
+);
+
+CREATE TABLE IF NOT EXISTS schedules (
+    schedule_id VARCHAR(36) DEFAULT UUID() PRIMARY KEY,
+    class_module_id VARCHAR(36) NOT NULL,
+    trainer_id VARCHAR(36) NOT NULL,
+    room_id INT,
+    is_online BOOLEAN DEFAULT false,
+    regime_type TINYINT(1) DEFAULT 0, -- 0: DAYTIME | 1: POST WORK
+    total_hours DECIMAL(4,2) DEFAULT 6.0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (class_module_id) REFERENCES classes_modules (classes_modules_id),
+    FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id) ON DELETE CASCADE,
+    FOREIGN KEY (room_id) REFERENCES rooms (room_id)
+);
+
+CREATE TABLE IF NOT EXISTS schedule_slots (
+    slot_id VARCHAR(36) DEFAULT UUID() PRIMARY KEY,
+    schedule_id VARCHAR(36) NOT NULL,
+    availability_id VARCHAR(36) NOT NULL,
+    slot_status TINYINT(1) DEFAULT 0, -- 0: scheduled | 1: completed
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (schedule_id) REFERENCES schedules (schedule_id) ON DELETE CASCADE,
+    FOREIGN KEY (availability_id) REFERENCES availabilities (availability_id),
+    UNIQUE KEY unique_slot_booking (availability_id)
+);
 
 create table
     IF NOT EXISTS enrollments (
@@ -149,16 +164,16 @@ create table
 
 -- Create indexes
 -- Optimizes searching for lessons by date
-CREATE INDEX idx_schedules_period ON schedules (start_date_timestamp, end_date_timestamp);
+-- CREATE INDEX idx_schedules_period ON schedules (start_date_timestamp, end_date_timestamp);
 
 -- Optimizes searching for trainer availability by date
-CREATE INDEX idx_availabilities_period ON availabilities (start_date_timestamp, end_date_timestamp);
+-- CREATE INDEX idx_availabilities_period ON availabilities (start_date_timestamp, end_date_timestamp);
 
 -- Optimizes availability filtering by status
-CREATE INDEX idx_availabilities_status ON availabilities (status);
+-- CREATE INDEX idx_availabilities_status ON availabilities (status);
 
 -- Optimizes listing a course's modules
-CREATE INDEX idx_courses_modules_course ON courses_modules (course_id);
+-- CREATE INDEX idx_courses_modules_course ON courses_modules (course_id);
 
 -- Optimizes listing a class's trainees
-CREATE INDEX idx_enrollments_class ON enrollments (class_id);
+-- CREATE INDEX idx_enrollments_class ON enrollments (class_id);

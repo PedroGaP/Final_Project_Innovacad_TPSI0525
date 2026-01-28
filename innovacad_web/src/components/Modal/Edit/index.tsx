@@ -1,5 +1,11 @@
 import { CircleQuestionMark } from "lucide-solid";
-import { createSignal, Show, For, createEffect } from "solid-js";
+import {
+  createSignal,
+  Show,
+  For,
+  createEffect,
+  type JSXElement,
+} from "solid-js";
 import { Portal } from "solid-js/web";
 
 interface ModalEditProps<T> {
@@ -9,6 +15,10 @@ interface ModalEditProps<T> {
   onCancel: () => void;
   title: string;
   disabledFields?: string[];
+  renderCustomFields?: (
+    formData: T,
+    setFormData: (prev: (prev: T) => T) => void,
+  ) => JSXElement;
 }
 
 const PortalTooltip = (props: { text: string; children: any }) => {
@@ -151,6 +161,8 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
       "verified",
       "role",
       "tojson",
+      "modules",
+      "modules_ids",
     ];
     return excludedFields.includes(fieldName.toLocaleLowerCase());
   };
@@ -250,6 +262,11 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
               );
             }}
           </For>
+
+          <Show when={props.renderCustomFields}>
+            <div class="divider">Configuration</div>
+            {props.renderCustomFields!(formData(), setFormData)}
+          </Show>
         </div>
 
         <div class="bg-base-200/50 px-6 py-3 flex gap-2 justify-end border-t border-base-300 shrink-0">
@@ -264,7 +281,7 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
             Cancel
           </button>
           <button
-            class="btn btn-primary btn-sm font-medium min-w-[80px]"
+            class="btn btn-primary btn-sm font-medium min-w-20"
             onClick={handleSave}
             disabled={loading()}
           >

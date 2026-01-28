@@ -10,4 +10,5 @@ abstract class IAvailabilityRepository {
     UpdateAvailabilityDto dto,
   );
   Future<Result<OutputAvailabilityDao>> delete(String id);
+  Future<Result<List<SlotsOutputDao>>> getAllSlots();
 }

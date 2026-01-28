@@ -5,6 +5,7 @@ export "account/dao/output_account_dao.dart";
 /* Availability */
 
 export "availability/dao/output/output_availability_dao.dart";
+export "availability/dao/slots_output/slots_output_dao.dart";
 
 export "availability/dto/create/create_availability_dto.dart";
 export "availability/dto/update/update_availability_dto.dart";
@@ -105,6 +106,7 @@ export "room/service/room_service_impl.dart";
 
 /* Schedule */
 
+export "schedule/dao/output_simple/output_simple_schedule_dao.dart";
 export "schedule/dao/output/output_schedule_dao.dart";
 
 export "schedule/dto/create/create_schedule_dto.dart";

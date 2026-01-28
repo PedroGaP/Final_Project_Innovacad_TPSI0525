@@ -10,30 +10,24 @@ UpdateAvailabilityDto _$UpdateAvailabilityDtoFromJson(
   Map<String, dynamic> json,
 ) => UpdateAvailabilityDto(
   trainerId: json['trainer_id'] as String?,
-  status: json['status'] as String?,
-  startDateTimestamp: _$JsonConverterFromJson<Object, DateTime>(
-    json['start_date_timestamp'],
+  dateDay: _$JsonConverterFromJson<Object, DateTime>(
+    json['date_day'],
     const DateTimeConverter().fromJson,
   ),
-  endDateTimestamp: _$JsonConverterFromJson<Object, DateTime>(
-    json['end_date_timestamp'],
-    const DateTimeConverter().fromJson,
-  ),
+  slotNumber: (json['slot_number'] as num?)?.toInt(),
+  isBooked: (json['is_booked'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$UpdateAvailabilityDtoToJson(
   UpdateAvailabilityDto instance,
 ) => <String, dynamic>{
   'trainer_id': instance.trainerId,
-  'status': instance.status,
-  'start_date_timestamp': _$JsonConverterToJson<Object, DateTime>(
-    instance.startDateTimestamp,
+  'date_day': _$JsonConverterToJson<Object, DateTime>(
+    instance.dateDay,
     const DateTimeConverter().toJson,
   ),
-  'end_date_timestamp': _$JsonConverterToJson<Object, DateTime>(
-    instance.endDateTimestamp,
-    const DateTimeConverter().toJson,
-  ),
+  'slot_number': instance.slotNumber,
+  'is_booked': instance.isBooked,
 };
 
 Value? _$JsonConverterFromJson<Json, Value>(

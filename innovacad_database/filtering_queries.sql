@@ -100,3 +100,16 @@ describe innovacad_tpsi0525.classes_modules;
 
 INSERT INTO `classes` (`course_id`, `location`, `identifier`, `status`, `start_date_timestamp`, `end_date_timestamp`)
 VALUES ('834f65af-f8a1-11f0-adbc-e6c93dd26891', 'PAL', '0525', 'starting',' 2026-01-23T00:00:00.000', '2026-02-07T00:00:00.000');
+
+
+ SELECT
+          cm.courses_modules_id,
+          cm.course_id,
+          cm.module_id,
+          cm.sequence_course_module_id,
+          m.name AS module_name,
+          m.duration
+        FROM courses_modules cm
+        INNER JOIN modules m ON cm.module_id = m.module_id;
+
+select * from courses_modules;

@@ -1,33 +1,38 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
-import 'package:vaden/vaden.dart';
-import 'package:json_annotation/json_annotation.dart' as annotation;
+import 'package:vaden/vaden.dart' as v;
 import 'package:json_annotation/json_annotation.dart';
 
 part 'update_class_dto.g.dart';
 
-@DTO()
-@annotation.JsonSerializable()
+@v.DTO()
+@JsonSerializable()
 class UpdateClassDto {
-  @annotation.JsonKey(name: 'course_id')
+  @JsonKey(name: 'course_id')
   final String? courseId;
 
-  @annotation.JsonKey(name: 'location')
+  @JsonKey(name: 'location')
   final String? location;
 
-  @annotation.JsonKey(name: 'identifier')
+  @JsonKey(name: 'identifier')
   final String? identifier;
 
-  @annotation.JsonEnum(valueField: 'status')
+  @JsonEnum(valueField: 'status')
   final ClassStatusEnum? status;
 
-  @annotation.JsonKey(name: 'start_date_timestamp')
+  @JsonKey(name: 'start_date_timestamp')
   @DateTimeConverter()
   final DateTime? startDateTimestamp;
 
-  @annotation.JsonKey(name: 'end_date_timestamp')
+  @JsonKey(name: 'end_date_timestamp')
   @DateTimeConverter()
   final DateTime? endDateTimestamp;
+
+  @JsonKey(name: 'add_modules_ids')
+  final List<String>? addModulesIds;
+
+  @JsonKey(name: 'remove_classes_modules_ids')
+  final List<String>? removeClassesModulesIds;
 
   UpdateClassDto({
     this.courseId,
@@ -36,6 +41,8 @@ class UpdateClassDto {
     this.status,
     this.startDateTimestamp,
     this.endDateTimestamp,
+    this.addModulesIds,
+    this.removeClassesModulesIds,
   });
 
   Map<String, dynamic> toJson() => _$UpdateClassDtoToJson(this);

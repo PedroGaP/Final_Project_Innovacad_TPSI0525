@@ -9,17 +9,15 @@ part of 'output_class_module_dao.dart';
 OutputClassModuleDao _$OutputClassModuleDaoFromJson(
   Map<String, dynamic> json,
 ) => OutputClassModuleDao(
-  classesModulesId: json['classes_modules_id'] as String,
-  classId: json['class_id'] as String,
   coursesModulesId: json['courses_modules_id'] as String,
-  currentDuration: (json['current_duration'] as num).toInt(),
+  currentDuration: const NumberConverter().fromJson(
+    json['current_duration'] as Object,
+  ),
 );
 
 Map<String, dynamic> _$OutputClassModuleDaoToJson(
   OutputClassModuleDao instance,
 ) => <String, dynamic>{
-  'classes_modules_id': instance.classesModulesId,
-  'class_id': instance.classId,
   'courses_modules_id': instance.coursesModulesId,
-  'current_duration': instance.currentDuration,
+  'current_duration': const NumberConverter().toJson(instance.currentDuration),
 };

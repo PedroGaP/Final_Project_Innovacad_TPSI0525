@@ -1,4 +1,3 @@
-import 'package:innovacad_api/src/core/core.dart';
 import 'package:vaden/vaden.dart';
 import 'package:json_annotation/json_annotation.dart' as annotation;
 
@@ -17,27 +16,25 @@ class CreateScheduleDto {
   final String availabilityId;
 
   @annotation.JsonKey(name: 'room_id')
-  final int? roomId;
+  final int roomId;
 
-  @annotation.JsonKey(name: 'online')
-  final bool online;
+  @annotation.JsonKey(name: 'is_online')
+  final bool isOnline;
 
-  @annotation.JsonKey(name: 'start_date_timestamp')
-  @DateTimeConverter()
-  final DateTime startDateTimestamp;
+  @annotation.JsonKey(name: 'regime_type')
+  final int regimeType;
 
-  @annotation.JsonKey(name: 'end_date_timestamp')
-  @DateTimeConverter()
-  final DateTime endDateTimestamp;
+  @annotation.JsonKey(name: 'total_hours')
+  final double totalHours;
 
   CreateScheduleDto({
     required this.classModuleId,
     required this.trainerId,
     required this.availabilityId,
-    this.roomId,
-    required this.online,
-    required this.startDateTimestamp,
-    required this.endDateTimestamp,
+    required this.roomId,
+    required this.isOnline,
+    required this.regimeType,
+    required this.totalHours,
   });
 
   Map<String, dynamic> toJson() => _$CreateScheduleDtoToJson(this);

@@ -15,13 +15,10 @@ import {
 import { Class, type ClassResponseData } from "@/types/class";
 import { Course, type CourseResponseData } from "@/types/course";
 import { Enrollment, type EnrollmentResponseData } from "@/types/enrollment";
-import {
-  Grade,
-  type GradeResponseData,
-  type GradeTypeEnum,
-} from "@/types/grade";
+import { Grade, type GradeResponseData } from "@/types/grade";
 import { Module, type ModuleResponseData } from "@/types/module";
 import { Room, type RoomResponseData } from "@/types/room";
+import { Schedule, type ScheduleResponseData } from "@/types/schedule";
 import {
   Account,
   LinkSocialData,
@@ -68,6 +65,7 @@ export const API_ENDPOINTS = {
     MODULE: "/modules",
     ENROLLMENT: "/enrollments",
     AVAILABILITY: "/availabilities",
+    SCHEDULE: "/schedules",
   },
 } as const;
 
@@ -1406,6 +1404,27 @@ export const useApi = () => {
     }
   };
 
+  const fetchSchedules = async (
+    classId: string | null,
+  ): Promise<Schedule[]> => {
+    if (classId === null) {
+      throw new Error(`Fetch schedules failed: classId is null`);
+    }
+
+    const res = await fetchApi<ScheduleResponseData[]>(
+      `${API_ENDPOINTS.ENTITY.SCHEDULE}/${classId}`,
+      "GET",
+    );
+    if (res.isError || !res.data) {
+      throw new Error(
+        `Fetch schedules (${classId}) failed: ${res.error?.message}`,
+      );
+    }
+    const rooms = res.data.map((item) => new Schedule(item));
+    console.log(rooms);
+    return rooms;
+  };
+
   return {
     // Sign In/Up
     signIn,
@@ -1484,5 +1503,8 @@ export const useApi = () => {
     createAvailability,
     updateAvailability,
     deleteAvailability,
+
+    // Schedules
+    fetchSchedules,
   };
 };

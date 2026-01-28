@@ -9,7 +9,7 @@ class OutputUserDao {
   @annotation.JsonKey(name: 'id')
   final String id;
 
-  @annotation.JsonKey(name: 'name') // Changeable
+  @annotation.JsonKey(name: 'name')
   final String name;
 
   @annotation.JsonKey(name: 'email')
@@ -25,7 +25,7 @@ class OutputUserDao {
   @DateTimeConverter()
   final DateTime createdAt;
 
-  @annotation.JsonKey(name: 'image')  // Changeable
+  @annotation.JsonKey(name: 'image')
   final String? image;
 
   @annotation.JsonKey(name: 'token')

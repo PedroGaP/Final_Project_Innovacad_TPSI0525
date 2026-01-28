@@ -71,30 +71,29 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
 
       await db.startTrans();
 
-      final start_date_timestamp = dto.startDateTimestamp.toIso8601String();
-      final end_date_timestamp = dto.endDateTimestamp.toIso8601String();
+      final dateDay = dto.dateDay.toIso8601String();
+
+      print(dto.toJson());
 
       await db.insert(
         table: table,
         insertData: {
           "trainer_id": dto.trainerId,
-          "status": dto.status,
-          "start_date_timestamp": start_date_timestamp,
-          "end_date_timestamp": end_date_timestamp,
+          "date_day": dateDay,
+          "slot_number": dto.slotNumber,
+          "is_booked": dto.isBooked,
         },
       );
 
-      final created =
-          await db.getOne(
-                table: table,
-                where: {
-                  "trainer_id": dto.trainerId,
-                  "status": dto.status,
-                  "start_date_timestamp": start_date_timestamp,
-                  "end_date_timestamp": end_date_timestamp,
-                },
-              )
-              as Map<String, dynamic>;
+      final created = await db.getOne(
+        table: table,
+        where: {
+          "trainer_id": dto.trainerId,
+          "date_day": dateDay,
+          "slot_number": dto.slotNumber,
+          "is_booked": dto.isBooked,
+        },
+      );
 
       if (created.isEmpty)
         return Result.failure(
@@ -106,7 +105,13 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
 
       await db.commit();
 
-      return Result.success(OutputAvailabilityDao.fromJson(created));
+      return Result.success(
+        OutputAvailabilityDao.fromJson(
+          created
+              .map((k, v) => MapEntry(k.toString(), v))
+              .cast<String, dynamic>(),
+        ),
+      );
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -139,19 +144,17 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
           dto.trainerId != existingAvailability.data!.trainerId)
         updateData["trainer_id"] = dto.trainerId;
 
-      if (dto.status != null && dto.status != existingAvailability.data!.status)
-        updateData["status"] = dto.status;
+      if (dto.dateDay != null &&
+          dto.dateDay != existingAvailability.data!.dateDay)
+        updateData["date_day"] = dto.dateDay!.toIso8601String();
 
-      if (dto.startDateTimestamp != null &&
-          dto.startDateTimestamp !=
-              existingAvailability.data!.startDateTimestamp)
-        updateData["start_date_timestamp"] = dto.startDateTimestamp!
-            .toIso8601String();
+      if (dto.slotNumber != null &&
+          dto.slotNumber != existingAvailability.data!.slotNumber)
+        updateData["slot_number"] = dto.slotNumber;
 
-      if (dto.endDateTimestamp != null &&
-          dto.endDateTimestamp != existingAvailability.data!.endDateTimestamp)
-        updateData["end_date_timestamp"] = dto.endDateTimestamp!
-            .toIso8601String();
+      if (dto.isBooked != null &&
+          dto.isBooked != existingAvailability.data!.isBooked)
+        updateData["is_booked"] = dto.isBooked;
 
       if (updateData.isEmpty) return existingAvailability;
 
@@ -193,6 +196,31 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
         AppError(
           AppErrorType.internal,
           "Something went wrong while deleting the availability...",
+          details: {"error": e.toString(), "stacktrace": s.toString()},
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Result<List<SlotsOutputDao>>> getAllSlots() async {
+    MysqlUtils? db;
+
+    try {
+      db = await MysqlConfiguration.connect();
+
+      final results = await db.getAll(table: "ref_slots");
+
+      final items = results.map((data) {
+        return SlotsOutputDao.fromJson(data);
+      }).toList();
+
+      return Result.success(items);
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while fetching the slots...",
           details: {"error": e.toString(), "stacktrace": s.toString()},
         ),
       );

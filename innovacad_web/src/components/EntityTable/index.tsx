@@ -27,6 +27,11 @@ interface Props<T> {
   handleSave: (entity: T, original: T | null) => any;
   confirmDelete: (entity: T) => any;
   filter?: (entity: T, search: string) => boolean;
+
+  renderCustomFields?: (
+    formData: T,
+    setFormData: (prev: (prev: T) => T) => void,
+  ) => JSXElement;
 }
 
 export default function EntityTable<T>({
@@ -38,6 +43,7 @@ export default function EntityTable<T>({
   confirmDelete,
   handleSave,
   filter,
+  renderCustomFields,
 }: Props<T>) {
   const [page, setPage] = createSignal(!data() ? 1 : 0);
   const [search, setSearch] = createSignal("");
@@ -234,9 +240,9 @@ export default function EntityTable<T>({
                 setEditingEntity(null);
               }}
               onCancel={() => setEditingEntity(null)}
-              title={originalEntity() ? "Editar" : "Adicionar"}
-              // Aqui podes passar campos desativados via props se quiseres tornar mais genérico
-              disabledFields={originalEntity() ? ["email", "username"] : []}
+              title={originalEntity() ? "Edit" : "Add"}
+              disabledFields={originalEntity() ? ["class_id"] : []}
+              renderCustomFields={renderCustomFields}
             />
           )}
         </Show>
@@ -251,8 +257,8 @@ export default function EntityTable<T>({
                 setDeletingEntity(null);
               }}
               onCancel={() => setDeletingEntity(null)}
-              title="Confirmar Eliminação"
-              description="Tem a certeza que deseja eliminar? Esta ação é irreversível."
+              title="Confirm Delete"
+              description="Are you sure? This action is irreversible."
             />
           )}
         </Show>

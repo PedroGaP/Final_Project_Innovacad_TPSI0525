@@ -18,6 +18,9 @@ CreateClassDto _$CreateClassDtoFromJson(Map<String, dynamic> json) =>
       endDateTimestamp: const DateTimeConverter().fromJson(
         json['end_date_timestamp'] as Object,
       ),
+      modulesIds: (json['modules'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
     );
 
 Map<String, dynamic> _$CreateClassDtoToJson(CreateClassDto instance) =>
@@ -32,6 +35,7 @@ Map<String, dynamic> _$CreateClassDtoToJson(CreateClassDto instance) =>
       'end_date_timestamp': const DateTimeConverter().toJson(
         instance.endDateTimestamp,
       ),
+      'modules': instance.modulesIds,
     };
 
 const _$ClassStatusEnumEnumMap = {
