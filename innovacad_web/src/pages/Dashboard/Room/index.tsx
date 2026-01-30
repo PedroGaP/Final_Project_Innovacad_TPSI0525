@@ -184,6 +184,40 @@ const RoomsPage = () => {
           smaller: true,
         },
       ]}
+      formFields={[
+        {
+          label: "Name",
+          name: "room_name",
+          type: "text",
+          required: true,
+        },
+        {
+          label: "Capacity",
+          name: "capacity",
+          type: "number",
+          required: true,
+        },
+        {
+          label: "Has Computers ?",
+          name: "has_computers",
+          type: "checkbox",
+        },
+        {
+          label: "Has Projector ?",
+          name: "has_projector",
+          type: "checkbox",
+        },
+        {
+          label: "Has Whiteboard ?",
+          name: "has_whiteboard",
+          type: "checkbox",
+        },
+        {
+          label: "Has Smartboard ?",
+          name: "has_smartboard",
+          type: "checkbox",
+        },
+      ]}
     />
   );
 };

@@ -4,6 +4,11 @@ import 'package:vaden/vaden.dart';
 
 @Controller('/chat')
 class ChatController extends WebSocketResource {
+  @ApiOperation(
+    summary: 'WebSocket chat connection',
+    description:
+        'Establishes WebSocket connection for real-time chat messaging',
+  )
   @Mount('/')
   FutureOr<Response> webSocketHandler(Request request) {
     return handler(request);

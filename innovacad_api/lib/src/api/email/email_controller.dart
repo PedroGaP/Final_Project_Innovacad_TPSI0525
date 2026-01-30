@@ -13,9 +13,13 @@ class SendEmailDto {
   SendEmailDto(this.to, this.subject, this.body);
 }
 
-@Api(tag: "Email")
+@Api(tag: "Email", description: "Email sending endpoints")
 @Controller("/email")
 class EmailController {
+  @ApiOperation(
+    summary: 'Send email',
+    description: 'Sends an email to the specified recipient',
+  )
   @Post("/send")
   Future<Response> sendEmail(@Body() SendEmailDto dto) async {
     try {

@@ -15,8 +15,8 @@ class OutputTrainerDao extends OutputUserDao {
   @DateTimeConverter()
   final DateTime birthdayDate;
 
-  @annotation.JsonKey(name: 'specialization')
-  final String specialization;
+  @annotation.JsonKey(name: 'skills')
+  final List<TrainerSkillDto> skills;
 
   OutputTrainerDao({
     required super.id,
@@ -29,7 +29,7 @@ class OutputTrainerDao extends OutputUserDao {
     required super.twoFactorEnabled,
     required this.trainerId,
     required this.birthdayDate,
-    required this.specialization,
+    required this.skills,
     super.image,
     super.token,
     super.sessionToken,

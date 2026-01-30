@@ -117,3 +117,5 @@ select * from classes_modules;
 delete from classes where identifier = '0925';
 select * from classes;
 select * from user;
+
+select * from documents where user_id = 'RWswWXDVYpq87dQrMfG0zdKQ4IbwljQS';

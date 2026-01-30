@@ -1,19 +1,22 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
-import 'package:vaden/vaden.dart';
+import 'package:vaden/vaden.dart' as vaden;
 import 'package:json_annotation/json_annotation.dart' as annotation;
 
 part 'create_trainer_dto.g.dart';
 
-@DTO()
+@vaden.DTO()
 @annotation.JsonSerializable()
-class CreateTrainerDto extends CreateUserDto with Validator<CreateTrainerDto> {
+class CreateTrainerDto extends CreateUserDto
+    with vaden.Validator<CreateTrainerDto> {
+  @vaden.JsonKey('birthday_date')
   @annotation.JsonKey(name: 'birthday_date')
   @DateTimeConverter()
   final DateTime birthdayDate;
 
-  @annotation.JsonKey(name: 'specialization')
-  final String specialization;
+  @annotation.JsonKey(name: 'skills_to_add')
+  @vaden.JsonKey('skills_to_add')
+  final List<TrainerSkillDto>? skillsToAdd;
 
   CreateTrainerDto({
     required super.name,
@@ -21,7 +24,7 @@ class CreateTrainerDto extends CreateUserDto with Validator<CreateTrainerDto> {
     required super.username,
     required super.password,
     required this.birthdayDate,
-    required this.specialization,
+    this.skillsToAdd,
   });
 
   Map<String, dynamic> toJson() => _$CreateTrainerDtoToJson(this);
@@ -30,8 +33,8 @@ class CreateTrainerDto extends CreateUserDto with Validator<CreateTrainerDto> {
       _$CreateTrainerDtoFromJson(json);
 
   @override
-  LucidValidator<CreateTrainerDto> validate(
-    ValidatorBuilder<CreateTrainerDto> builder,
+  vaden.LucidValidator<CreateTrainerDto> validate(
+    vaden.ValidatorBuilder<CreateTrainerDto> builder,
   ) {
     builder.ruleFor((e) => e.email, key: 'email').notEmptyOrNull().validEmail();
     builder

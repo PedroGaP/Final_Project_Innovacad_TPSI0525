@@ -22,6 +22,8 @@ DROP TABLE verification;
 -- =======================================================
 
 DROP TABLE IF EXISTS
+    documents,
+    trainer_skills,
     grades,
     enrollments,
     schedules,
@@ -35,6 +37,7 @@ DROP TABLE IF EXISTS
     courses,
     modules,
     trainers,
-    trainees;
+    trainees,
+    document_types;
 
 SET FOREIGN_KEY_CHECKS = 1;

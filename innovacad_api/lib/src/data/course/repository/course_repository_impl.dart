@@ -283,9 +283,7 @@ class CourseRepositoryImpl implements ICourseRepository {
         );
       }
 
-      // --- PASSO C: Bulk Insert & Link (VERSÃO ESTÁVEL) ---
       if (dto.addCoursesModules != null && dto.addCoursesModules!.isNotEmpty) {
-        // 1. Carregar estado atual
         print("[DEBUG] Fetching current database state...");
         final currentRows = await db.query(
           "SELECT courses_modules_id, module_id FROM courses_modules WHERE course_id = ?",
@@ -293,7 +291,6 @@ class CourseRepositoryImpl implements ICourseRepository {
           isStmt: true,
         );
 
-        // MAPA: Normalizamos a chave (module_id) para lowercase para evitar erros de comparação
         final Map<String, String> moduleToRelationMap = {
           for (var row in currentRows.rowsAssoc)
             row.assoc()['module_id'].toString().trim().toLowerCase(): row
@@ -301,8 +298,6 @@ class CourseRepositoryImpl implements ICourseRepository {
                 .toString(),
         };
 
-        // 2. Calcular quem precisa de ser inserido
-        // Nota: Também normalizamos o ID do DTO para lowercase
         final explicitIds = dto.addCoursesModules!
             .map((e) => e.moduleId.trim().toLowerCase())
             .toSet();
@@ -317,7 +312,6 @@ class CourseRepositoryImpl implements ICourseRepository {
             )
             .toSet();
 
-        // Lista final de módulos NOVOS a inserir
         final List<String> modulesToInsert =
             [...implicitParents, ...explicitIds]
                 .where(
@@ -327,9 +321,6 @@ class CourseRepositoryImpl implements ICourseRepository {
                 .cast<String>()
                 .toList();
 
-        // ---------------------------------------------------------
-        // OTIMIZAÇÃO 1: Bulk Insert (Mantemos, pois funciona bem)
-        // ---------------------------------------------------------
         if (modulesToInsert.isNotEmpty) {
           final insertValues = <String>[];
           final insertParams = <dynamic>[];
@@ -339,11 +330,9 @@ class CourseRepositoryImpl implements ICourseRepository {
           for (final modId in modulesToInsert) {
             final newRelationUuid = uuid.v4();
 
-            // Atualizar mapa (chave lowercase)
             moduleToRelationMap[modId] = newRelationUuid;
 
             insertValues.add("(?, ?, ?, ?)");
-            // O modId aqui já é o lowercase/trim da lista acima
             insertParams.addAll([newRelationUuid, id, modId, null]);
           }
 
@@ -357,7 +346,6 @@ class CourseRepositoryImpl implements ICourseRepository {
         
         for (final item in dto.addCoursesModules!) {
           
-          // 1. Encontrar o UUID do módulo que estamos a atualizar
           final modKey = item.moduleId.trim().toLowerCase();
           final currentUuid = moduleToRelationMap[modKey];
 
@@ -366,9 +354,7 @@ class CourseRepositoryImpl implements ICourseRepository {
             continue;
           }
 
-          // 2. Verificar se é para ligar a um Pai ou para Desligar (Null)
           if (item.sequenceModuleId != null) {
-            // --- CASO A: Tem um Pai (Ligar) ---
             final seqKey = item.sequenceModuleId!.trim().toLowerCase();
             final parentUuid = moduleToRelationMap[seqKey];
 
@@ -382,12 +368,10 @@ class CourseRepositoryImpl implements ICourseRepository {
               print("[DEBUG] AVISO: Pai ${item.sequenceModuleId} não encontrado no mapa.");
             }
           } else {
-            // --- CASO B: É Null (Remover Sequência / "None") ---
-            // AQUI ESTÁ A CORREÇÃO: Forçamos o update para NULL explicitamente
             
             await db.update(
               table: 'courses_modules',
-              updateData: {"sequence_course_module_id": null}, // <--- O Segredo
+              updateData: {"sequence_course_module_id": null},
               where: {"courses_modules_id": currentUuid},
             );
           }

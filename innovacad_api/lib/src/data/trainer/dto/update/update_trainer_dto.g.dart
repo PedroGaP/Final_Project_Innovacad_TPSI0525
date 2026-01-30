@@ -14,7 +14,10 @@ UpdateTrainerDto _$UpdateTrainerDtoFromJson(Map<String, dynamic> json) =>
         json['birthday_date'],
         const DateTimeConverter().fromJson,
       ),
-      specialization: json['specialization'] as String?,
+      skillsToAdd: (json['skills_to_add'] as List<dynamic>?)
+          ?.map((e) => TrainerSkillDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      skillsToRemove: json['skills_to_remove'] as String?,
     );
 
 Map<String, dynamic> _$UpdateTrainerDtoToJson(UpdateTrainerDto instance) =>
@@ -25,7 +28,8 @@ Map<String, dynamic> _$UpdateTrainerDtoToJson(UpdateTrainerDto instance) =>
         instance.birthdayDate,
         const DateTimeConverter().toJson,
       ),
-      'specialization': instance.specialization,
+      'skills_to_add': instance.skillsToAdd,
+      'skills_to_remove': instance.skillsToRemove,
     };
 
 Value? _$JsonConverterFromJson<Json, Value>(
