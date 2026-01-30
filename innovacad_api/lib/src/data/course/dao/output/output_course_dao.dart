@@ -1,3 +1,4 @@
+import 'package:innovacad_api/src/data/data.dart';
 import 'package:vaden/vaden.dart';
 import 'package:json_annotation/json_annotation.dart' as annotation;
 
@@ -15,13 +16,14 @@ class OutputCourseDao {
   @annotation.JsonKey(name: 'name')
   final String name;
 
-  // Assuming createdAt might be useful or standard, but sticking to old Course fields + standard if revealed later.
-  // Old Course only had course_id, identifier, name.
+  @annotation.JsonKey(name: 'modules')
+  final List<OutputCourseModuleDao>? coursesModules;
 
   OutputCourseDao({
     required this.courseId,
     required this.identifier,
     required this.name,
+    this.coursesModules,
   });
 
   Map<String, dynamic> toJson() => _$OutputCourseDaoToJson(this);

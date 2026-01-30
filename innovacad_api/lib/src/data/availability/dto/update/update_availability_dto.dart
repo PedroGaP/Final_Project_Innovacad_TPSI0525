@@ -11,24 +11,24 @@ class UpdateAvailabilityDto {
   @vaden.JsonKey('trainer_id')
   final String? trainerId;
 
-  @annotation.JsonKey(name: 'status')
-  final String? status;
-
-  @annotation.JsonKey(name: 'start_date_timestamp')
-  @vaden.JsonKey('start_date_timestamp')
+  @annotation.JsonKey(name: 'date_day')
+  @vaden.JsonKey('date_day')
   @DateTimeConverter()
-  final DateTime? startDateTimestamp;
+  final DateTime? dateDay;
 
-  @annotation.JsonKey(name: 'end_date_timestamp')
-  @vaden.JsonKey('end_date_timestamp')
-  @DateTimeConverter()
-  final DateTime? endDateTimestamp;
+  @annotation.JsonKey(name: 'slot_number')
+  @vaden.JsonKey('slot_number')
+  final int? slotNumber;
+
+  @annotation.JsonKey(name: 'is_booked')
+  @vaden.JsonKey('is_booked')
+  final int? isBooked;
 
   UpdateAvailabilityDto({
     this.trainerId,
-    this.status,
-    this.startDateTimestamp,
-    this.endDateTimestamp,
+    this.dateDay,
+    this.slotNumber,
+    this.isBooked,
   });
 
   Map<String, dynamic> toJson() => _$UpdateAvailabilityDtoToJson(this);

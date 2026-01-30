@@ -11,14 +11,10 @@ CreateScheduleDto _$CreateScheduleDtoFromJson(Map<String, dynamic> json) =>
       classModuleId: json['class_module_id'] as String,
       trainerId: json['trainer_id'] as String,
       availabilityId: json['availability_id'] as String,
-      roomId: (json['room_id'] as num?)?.toInt(),
-      online: json['online'] as bool,
-      startDateTimestamp: const DateTimeConverter().fromJson(
-        json['start_date_timestamp'] as Object,
-      ),
-      endDateTimestamp: const DateTimeConverter().fromJson(
-        json['end_date_timestamp'] as Object,
-      ),
+      roomId: (json['room_id'] as num).toInt(),
+      isOnline: json['is_online'] as bool,
+      regimeType: (json['regime_type'] as num).toInt(),
+      totalHours: (json['total_hours'] as num).toDouble(),
     );
 
 Map<String, dynamic> _$CreateScheduleDtoToJson(CreateScheduleDto instance) =>
@@ -27,11 +23,7 @@ Map<String, dynamic> _$CreateScheduleDtoToJson(CreateScheduleDto instance) =>
       'trainer_id': instance.trainerId,
       'availability_id': instance.availabilityId,
       'room_id': instance.roomId,
-      'online': instance.online,
-      'start_date_timestamp': const DateTimeConverter().toJson(
-        instance.startDateTimestamp,
-      ),
-      'end_date_timestamp': const DateTimeConverter().toJson(
-        instance.endDateTimestamp,
-      ),
+      'is_online': instance.isOnline,
+      'regime_type': instance.regimeType,
+      'total_hours': instance.totalHours,
     };

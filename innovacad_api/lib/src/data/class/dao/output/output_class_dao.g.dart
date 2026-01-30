@@ -19,6 +19,7 @@ OutputClassDao _$OutputClassDaoFromJson(Map<String, dynamic> json) =>
       endDateTimestamp: const DateTimeConverter().fromJson(
         json['end_date_timestamp'] as Object,
       ),
+      modules: const ModuleListConverter().fromJson(json['modules']),
     );
 
 Map<String, dynamic> _$OutputClassDaoToJson(OutputClassDao instance) =>
@@ -34,6 +35,7 @@ Map<String, dynamic> _$OutputClassDaoToJson(OutputClassDao instance) =>
       'end_date_timestamp': const DateTimeConverter().toJson(
         instance.endDateTimestamp,
       ),
+      'modules': const ModuleListConverter().toJson(instance.modules),
     };
 
 const _$ClassStatusEnumEnumMap = {

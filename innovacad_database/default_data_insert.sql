@@ -1,9 +1,9 @@
 INSERT INTO user (id, name, email, emailVerified, username, role)
-VALUES ('77ab8510-dc5c-11f0-bdbd-98eecb87bc27', 'Pedro Guerra', 'pedroga@trainers.innovacad.pt', true, 'pedroga',
+VALUES ('77ab8510-dc5c-11f0-bdbd-98eecb87bc27', 'Pedro Guerra', 'pedroga@trainers.innovacad.pt', true, 'pedroga2',
         'trainer'),
-       ('b7b1dc75-838d-476b-a4d0-28e5771f9f15', 'Filipe Junqueiro', 'filipej@trainers.innovacad.pt', true, 'filipej',
+       ('b7b1dc75-838d-476b-a4d0-28e5771f9f15', 'Filipe Junqueiro', 'filipej@trainers.innovacad.pt', true, 'filipej2',
         'trainer'),
-       ('68c8681a-ac3e-4e15-a590-0592cfc832b0', 'Beatriz Rodrigues', 'beatriz@trainees.innovacad.pt', false, 'beatrizr',
+       ('68c8681a-ac3e-4e15-a590-0592cfc832b0', 'Beatriz Rodrigues', 'beatriz@trainees.innovacad.pt', false, 'beatrizr2',
         'trainee');
 
 INSERT INTO trainers (trainer_id, user_id, specialization)
@@ -64,3 +64,18 @@ VALUES ('ef1fa2f8-e32c-4f6d-8e8f-20efd5710b34', 'b332fc2c-832a-4d33-8f2f-139d733
 INSERT INTO grades (class_module_id, trainee_id, grade, grade_type)
 VALUES ('ef1fa2f8-e32c-4f6d-8e8f-20efd5710b34', 'b332fc2c-832a-4d33-8f2f-139d733be9f7', 15.00, 'final');
 
+INSERT INTO ref_slots (slot_number, start_time, end_time) VALUES
+(1, '08:00:00', '09:00:00'),
+(2, '09:00:00', '10:00:00'),
+(3, '10:00:00', '11:00:00'),
+(4, '12:00:00', '13:00:00'),
+(5, '13:00:00', '14:00:00'),
+(6, '14:00:00', '15:00:00');
+
+INSERT INTO ref_slots (slot_number, start_time, end_time) VALUES
+(7, '16:00:00', '17:00:00'),
+(8, '17:00:00', '18:00:00'),
+(9, '18:00:00', '19:00:00'),
+(10, '20:00:00', '21:00:00'),
+(11, '21:00:00', '22:00:00'),
+(12, '22:00:00', '23:00:00');

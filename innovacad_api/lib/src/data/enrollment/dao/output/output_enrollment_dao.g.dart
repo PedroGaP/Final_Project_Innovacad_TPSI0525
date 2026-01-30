@@ -11,7 +11,9 @@ OutputEnrollmentDao _$OutputEnrollmentDaoFromJson(Map<String, dynamic> json) =>
       enrollmentId: json['enrollment_id'] as String,
       classId: json['class_id'] as String,
       traineeId: json['trainee_id'] as String,
-      finalGrade: json['final_grade'] as String,
+      finalGrade: const DoubleConverter().fromJson(
+        json['final_grade'] as Object,
+      ),
     );
 
 Map<String, dynamic> _$OutputEnrollmentDaoToJson(
@@ -20,5 +22,5 @@ Map<String, dynamic> _$OutputEnrollmentDaoToJson(
   'enrollment_id': instance.enrollmentId,
   'class_id': instance.classId,
   'trainee_id': instance.traineeId,
-  'final_grade': instance.finalGrade,
+  'final_grade': const DoubleConverter().toJson(instance.finalGrade),
 };

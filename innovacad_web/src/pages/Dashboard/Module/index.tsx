@@ -148,6 +148,38 @@ const ModulesPage = () => {
         const s = search.toLowerCase();
         return e.name?.toLowerCase().includes(s) ?? false;
       }}
+      formFields={[
+        {
+          name: "duration",
+          label: "Duration",
+          type: "number",
+        },
+        {
+          name: "name",
+          label: "Name",
+          type: "text",
+        },
+        {
+          label: "Has Computers ?",
+          name: "has_computers",
+          type: "checkbox",
+        },
+        {
+          label: "Has Projector ?",
+          name: "has_projector",
+          type: "checkbox",
+        },
+        {
+          label: "Has Whiteboard ?",
+          name: "has_whiteboard",
+          type: "checkbox",
+        },
+        {
+          label: "Has Smartboard ?",
+          name: "has_smartboard",
+          type: "checkbox",
+        },
+      ]}
       fields={[
         {
           formattedName: "ID",

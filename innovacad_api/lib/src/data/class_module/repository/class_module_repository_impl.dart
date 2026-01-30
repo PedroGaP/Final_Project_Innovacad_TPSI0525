@@ -69,8 +69,6 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
     try {
       db = await MysqlConfiguration.connect();
 
-      //await db.startTrans();
-
       await db.insert(
         table: table,
         insertData: {
@@ -98,8 +96,6 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
             "Created ClassModule could not be retrieved...",
           ),
         );
-
-      //      await db.commit();
 
       return Result.success(OutputClassModuleDao.fromJson(created));
     } catch (e, s) {
@@ -131,7 +127,7 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
       final updateData = <String, dynamic>{};
 
       if (dto.classId != null &&
-          dto.classId != existingClassModule.data!.classId)
+          dto.classId != existingClassModule.data!.coursesModulesId)
         updateData["class_id"] = dto.classId;
 
       if (dto.coursesModulesId != null &&

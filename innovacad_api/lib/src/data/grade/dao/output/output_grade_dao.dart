@@ -17,6 +17,7 @@ class OutputGradeDao {
   final String traineeId;
 
   @annotation.JsonKey(name: 'grade')
+  @DoubleConverter()
   final double grade;
 
   @annotation.JsonKey(name: 'grade_type')

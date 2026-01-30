@@ -10,7 +10,7 @@ class AppConfiguration {
 
   @Bean()
   Pipeline globalMiddleware(ApplicationSettings settings) {
-    return Pipeline() //
+    return Pipeline()
         .addMiddleware(corsMiddleware())
         .addVadenMiddleware(EnforceJsonContentType())
         .addMiddleware(logRequests());

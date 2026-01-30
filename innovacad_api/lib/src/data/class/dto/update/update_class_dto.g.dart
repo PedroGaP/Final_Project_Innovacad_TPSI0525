@@ -20,6 +20,12 @@ UpdateClassDto _$UpdateClassDtoFromJson(Map<String, dynamic> json) =>
         json['end_date_timestamp'],
         const DateTimeConverter().fromJson,
       ),
+      addModulesIds: (json['add_modules_ids'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      removeClassesModulesIds: (json['remove_modules_ids'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
     );
 
 Map<String, dynamic> _$UpdateClassDtoToJson(UpdateClassDto instance) =>
@@ -36,6 +42,8 @@ Map<String, dynamic> _$UpdateClassDtoToJson(UpdateClassDto instance) =>
         instance.endDateTimestamp,
         const DateTimeConverter().toJson,
       ),
+      'add_modules_ids': instance.addModulesIds,
+      'remove_modules_ids': instance.removeClassesModulesIds,
     };
 
 const _$ClassStatusEnumEnumMap = {

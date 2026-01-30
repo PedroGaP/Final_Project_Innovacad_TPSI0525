@@ -66,7 +66,6 @@ class _SignInViewState extends State<SignInView> {
                       ),
 
                       const SizedBox(height: 40),
-                      // Formulário
                       Form(
                         key: _key,
                         child: Column(
@@ -166,7 +165,6 @@ class _SignInViewState extends State<SignInView> {
 
                       const SizedBox(height: 32),
 
-                      // Botão Google
                       FButton(
                         style: (style) => style.copyWith(
                           decoration: FWidgetStateMap.all(

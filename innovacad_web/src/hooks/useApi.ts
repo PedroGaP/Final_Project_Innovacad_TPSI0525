@@ -15,13 +15,10 @@ import {
 import { Class, type ClassResponseData } from "@/types/class";
 import { Course, type CourseResponseData } from "@/types/course";
 import { Enrollment, type EnrollmentResponseData } from "@/types/enrollment";
-import {
-  Grade,
-  type GradeResponseData,
-  type GradeTypeEnum,
-} from "@/types/grade";
+import { Grade, type GradeResponseData } from "@/types/grade";
 import { Module, type ModuleResponseData } from "@/types/module";
 import { Room, type RoomResponseData } from "@/types/room";
+import { Schedule, type ScheduleResponseData } from "@/types/schedule";
 import {
   Account,
   LinkSocialData,
@@ -68,6 +65,7 @@ export const API_ENDPOINTS = {
     MODULE: "/modules",
     ENROLLMENT: "/enrollments",
     AVAILABILITY: "/availabilities",
+    SCHEDULE: "/schedules",
   },
 } as const;
 
@@ -143,7 +141,8 @@ export const useApi = () => {
           : {}),
       };
 
-      const res = await fetch(`${baseUrl}${path}`, {
+      // const res = await fetch(`${baseUrl}${path}`, {
+      const res = await fetch(`${path}`, {
         headers: reqHeaders,
         method,
         credentials: "include",
@@ -880,6 +879,8 @@ export const useApi = () => {
       status?: string | undefined;
       start_date_timestamp?: string | undefined;
       end_date_timestamp?: string | undefined;
+      add_modules_ids?: string[] | undefined;
+      remove_modules_ids?: string[] | undefined;
     },
   ): Promise<Class> => {
     const updateData: Record<string, any> = {};
@@ -892,6 +893,12 @@ export const useApi = () => {
       updateData.start_date_timestamp = data.start_date_timestamp;
     if (data.end_date_timestamp !== undefined)
       updateData.end_date_timestamp = data.end_date_timestamp;
+    if (data.add_modules_ids !== undefined)
+      updateData.add_modules_ids = data.add_modules_ids;
+    if (data.remove_modules_ids !== undefined)
+      updateData.remove_modules_ids = data.remove_modules_ids;
+
+    console.log(`Update Data for Class ${classId}:`, updateData);
 
     const res = await fetchApi<ClassResponseData>(
       `${API_ENDPOINTS.ENTITY.CLASS}/${classId}`,
@@ -928,6 +935,8 @@ export const useApi = () => {
   const createCourse = async (data: {
     identifier: string | undefined;
     name: string | undefined;
+    add_modules_ids?: object[] | undefined;
+    remove_modules_ids?: string[] | undefined;
   }): Promise<Course> => {
     const res = await fetchApi<CourseResponseData>(
       API_ENDPOINTS.ENTITY.COURSE,
@@ -948,12 +957,18 @@ export const useApi = () => {
     data: {
       identifier?: string | undefined;
       name?: string | undefined;
+      add_modules_ids?: string[] | undefined;
+      remove_modules_ids?: string[] | undefined;
     },
   ): Promise<Course> => {
     const updateData: Record<string, any> = {};
 
     if (data.identifier !== undefined) updateData.identifier = data.identifier;
     if (data.name !== undefined) updateData.name = data.name;
+    if (data.add_modules_ids !== undefined)
+      updateData.add_modules_ids = data.add_modules_ids;
+    if (data.remove_modules_ids !== undefined)
+      updateData.remove_modules_ids = data.remove_modules_ids;
 
     const res = await fetchApi<CourseResponseData>(
       `${API_ENDPOINTS.ENTITY.COURSE}/${courseId}`,
@@ -1406,6 +1421,27 @@ export const useApi = () => {
     }
   };
 
+  const fetchSchedules = async (
+    classId: string | null,
+  ): Promise<Schedule[]> => {
+    if (classId === null) {
+      throw new Error(`Fetch schedules failed: classId is null`);
+    }
+
+    const res = await fetchApi<ScheduleResponseData[]>(
+      `${API_ENDPOINTS.ENTITY.SCHEDULE}/${classId}`,
+      "GET",
+    );
+    if (res.isError || !res.data) {
+      throw new Error(
+        `Fetch schedules (${classId}) failed: ${res.error?.message}`,
+      );
+    }
+    const rooms = res.data.map((item) => new Schedule(item));
+    console.log(rooms);
+    return rooms;
+  };
+
   return {
     // Sign In/Up
     signIn,
@@ -1484,5 +1520,8 @@ export const useApi = () => {
     createAvailability,
     updateAvailability,
     deleteAvailability,
+
+    // Schedules
+    fetchSchedules,
   };
 };

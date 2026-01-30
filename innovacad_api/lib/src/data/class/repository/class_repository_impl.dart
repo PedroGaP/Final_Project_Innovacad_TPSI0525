@@ -15,13 +15,35 @@ class ClassRepositoryImpl implements IClassRepository {
     try {
       db = await MysqlConfiguration.connect();
 
-      final results = await db.getAll(table: table);
+      final classesResults = await db.getAll(table: 'classes');
 
-      final classes = results.map((data) {
-        return OutputClassDao.fromJson(data);
-      }).toList();
+      final List<OutputClassDao> outputList = [];
 
-      return Result.success(classes);
+      for (final classData in classesResults) {
+        final classId = classData['class_id'];
+
+        final modulesResult = await db.query(
+          "SELECT courses_modules_id, classes_modules_id, current_duration FROM classes_modules WHERE class_id = ?",
+          whereValues: [classId],
+          isStmt: true,
+        );
+
+        final Map<String, dynamic> fullData = Map.from(classData);
+
+        fullData['modules'] = modulesResult.rowsAssoc
+            .map(
+              (row) => {
+                "classes_modules_id": row.assoc()['classes_modules_id'],
+                "courses_modules_id": row.assoc()['courses_modules_id'],
+                "current_duration": row.assoc()['current_duration'],
+              },
+            )
+            .toList();
+
+        outputList.add(OutputClassDao.fromJson(fullData));
+      }
+
+      return Result.success(outputList);
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -40,16 +62,34 @@ class ClassRepositoryImpl implements IClassRepository {
     try {
       db = await MysqlConfiguration.connect();
 
-      final result =
-          await db.getOne(table: table, where: {"class_id": id})
-              as Map<String, dynamic>;
+      final classResult = await db.getOne(
+        table: 'classes',
+        where: {"class_id": id},
+      );
 
-      if (result.isEmpty)
+      if (classResult.isEmpty) {
         return Result.failure(
           AppError(AppErrorType.notFound, "Class not found"),
         );
+      }
 
-      return Result.success(OutputClassDao.fromJson(result));
+      final modulesResult = await db.query(
+        "SELECT courses_modules_id, current_duration FROM classes_modules WHERE class_id = ?",
+        whereValues: [id],
+        isStmt: true,
+      );
+
+      final Map<String, dynamic> fullData = Map.from(classResult);
+
+      fullData['modules'] = modulesResult.rowsAssoc.map((row) {
+        return {
+          "classes_modules_id": row.assoc()['classes_modules_id'],
+          "courses_modules_id": row.assoc()['courses_modules_id'],
+          "current_duration": row.assoc()['current_duration'],
+        };
+      }).toList();
+
+      return Result.success(OutputClassDao.fromJson(fullData));
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -65,13 +105,12 @@ class ClassRepositoryImpl implements IClassRepository {
   Future<Result<OutputClassDao>> create(CreateClassDto dto) async {
     MysqlUtils? db;
 
-    db = await MysqlConfiguration.connect();
-
     try {
+      db = await MysqlConfiguration.connect();
       await db.startTrans();
 
       await db.insert(
-        table: table,
+        table: 'classes',
         insertData: {
           "course_id": dto.courseId,
           "location": dto.location,
@@ -80,36 +119,45 @@ class ClassRepositoryImpl implements IClassRepository {
           "start_date_timestamp": dto.startDateTimestamp.toIso8601String(),
           "end_date_timestamp": dto.endDateTimestamp.toIso8601String(),
         },
-        debug: true,
       );
 
-      final created = await db.getOne(
-        table: table,
+      final createdClass = await db.getOne(
+        table: 'classes',
         where: {"identifier": dto.identifier},
       );
 
-      if (created.isEmpty)
-        return Result.failure(
-          AppError(
-            AppErrorType.internal,
-            "Created class could not be retrieved",
-          ),
-        );
+      if (createdClass.isEmpty) throw Exception("Class creation failed");
+      final String newClassId = createdClass['class_id'];
+
+      if (dto.modulesIds != null && dto.modulesIds!.isNotEmpty) {
+        for (final String courseModuleId in dto.modulesIds!) {
+          await db.insert(
+            table: 'classes_modules',
+            insertData: {
+              'class_id': newClassId,
+              'courses_modules_id': courseModuleId,
+              'current_duration': 0,
+            },
+          );
+        }
+      }
 
       await db.commit();
 
-      return Result.success(
-        OutputClassDao.fromJson(
-          created
-              .map((k, v) => MapEntry(k.toString(), v))
-              .cast<String, dynamic>(),
-        ),
-      );
+      final klass = await getById(newClassId);
+      if (klass.isFailure) throw Exception("Class creation failed");
+
+      final createdClassMap = klass.data!.toJson();
+
+      print(createdClassMap);
+
+      return Result.success(OutputClassDao.fromJson(createdClassMap));
     } catch (e, s) {
+      await db?.rollback();
       return Result.failure(
         AppError(
           AppErrorType.internal,
-          "Something went wrong while creating the class...",
+          "Error creating class",
           details: {"error": e.toString(), "stacktrace": s.toString()},
         ),
       );
@@ -120,49 +168,92 @@ class ClassRepositoryImpl implements IClassRepository {
   Future<Result<OutputClassDao>> update(String id, UpdateClassDto dto) async {
     MysqlUtils? db;
 
+    print(dto.toJson());
+    print(dto.removeClassesModulesIds);
+
     try {
       db = await MysqlConfiguration.connect();
 
-      final existingClass = await getById(id);
+      final existingClassResult = await getById(id);
+      if (existingClassResult.isFailure || existingClassResult.data == null) {
+        return existingClassResult;
+      }
+      final existingClass = existingClassResult.data!;
 
-      if (existingClass.isFailure || existingClass.data == null)
-        return existingClass;
+      await db.startTrans();
 
       final updateData = <String, dynamic>{};
 
-      if (dto.courseId != null && dto.courseId != existingClass.data!.courseId)
+      if (dto.courseId != null && dto.courseId != existingClass.courseId)
         updateData["course_id"] = dto.courseId;
 
-      if (dto.location != null && dto.location != existingClass.data!.location)
+      if (dto.location != null && dto.location != existingClass.location)
         updateData["location"] = dto.location;
 
-      if (dto.identifier != null &&
-          dto.identifier != existingClass.data!.identifier)
+      if (dto.identifier != null && dto.identifier != existingClass.identifier)
         updateData["identifier"] = dto.identifier;
 
-      if (dto.status != null && dto.status != existingClass.data!.status)
-        updateData["status"] = dto.status.toString().split('.').last;
+      if (dto.status != null && dto.status!.name != existingClass.status.name)
+        updateData["status"] = dto.status!.name;
 
       if (dto.startDateTimestamp != null &&
-          dto.startDateTimestamp != existingClass.data!.startDateTimestamp)
+          dto.startDateTimestamp != existingClass.startDateTimestamp)
         updateData["start_date_timestamp"] = dto.startDateTimestamp!
             .toIso8601String();
 
       if (dto.endDateTimestamp != null &&
-          dto.endDateTimestamp != existingClass.data!.endDateTimestamp)
+          dto.endDateTimestamp != existingClass.endDateTimestamp)
         updateData["end_date_timestamp"] = dto.endDateTimestamp!
             .toIso8601String();
 
-      if (updateData.isEmpty) return existingClass;
+      if (updateData.isNotEmpty) {
+        await db.update(
+          table: 'classes',
+          updateData: updateData,
+          where: {"class_id": id},
+        );
+      }
 
-      await db.update(
-        table: table,
-        updateData: updateData,
-        where: {"class_id": id},
-      );
+      if (dto.removeClassesModulesIds != null &&
+          dto.removeClassesModulesIds!.isNotEmpty) {
+        for (final idToRemove in dto.removeClassesModulesIds!) {
+          await db.delete(
+            table: 'classes_modules',
+            where: {"class_id": id, "courses_modules_id": idToRemove},
+          );
+        }
+      }
+
+      if (dto.addModulesIds != null && dto.addModulesIds!.isNotEmpty) {
+        final currentModulesResult = await db.query(
+          "SELECT courses_modules_id FROM classes_modules WHERE class_id = ?",
+          whereValues: [id],
+          isStmt: true,
+        );
+
+        final Set<String> existingModuleIds = currentModulesResult.rowsAssoc
+            .map((row) => row.assoc()['courses_modules_id'].toString())
+            .toSet();
+
+        for (final idToAdd in dto.addModulesIds!) {
+          if (!existingModuleIds.contains(idToAdd)) {
+            await db.insert(
+              table: 'classes_modules',
+              insertData: {
+                "class_id": id,
+                "courses_modules_id": idToAdd,
+                "current_duration": 0,
+              },
+            );
+          }
+        }
+      }
+
+      await db.commit();
 
       return await getById(id);
     } catch (e, s) {
+      await db?.rollback();
       return Result.failure(
         AppError(
           AppErrorType.internal,

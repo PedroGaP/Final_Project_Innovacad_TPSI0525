@@ -1,8 +1,5 @@
-import 'dart:convert';
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/user/dto/reset_password/request_reset_password_dto.dart';
-import 'package:innovacad_api/src/data/user/dto/reset_password/reset_password_dto.dart';
-import 'package:innovacad_api/src/data/user/service/sign_service_impl.dart';
 import 'package:innovacad_api/src/data/data.dart';
 import 'package:vaden/vaden.dart';
 
@@ -13,7 +10,6 @@ class SignController {
 
   SignController(this._service);
 
-  //@Get('/session/<session-token>')
   @Get('/session')
   Future<Response> getSession(@Header('cookie') String sessionCookie) async {
     final result = await _service.getSession(sessionCookie);

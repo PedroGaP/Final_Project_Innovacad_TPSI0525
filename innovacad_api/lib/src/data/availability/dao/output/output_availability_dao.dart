@@ -13,23 +13,24 @@ class OutputAvailabilityDao {
   @annotation.JsonKey(name: 'trainer_id')
   final String trainerId;
 
-  @annotation.JsonKey(name: 'status')
-  final String status;
-
-  @annotation.JsonKey(name: 'start_date_timestamp')
+  @annotation.JsonKey(name: 'date_day')
   @DateTimeConverter()
-  final DateTime startDateTimestamp;
+  final DateTime dateDay;
 
-  @annotation.JsonKey(name: 'end_date_timestamp')
-  @DateTimeConverter()
-  final DateTime endDateTimestamp;
+  @annotation.JsonKey(name: 'slot_number')
+  @NumberConverter()
+  final int slotNumber;
+
+  @annotation.JsonKey(name: 'is_booked')
+  @NumberConverter()
+  final int isBooked;
 
   OutputAvailabilityDao({
     required this.availabilityId,
     required this.trainerId,
-    required this.status,
-    required this.startDateTimestamp,
-    required this.endDateTimestamp,
+    required this.dateDay,
+    required this.slotNumber,
+    required this.isBooked,
   });
 
   Map<String, dynamic> toJson() => _$OutputAvailabilityDaoToJson(this);

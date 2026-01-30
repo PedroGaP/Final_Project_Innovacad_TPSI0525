@@ -8,40 +8,45 @@ part 'output_schedule_dao.g.dart';
 @annotation.JsonSerializable()
 class OutputScheduleDao {
   @annotation.JsonKey(name: 'schedule_id')
-  final String scheduleId;
+  final String? scheduleId;
 
-  @annotation.JsonKey(name: 'class_module_id')
-  final String classModuleId;
+  @annotation.JsonKey(name: 'regime_type')
+  final String? regimeType;
 
-  @annotation.JsonKey(name: 'trainer_id')
-  final String trainerId;
+  @annotation.JsonKey(name: 'module_name')
+  final String? moduleName;
 
-  @annotation.JsonKey(name: 'availability_id')
-  final String availabilityId;
+  @annotation.JsonKey(name: 'trainer_name')
+  final String? trainerName;
 
-  @annotation.JsonKey(name: 'room_id')
-  final int? roomId;
-
-  @annotation.JsonKey(name: 'online')
-  final bool online;
-
-  @annotation.JsonKey(name: 'start_date_timestamp')
+  @annotation.JsonKey(name: 'date_day')
   @DateTimeConverter()
-  final DateTime startDateTimestamp;
+  final DateTime? dateDay;
 
-  @annotation.JsonKey(name: 'end_date_timestamp')
-  @DateTimeConverter()
-  final DateTime endDateTimestamp;
+  @annotation.JsonKey(name: 'start_time')
+  @DurationConverter()
+  final Duration? startTime;
+
+  @annotation.JsonKey(name: 'end_time')
+  @DurationConverter()
+  final Duration? endTime;
+
+  @annotation.JsonKey(name: 'is_online')
+  final String? isOnline;
+
+  @annotation.JsonKey(name: 'room_name')
+  final String? roomName;
 
   OutputScheduleDao({
-    required this.scheduleId,
-    required this.classModuleId,
-    required this.trainerId,
-    required this.availabilityId,
-    this.roomId,
-    required this.online,
-    required this.startDateTimestamp,
-    required this.endDateTimestamp,
+    this.scheduleId,
+    this.moduleName,
+    this.trainerName,
+    this.startTime,
+    this.endTime,
+    this.isOnline,
+    this.dateDay,
+    this.regimeType,
+    this.roomName,
   });
 
   Map<String, dynamic> toJson() => _$OutputScheduleDaoToJson(this);

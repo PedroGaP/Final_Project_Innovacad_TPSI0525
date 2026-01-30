@@ -31,8 +31,15 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       }
 
       return Result.success(daos);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } catch (e, s) {
+      print(s);
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          e.toString(),
+          details: {"stacktrace": s.toString()},
+        ),
+      );
     }
   }
 
@@ -174,7 +181,10 @@ class TrainerRepositoryImpl implements ITrainerRepository {
           ),
         );
 
-      final isUserUpdated = await _remoteUserService.updateUser(res.data!.id, dto);
+      final isUserUpdated = await _remoteUserService.updateUser(
+        res.data!.id,
+        dto,
+      );
 
       if (isUserUpdated.isFailure)
         return Result.failure(

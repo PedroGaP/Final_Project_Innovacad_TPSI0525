@@ -11,7 +11,7 @@ class OutputTraineeDao extends OutputUserDao {
   @annotation.JsonKey(name: 'trainee_id')
   final String traineeId;
 
-  @annotation.JsonKey(name: 'birthday_date') // Changeable
+  @annotation.JsonKey(name: 'birthday_date')
   @DateTimeConverter()
   final DateTime birthdayDate;
 

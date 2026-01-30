@@ -1,11 +1,15 @@
-import { createResource } from "solid-js";
+import { createMemo, createResource } from "solid-js";
 import type { Enrollment } from "@/types/enrollment";
+import type { Trainee } from "@/types/user";
+import type { Class } from "@/types/class";
 import { useApi } from "@/hooks/useApi";
 import toast from "solid-toast";
 import EntityTable from "@/components/EntityTable";
+import type { ModalFieldDefinition } from "@/components/Modal/Edit";
 
 const createEmptyEnrollment = (): Enrollment =>
   ({
+    enrollment_id: "",
     class_id: "",
     trainee_id: "",
     final_grade: "",
@@ -18,17 +22,23 @@ const validateEnrollment = (
 
   const class_id = String(enrollment.class_id || "").trim();
   if (!class_id) {
-    errors.push("Class Id is required");
+    errors.push("Class is required");
   }
 
   const trainee_id = String(enrollment.trainee_id || "").trim();
   if (!trainee_id) {
-    errors.push("Trainee Id is required");
+    errors.push("Trainee is required");
   }
 
+  // Final grade might be optional initially, but if provided, validate range
   const final_grade = String(enrollment.final_grade || "").trim();
-  if (!final_grade) {
-    errors.push("Final Grade is required");
+  if (
+    final_grade &&
+    (isNaN(Number(final_grade)) ||
+      Number(final_grade) < 0 ||
+      Number(final_grade) > 20)
+  ) {
+    errors.push("Final Grade must be between 0 and 20");
   }
 
   return {
@@ -65,9 +75,47 @@ const getChangedFields = (
 const EnrollmentsPage = () => {
   const api = useApi();
 
-  const [usersData, { mutate }] = createResource<Enrollment[]>(
+  // 1. Fetch main data
+  const [enrollmentsData, { mutate }] = createResource<Enrollment[]>(
     api.fetchEnrollments,
   );
+
+  // 2. Fetch Relations for Dropdowns (Lazy Loading via Resource)
+  const [trainees] = createResource<Trainee[]>(api.fetchTrainees);
+  const [classes] = createResource<Class[]>(api.fetchClasses);
+
+  // 3. Prepare Options for Select Boxes
+  const traineeOptions = createMemo(() => {
+    const list = trainees();
+    if (!list) return [];
+    // Format: "Name (Email)" to make it searchable by native browser typing
+    return list.map((t) => ({
+      label: `${t.name} (${t.email})`,
+      value: t.traineeId!,
+    }));
+  });
+
+  const classOptions = createMemo(() => {
+    const list = classes();
+    if (!list) return [];
+    return list.map((c) => ({
+      label: `${c.identifier} - ${c.location} (${c.status})`,
+      value: c.class_id!,
+    }));
+  });
+
+  // 4. Helpers for Table Display (Show Names instead of IDs)
+  const getTraineeName = (id: string | undefined) => {
+    if (!id || !trainees()) return id;
+    const found = trainees()?.find((t) => t.traineeId === id);
+    return found ? found.name : id;
+  };
+
+  const getClassIdentifier = (id: string | undefined) => {
+    if (!id || !classes()) return id;
+    const found = classes()?.find((c) => c.class_id === id);
+    return found ? `${found.identifier} (${found.location})` : id;
+  };
 
   const handleSaveEnrollment = async (
     enrollment: Enrollment,
@@ -103,7 +151,9 @@ const EnrollmentsPage = () => {
         const enrollmentObj = {
           class_id: String(enrollment.class_id),
           trainee_id: String(enrollment.trainee_id),
-          final_grade: String(enrollment.final_grade),
+          final_grade: enrollment.final_grade
+            ? String(enrollment.final_grade)
+            : "0",
         };
 
         const newEnrollment = await api.createEnrollment(enrollmentObj);
@@ -126,21 +176,61 @@ const EnrollmentsPage = () => {
         prev?.filter((u) => u.enrollment_id !== userToDelete.enrollment_id) ||
         [],
     );
+    toast.success("Enrollment deleted successfully");
   };
+
+  // 5. Define Form Fields for the Modal
+  const formFieldsConfig = createMemo<ModalFieldDefinition<Enrollment>[]>(
+    () => [
+      {
+        name: "class_id",
+        label: "Class",
+        type: "select",
+        options: classOptions(),
+        required: true,
+        placeholder: classes.loading ? "Loading Classes..." : "Select Class",
+      },
+      {
+        name: "trainee_id",
+        label: "Trainee",
+        type: "select", // <--- Converted to Select Box
+        options: traineeOptions(),
+        required: true,
+        placeholder: trainees.loading
+          ? "Loading Trainees..."
+          : "Select Trainee",
+      },
+      {
+        name: "final_grade",
+        label: "Final Grade (0-20)",
+        type: "number",
+      },
+    ],
+  );
 
   return (
     <EntityTable<Enrollment>
       title="Manage Enrollments"
-      data={usersData}
+      data={enrollmentsData}
       handleEditClick={(enrollment) => ({
         ...enrollment,
       })}
       handleAddClick={() => createEmptyEnrollment()}
       confirmDelete={confirmDelete}
       handleSave={handleSaveEnrollment}
+      formFields={formFieldsConfig()} // <--- Pass the config here
       filter={(e: Enrollment, search: string) => {
         const s = search.toLowerCase();
-        return String(e.final_grade)?.toLowerCase().includes(s) ?? false;
+        // Allow searching by grade, or by the resolved name of the trainee/class
+        const traineeName = getTraineeName(e.trainee_id)?.toLowerCase() || "";
+        const classIdent = getClassIdentifier(e.class_id)?.toLowerCase() || "";
+
+        return (
+          (String(e.final_grade)?.toLowerCase().includes(s) ||
+            traineeName.includes(s) ||
+            classIdent.includes(s)) ??
+          false
+        );
       }}
       fields={[
         {
@@ -150,21 +240,41 @@ const EnrollmentsPage = () => {
           smaller: true,
         },
         {
-          formattedName: "Class Id",
+          formattedName: "Class",
           fieldName: "class_id",
-          canCopy: true,
+          // Use custom generation to show readable name instead of UUID
+          customGeneration: (e) => (
+            <span class="font-mono text-xs">
+              {getClassIdentifier(e.class_id)}
+            </span>
+          ),
           smaller: true,
         },
         {
-          formattedName: "Trainee Id",
+          formattedName: "Trainee",
           fieldName: "trainee_id",
+          // Use custom generation to show readable name instead of UUID
+          customGeneration: (e) => (
+            <div class="flex flex-col">
+              <span class="font-medium">{getTraineeName(e.trainee_id)}</span>
+              <span class="text-[10px] opacity-50 font-mono">
+                {e.trainee_id?.substring(0, 8)}...
+              </span>
+            </div>
+          ),
           canCopy: true,
-          smaller: true,
         },
         {
           formattedName: "Final Grade",
           fieldName: "final_grade",
           smaller: true,
+          customGeneration: (e) => (
+            <div
+              class={`badge ${Number(e.final_grade) >= 10 ? "badge-success" : "badge-error"} badge-outline`}
+            >
+              {e.final_grade}
+            </div>
+          ),
         },
       ]}
     />

@@ -32,6 +32,10 @@ class OutputClassDao {
   @DateTimeConverter()
   final DateTime endDateTimestamp;
 
+  @annotation.JsonKey(name: 'modules')
+  @ModuleListConverter()
+  final List<OutputClassModuleDao> modules;
+
   OutputClassDao({
     required this.classId,
     required this.courseId,
@@ -40,6 +44,7 @@ class OutputClassDao {
     required this.status,
     required this.startDateTimestamp,
     required this.endDateTimestamp,
+    required this.modules,
   });
 
   Map<String, dynamic> toJson() => _$OutputClassDaoToJson(this);

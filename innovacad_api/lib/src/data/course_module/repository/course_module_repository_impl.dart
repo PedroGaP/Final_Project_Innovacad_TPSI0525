@@ -127,7 +127,7 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
       final updateData = <String, dynamic>{};
 
       if (dto.courseId != null &&
-          dto.courseId != existingCourseModule.data!.courseId)
+          dto.courseId != existingCourseModule.data!.coursesModulesId)
         updateData["course_id"] = dto.courseId;
 
       if (dto.moduleId != null &&

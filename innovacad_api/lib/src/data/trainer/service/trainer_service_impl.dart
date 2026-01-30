@@ -39,7 +39,6 @@ class TrainerServiceImpl implements ITrainerService {
 
   @override
   Future<Result<OutputTrainerDao>> linkAccount(UserLinkAccountDto dto) {
-    // TODO: implement linkAccount
     throw UnimplementedError();
   }
 }

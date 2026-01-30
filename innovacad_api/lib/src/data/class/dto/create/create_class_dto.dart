@@ -34,6 +34,10 @@ class CreateClassDto {
   @DateTimeConverter()
   final DateTime endDateTimestamp;
 
+  @annotation.JsonKey(name: 'modules')
+  @v.JsonKey('modules_ids')
+  final List<String>? modulesIds;
+
   CreateClassDto({
     required this.courseId,
     required this.location,
@@ -41,6 +45,7 @@ class CreateClassDto {
     required this.status,
     required this.startDateTimestamp,
     required this.endDateTimestamp,
+    this.modulesIds,
   });
 
   Map<String, dynamic> toJson() => _$CreateClassDtoToJson(this);
