@@ -35,6 +35,7 @@ class CreateClassDto {
   final DateTime endDateTimestamp;
 
   @annotation.JsonKey(name: 'modules')
+  @v.JsonKey('modules_ids')
   final List<String>? modulesIds;
 
   CreateClassDto({

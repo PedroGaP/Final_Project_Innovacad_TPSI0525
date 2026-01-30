@@ -10,12 +10,16 @@ class OutputClassModuleDao {
   @annotation.JsonKey(name: 'courses_modules_id')
   final String coursesModulesId;
 
+  @annotation.JsonKey(name: 'classes_modules_id')
+  final String classesModulesId;
+
   @annotation.JsonKey(name: 'current_duration')
   @NumberConverter()
   final int currentDuration;
 
   OutputClassModuleDao({
     required this.coursesModulesId,
+    required this.classesModulesId,
     required this.currentDuration,
   });
 

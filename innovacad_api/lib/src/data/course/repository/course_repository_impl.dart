@@ -72,8 +72,6 @@ class CourseRepositoryImpl implements ICourseRepository {
         final modulesList = modulesMap[cId] ?? [];
         fullData['modules'] = modulesList;
 
-        print('DEBUG: Curso $cId tem ${modulesList.length} módulos');
-
         return OutputCourseDao.fromJson(fullData);
       }).toList();
 
@@ -135,10 +133,6 @@ class CourseRepositoryImpl implements ICourseRepository {
 
       fullData['modules'] = modulesList;
 
-      print(
-        'DEBUG getById: Curso encontrado com ${modulesList.length} módulos.',
-      );
-
       return Result.success(OutputCourseDao.fromJson(fullData));
     } catch (e, s) {
       return Result.failure(
@@ -173,43 +167,60 @@ class CourseRepositoryImpl implements ICourseRepository {
 
       if (dto.addModulesIds != null && dto.addModulesIds!.isNotEmpty) {
         final Map<String, String> moduleToRelationMap = {};
+        final insertValues = <String>[];
+        final insertParams = <dynamic>[];
 
         for (final item in dto.addModulesIds!) {
-          final String newRelationUuid = uuid.v4();
-
-          await db.insert(
-            table: 'courses_modules',
-            insertData: {
-              "courses_modules_id": newRelationUuid,
-              "course_id": newCourseId,
-              "module_id": item.moduleId,
-              "sequence_course_module_id": null,
-            },
-          );
+          final newRelationUuid = uuid.v4();
 
           moduleToRelationMap[item.moduleId] = newRelationUuid;
+
+          insertValues.add("(?, ?, ?, ?)");
+          insertParams.addAll([
+            newRelationUuid,
+            newCourseId,
+            item.moduleId,
+            null,
+          ]);
         }
+
+        if (insertValues.isNotEmpty) {
+          final insertSql =
+              "INSERT INTO courses_modules (courses_modules_id, course_id, module_id, sequence_course_module_id) VALUES ${insertValues.join(',')}";
+
+          await db.query(insertSql, whereValues: insertParams, isStmt: true);
+        }
+
+        final caseCases = <String>[];
+        final caseParams = <dynamic>[];
+        final idsToUpdate = <String>[];
 
         for (final item in dto.addModulesIds!) {
           if (item.sequenceModuleId != null) {
-            final String currentRelationUuid =
-                moduleToRelationMap[item.moduleId]!;
+            final currentUuid = moduleToRelationMap[item.moduleId];
+            final parentUuid = moduleToRelationMap[item.sequenceModuleId];
 
-            final String? parentRelationUuid =
-                moduleToRelationMap[item.sequenceModuleId];
-
-            if (parentRelationUuid != null) {
-              await db.update(
-                table: 'courses_modules',
-                updateData: {"sequence_course_module_id": parentRelationUuid},
-                where: {"courses_modules_id": currentRelationUuid},
-              );
-            } else {
-              print(
-                "Aviso: Módulo ${item.moduleId} depende de ${item.sequenceModuleId} que não foi incluído.",
-              );
+            if (currentUuid != null && parentUuid != null) {
+              caseCases.add("WHEN ? THEN ?");
+              caseParams.add(currentUuid);
+              caseParams.add(parentUuid);
+              idsToUpdate.add("'$currentUuid'");
             }
           }
+        }
+
+        if (caseCases.isNotEmpty) {
+          final updateSql =
+              """
+            UPDATE courses_modules 
+            SET sequence_course_module_id = CASE courses_modules_id 
+            ${caseCases.join(' ')} 
+            ELSE sequence_course_module_id 
+            END
+            WHERE courses_modules_id IN (${idsToUpdate.join(',')})
+          """;
+
+          await db.query(updateSql, whereValues: caseParams, isStmt: true);
         }
       }
 
@@ -218,6 +229,7 @@ class CourseRepositoryImpl implements ICourseRepository {
       return await getById(newCourseId);
     } catch (e, s) {
       await db?.rollback();
+      print("Error Creating Course: $e");
       return Result.failure(
         AppError(
           AppErrorType.internal,
@@ -237,9 +249,8 @@ class CourseRepositoryImpl implements ICourseRepository {
       db = await MysqlConfiguration.connect();
 
       final existingCourseResult = await getById(id);
-      if (existingCourseResult.isFailure || existingCourseResult.data == null) {
+      if (existingCourseResult.isFailure || existingCourseResult.data == null)
         return existingCourseResult;
-      }
 
       await db.startTrans();
 
@@ -260,40 +271,44 @@ class CourseRepositoryImpl implements ICourseRepository {
 
       if (dto.removeCoursesModules != null &&
           dto.removeCoursesModules!.isNotEmpty) {
-        for (final idToRemove in dto.removeCoursesModules!) {
-          await db.update(
-            table: 'courses_modules',
-            updateData: {'sequence_course_module_id': null},
-            where: {'sequence_course_module_id': idToRemove},
-          );
+        final idsToRemoveString = dto.removeCoursesModules!
+            .map((e) => "'$e'")
+            .join(',');
 
-          await db.delete(
-            table: 'courses_modules',
-            where: {"courses_modules_id": idToRemove},
-          );
-        }
+        await db.query(
+          "UPDATE courses_modules SET sequence_course_module_id = NULL WHERE sequence_course_module_id IN ($idsToRemoveString)",
+        );
+        await db.query(
+          "DELETE FROM courses_modules WHERE courses_modules_id IN ($idsToRemoveString)",
+        );
       }
 
+      // --- PASSO C: Bulk Insert & Link (VERSÃO ESTÁVEL) ---
       if (dto.addCoursesModules != null && dto.addCoursesModules!.isNotEmpty) {
+        // 1. Carregar estado atual
+        print("[DEBUG] Fetching current database state...");
         final currentRows = await db.query(
           "SELECT courses_modules_id, module_id FROM courses_modules WHERE course_id = ?",
           whereValues: [id],
           isStmt: true,
         );
 
+        // MAPA: Normalizamos a chave (module_id) para lowercase para evitar erros de comparação
         final Map<String, String> moduleToRelationMap = {
           for (var row in currentRows.rowsAssoc)
-            row.assoc()['module_id'].toString(): row
+            row.assoc()['module_id'].toString().trim().toLowerCase(): row
                 .assoc()['courses_modules_id']
                 .toString(),
         };
 
+        // 2. Calcular quem precisa de ser inserido
+        // Nota: Também normalizamos o ID do DTO para lowercase
         final explicitIds = dto.addCoursesModules!
-            .map((e) => e.moduleId)
+            .map((e) => e.moduleId.trim().toLowerCase())
             .toSet();
 
         final implicitParents = dto.addCoursesModules!
-            .map((e) => e.sequenceModuleId)
+            .map((e) => e.sequenceModuleId?.trim().toLowerCase())
             .where(
               (seqId) =>
                   seqId != null &&
@@ -302,49 +317,80 @@ class CourseRepositoryImpl implements ICourseRepository {
             )
             .toSet();
 
-        Future<void> insertModule(String moduleId) async {
-          if (!moduleToRelationMap.containsKey(moduleId)) {
+        // Lista final de módulos NOVOS a inserir
+        final List<String> modulesToInsert =
+            [...implicitParents, ...explicitIds]
+                .where(
+                  (modId) =>
+                      !moduleToRelationMap.containsKey(modId!) && modId != null,
+                )
+                .cast<String>()
+                .toList();
+
+        // ---------------------------------------------------------
+        // OTIMIZAÇÃO 1: Bulk Insert (Mantemos, pois funciona bem)
+        // ---------------------------------------------------------
+        if (modulesToInsert.isNotEmpty) {
+          final insertValues = <String>[];
+          final insertParams = <dynamic>[];
+
+          print("[DEBUG] Inserting ${modulesToInsert.length} new modules...");
+
+          for (final modId in modulesToInsert) {
             final newRelationUuid = uuid.v4();
-            await db!.insert(
-              table: 'courses_modules',
-              insertData: {
-                "courses_modules_id": newRelationUuid,
-                "course_id": id,
-                "module_id": moduleId,
-                "sequence_course_module_id": null,
-              },
-            );
-            moduleToRelationMap[moduleId] = newRelationUuid;
+
+            // Atualizar mapa (chave lowercase)
+            moduleToRelationMap[modId] = newRelationUuid;
+
+            insertValues.add("(?, ?, ?, ?)");
+            // O modId aqui já é o lowercase/trim da lista acima
+            insertParams.addAll([newRelationUuid, id, modId, null]);
           }
+
+          final insertSql =
+              "INSERT INTO courses_modules (courses_modules_id, course_id, module_id, sequence_course_module_id) VALUES ${insertValues.join(',')}";
+
+          await db.query(insertSql, whereValues: insertParams, isStmt: true);
         }
 
-        for (final parentId in implicitParents) {
-          await insertModule(parentId!);
-        }
-
+        print("[DEBUG] Updating sequences...");
+        
         for (final item in dto.addCoursesModules!) {
-          await insertModule(item.moduleId);
-        }
+          
+          // 1. Encontrar o UUID do módulo que estamos a atualizar
+          final modKey = item.moduleId.trim().toLowerCase();
+          final currentUuid = moduleToRelationMap[modKey];
 
-        for (final item in dto.addCoursesModules!) {
-          final currentRelationUuid = moduleToRelationMap[item.moduleId]!;
-          String? parentRelationUuid;
+          if (currentUuid == null) {
+            print("[DEBUG] ERRO: UUID não encontrado para o módulo ${item.moduleId}");
+            continue;
+          }
 
+          // 2. Verificar se é para ligar a um Pai ou para Desligar (Null)
           if (item.sequenceModuleId != null) {
-            parentRelationUuid = moduleToRelationMap[item.sequenceModuleId];
+            // --- CASO A: Tem um Pai (Ligar) ---
+            final seqKey = item.sequenceModuleId!.trim().toLowerCase();
+            final parentUuid = moduleToRelationMap[seqKey];
 
-            if (parentRelationUuid == null) {
-              print(
-                "AVISO: Dependência ${item.sequenceModuleId} não encontrada.",
+            if (parentUuid != null) {
+              await db.update(
+                table: 'courses_modules',
+                updateData: {"sequence_course_module_id": parentUuid},
+                where: {"courses_modules_id": currentUuid},
               );
+            } else {
+              print("[DEBUG] AVISO: Pai ${item.sequenceModuleId} não encontrado no mapa.");
             }
+          } else {
+            // --- CASO B: É Null (Remover Sequência / "None") ---
+            // AQUI ESTÁ A CORREÇÃO: Forçamos o update para NULL explicitamente
+            
+            await db.update(
+              table: 'courses_modules',
+              updateData: {"sequence_course_module_id": null}, // <--- O Segredo
+              where: {"courses_modules_id": currentUuid},
+            );
           }
-
-          await db.update(
-            table: 'courses_modules',
-            updateData: {"sequence_course_module_id": parentRelationUuid},
-            where: {"courses_modules_id": currentRelationUuid},
-          );
         }
       }
 
@@ -355,7 +401,7 @@ class CourseRepositoryImpl implements ICourseRepository {
       return Result.failure(
         AppError(
           AppErrorType.internal,
-          "Error updating course",
+          "Error updating course batch",
           details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
@@ -368,6 +414,9 @@ class CourseRepositoryImpl implements ICourseRepository {
 
     try {
       final existingCourse = await getById(id);
+
+      print(existingCourse.data.toString());
+      print(id);
 
       if (existingCourse.isFailure || existingCourse.data == null)
         return existingCourse;

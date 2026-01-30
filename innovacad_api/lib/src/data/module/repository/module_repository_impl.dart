@@ -86,9 +86,7 @@ class ModuleRepositoryImpl implements IModuleRepository {
         },
       );
 
-      final created =
-          await db.getOne(table: table, where: {"name": dto.name})
-              as Map<String, dynamic>;
+      final created = await db.getOne(table: table, where: {"name": dto.name});
 
       if (created.isEmpty)
         return Result.failure(
@@ -100,7 +98,13 @@ class ModuleRepositoryImpl implements IModuleRepository {
 
       await db.commit();
 
-      return Result.success(OutputModuleDao.fromJson(created));
+      return Result.success(
+        OutputModuleDao.fromJson(
+          created
+              .map((k, v) => MapEntry(k.toString(), v))
+              .cast<String, dynamic>(),
+        ),
+      );
     } catch (e, s) {
       return Result.failure(
         AppError(

@@ -18,7 +18,7 @@ class UpdateEnrollmentDto {
   @vaden.JsonKey('final_grade')
   final String? finalGrade;
 
-  double get finalGradeDouble => double.parse(finalGrade!);
+  double? get finalGradeDouble => double.tryParse(finalGrade ?? '');
 
   UpdateEnrollmentDto({this.classId, this.traineeId, this.finalGrade});
 

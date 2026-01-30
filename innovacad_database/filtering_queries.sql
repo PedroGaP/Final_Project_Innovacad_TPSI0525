@@ -113,3 +113,7 @@ VALUES ('834f65af-f8a1-11f0-adbc-e6c93dd26891', 'PAL', '0525', 'starting',' 2026
         INNER JOIN modules m ON cm.module_id = m.module_id;
 
 select * from courses_modules;
+select * from classes_modules;
+delete from classes where identifier = '0925';
+select * from classes;
+select * from user;

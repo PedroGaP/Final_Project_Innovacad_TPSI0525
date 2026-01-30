@@ -6,7 +6,12 @@ part 'link_module_dto.g.dart';
 @v.DTO()
 @JsonSerializable()
 class LinkModuleDto {
+  @JsonKey(name: 'module_id')
+  @v.JsonKey('module_id')
   final String moduleId;
+
+  @JsonKey(name: 'sequence_course_module_id')
+  @v.JsonKey('sequence_course_module_id')
   final String? sequenceModuleId;
 
   LinkModuleDto({required this.moduleId, this.sequenceModuleId});

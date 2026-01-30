@@ -1,3 +1,4 @@
+import 'package:innovacad_api/src/core/core.dart';
 import 'package:vaden/vaden.dart';
 import 'package:json_annotation/json_annotation.dart' as annotation;
 
@@ -16,7 +17,8 @@ class OutputEnrollmentDao {
   final String traineeId;
 
   @annotation.JsonKey(name: 'final_grade')
-  final String finalGrade;
+  @DoubleConverter()
+  final double finalGrade;
 
   OutputEnrollmentDao({
     required this.enrollmentId,

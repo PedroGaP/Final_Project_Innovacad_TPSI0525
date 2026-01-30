@@ -8,12 +8,12 @@ part of 'link_module_dto.dart';
 
 LinkModuleDto _$LinkModuleDtoFromJson(Map<String, dynamic> json) =>
     LinkModuleDto(
-      moduleId: json['moduleId'] as String,
-      sequenceModuleId: json['sequenceModuleId'] as String?,
+      moduleId: json['module_id'] as String,
+      sequenceModuleId: json['sequence_course_module_id'] as String?,
     );
 
 Map<String, dynamic> _$LinkModuleDtoToJson(LinkModuleDto instance) =>
     <String, dynamic>{
-      'moduleId': instance.moduleId,
-      'sequenceModuleId': instance.sequenceModuleId,
+      'module_id': instance.moduleId,
+      'sequence_course_module_id': instance.sequenceModuleId,
     };

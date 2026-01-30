@@ -13,10 +13,12 @@ class CreateCourseDto {
   @annotation.JsonKey(name: 'name')
   final String name;
 
-  @annotation.JsonKey(name: 'add_modules_ids')
+  @annotation.JsonKey(name: 'add_courses_modules')
+  @JsonKey('add_modules_ids')
   final List<LinkModuleDto>? addModulesIds;
 
-  @annotation.JsonKey(name: 'remove_courses_modules_ids')
+  @annotation.JsonKey(name: 'remove_courses_modules')
+  @JsonKey('remove_modules_ids')
   final List<String>? removeCoursesModulesIds;
 
   CreateCourseDto({

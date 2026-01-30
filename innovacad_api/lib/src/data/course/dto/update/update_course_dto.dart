@@ -13,10 +13,12 @@ class UpdateCourseDto {
   @annotation.JsonKey(name: 'name')
   final String? name;
 
-  @annotation.JsonKey(name: 'add_courses_modules')
+  @annotation.JsonKey(name: 'add_modules_ids')
+  @JsonKey('add_modules_ids')
   final List<LinkModuleDto>? addCoursesModules;
 
-  @annotation.JsonKey(name: 'remove_courses_modules')
+  @annotation.JsonKey(name: 'remove_modules_ids')
+  @JsonKey('remove_modules_ids')
   final List<String>? removeCoursesModules;
 
   UpdateCourseDto({

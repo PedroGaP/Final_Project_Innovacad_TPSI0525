@@ -96,7 +96,7 @@ const getChangedFields = (
   }
 
   if (String(oldTrainee.birthdayDate) !== String(newTrainee.birthdayDate)) {
-    changes.birthdayDate = String(newTrainee.birthdayDate);
+    changes.birthdayDate = epochToDateTime(newTrainee.birthdayDate!);
   }
 
   return changes;
@@ -138,7 +138,7 @@ const TraineePage = () => {
         const traineeObj = {
           name: String(trainee.name),
           email: String(trainee.email),
-          birthdayDate: String(trainee.birthdayDate),
+          birthdayDate: epochToDateTime(trainee.birthdayDate!),
           username: String(trainee.username),
           password: "T" + Math.random().toString(36).slice(-10) + "1@",
         };
@@ -240,6 +240,32 @@ const TraineePage = () => {
           formattedName: "Verified",
           fieldName: "verified",
           smaller: true,
+        },
+      ]}
+      formFields={[
+        {
+          label: "Email",
+          name: "email",
+          required: true,
+          type: "email",
+        },
+        {
+          label: "Username",
+          name: "username",
+          required: true,
+          type: "text",
+        },
+        {
+          label: "Name",
+          name: "name",
+          required: true,
+          type: "text",
+        },
+        {
+          label: "Birthday Date",
+          name: "birthdayDate",
+          required: true,
+          type: "datetime-local",
         },
       ]}
     />

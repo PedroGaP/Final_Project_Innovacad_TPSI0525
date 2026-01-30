@@ -17,11 +17,6 @@ const createEmptyGrade = (): Grade =>
 const validateGrade = (grade: Grade): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
-  const grade_id = String(grade.grade_id || "").trim();
-  if (!grade_id) {
-    errors.push("Grade Id is required");
-  }
-
   const grade_module_id = String(grade.grade || "").trim();
   if (!grade_module_id) {
     errors.push("Class Module Id is required");
@@ -40,7 +35,9 @@ const validateGrade = (grade: Grade): { valid: boolean; errors: string[] } => {
   const grade_type = String(grade.grade_type || "").trim();
   if (!grade_type) {
     errors.push("Grade Type is required");
-  } else if (!(grade_type in GradeTypeEnum)) {
+  } else if (
+    !Object.values(GradeTypeEnum).includes(grade_type as GradeTypeEnum)
+  ) {
     errors.push("Grade Type is invalid");
   }
 
@@ -146,6 +143,36 @@ const GradesPage = () => {
       handleAddClick={() => createEmptyGrade()}
       confirmDelete={confirmDelete}
       handleSave={handleSaveTrainee}
+      formFields={[
+        {
+          label: "Class Module ID",
+          name: "class_module_id",
+          type: "text",
+          required: true,
+        },
+        {
+          label: "Trainee Id",
+          name: "trainee_id",
+          type: "text",
+          required: true,
+        },
+        {
+          label: "Grade",
+          name: "grade",
+          type: "number",
+          required: false,
+        },
+        {
+          label: "Grade Type",
+          name: "grade_type",
+          type: "select",
+          options: Object.values(GradeTypeEnum).map((value) => ({
+            label: value,
+            value: value,
+          })),
+          required: true,
+        },
+      ]}
       fields={[
         {
           formattedName: "Grade ID",

@@ -130,9 +130,10 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
           dto.classId != existingEnrollment.data!.classId)
         updateData["class_id"] = dto.classId;
 
-      if (dto.traineeId != null ||
-          dto.traineeId != existingEnrollment.data!.traineeId)
+      if ((dto.traineeId != null && dto.traineeId!.isNotEmpty) &&
+          dto.traineeId != existingEnrollment.data!.traineeId) {
         updateData["trainee_id"] = dto.traineeId;
+      }
 
       if (dto.finalGrade != null ||
           dto.finalGrade != existingEnrollment.data!.finalGrade)
@@ -140,10 +141,13 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
 
       if (updateData.isEmpty) return existingEnrollment;
 
+      print("Update Data: $updateData");
+
       await db.update(
         table: table,
         updateData: updateData,
         where: {"enrollment_id": id},
+        debug: true,
       );
 
       return await getById(id);

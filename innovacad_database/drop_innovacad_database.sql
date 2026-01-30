@@ -1,81 +1,40 @@
-use innovacad_tpsi0525;
+USE innovacad_tpsi0525;
 
--- Comment this to not DELETE Better Auth API Tables
+SET FOREIGN_KEY_CHECKS = 0;
 
+-- =======================================================
+-- BETTER AUTH TABLES (DO NOT TOUCH)
+-- =======================================================
 /*
 DELETE FROM user WHERE 1;
 DELETE FROM session WHERE 1;
 DELETE FROM account WHERE 1;
 DELETE FROM verification WHERE 1;
 
-SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE user;
 DROP TABLE session;
 DROP TABLE account;
 DROP TABLE verification;
-SET FOREIGN_KEY_CHECKS = 1;
 */
 
-DELETE
-FROM courses_modules
-WHERE 1;
+-- =======================================================
+-- INNOVACAD TABLES (DROP ALL)
+-- =======================================================
 
-DELETE
-FROM classes_modules
-WHERE 1;
+DROP TABLE IF EXISTS
+    grades,
+    enrollments,
+    schedules,
+    schedule_slots,
+    availabilities,
+    ref_slots,
+    classes_modules,
+    courses_modules,
+    rooms,
+    classes,
+    courses,
+    modules,
+    trainers,
+    trainees;
 
-DELETE
-FROM schedules
-WHERE 1;
-
-DELETE
-FROM availabilities
-WHERE 1;
-
-DELETE
-FROM enrollments
-WHERE 1;
-
-DELETE
-FROM grades
-WHERE 1;
-
-DELETE
-FROM rooms
-WHERE 1;
-
-DELETE
-FROM classes
-where 1;
-
-DELETE
-FROM courses
-WHERE 1;
-
-DELETE
-FROM modules
-WHERE 1;
-
-DELETE
-FROM trainers
-where 1;
-
-DELETE
-FROM trainees
-where 1;
-
-DROP TABLE classes_modules;
-DROP TABLE courses_modules;
-DROP TABLE schedules;
-DROP TABLE availabilities;
-DROP TABLE enrollments;
-DROP TABLE rooms;
-drop table grades;
-DROP TABLE classes;
-DROP TABLE courses;
-DROP TABLE modules;
-DROP TABLE trainers;
-DROP TABLE trainees;
-
--- Executing this command will also remove Better Auth API tables.
--- drop database innovacad_tpsi0525;
+SET FOREIGN_KEY_CHECKS = 1;

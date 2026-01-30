@@ -7,7 +7,7 @@ type CourseModuleResponseData = {
 };
 
 export type CourseModule = {
-  courses_modules_id: string;
+  courses_modules_id?: string;
   module_id: string;
   sequence_course_module_id?: string | null;
   module_name?: string;

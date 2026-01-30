@@ -141,7 +141,8 @@ export const useApi = () => {
           : {}),
       };
 
-      const res = await fetch(`${baseUrl}${path}`, {
+      // const res = await fetch(`${baseUrl}${path}`, {
+      const res = await fetch(`${path}`, {
         headers: reqHeaders,
         method,
         credentials: "include",
@@ -878,6 +879,8 @@ export const useApi = () => {
       status?: string | undefined;
       start_date_timestamp?: string | undefined;
       end_date_timestamp?: string | undefined;
+      add_modules_ids?: string[] | undefined;
+      remove_modules_ids?: string[] | undefined;
     },
   ): Promise<Class> => {
     const updateData: Record<string, any> = {};
@@ -890,6 +893,12 @@ export const useApi = () => {
       updateData.start_date_timestamp = data.start_date_timestamp;
     if (data.end_date_timestamp !== undefined)
       updateData.end_date_timestamp = data.end_date_timestamp;
+    if (data.add_modules_ids !== undefined)
+      updateData.add_modules_ids = data.add_modules_ids;
+    if (data.remove_modules_ids !== undefined)
+      updateData.remove_modules_ids = data.remove_modules_ids;
+
+    console.log(`Update Data for Class ${classId}:`, updateData);
 
     const res = await fetchApi<ClassResponseData>(
       `${API_ENDPOINTS.ENTITY.CLASS}/${classId}`,
@@ -926,6 +935,8 @@ export const useApi = () => {
   const createCourse = async (data: {
     identifier: string | undefined;
     name: string | undefined;
+    add_modules_ids?: object[] | undefined;
+    remove_modules_ids?: string[] | undefined;
   }): Promise<Course> => {
     const res = await fetchApi<CourseResponseData>(
       API_ENDPOINTS.ENTITY.COURSE,
@@ -946,12 +957,18 @@ export const useApi = () => {
     data: {
       identifier?: string | undefined;
       name?: string | undefined;
+      add_modules_ids?: string[] | undefined;
+      remove_modules_ids?: string[] | undefined;
     },
   ): Promise<Course> => {
     const updateData: Record<string, any> = {};
 
     if (data.identifier !== undefined) updateData.identifier = data.identifier;
     if (data.name !== undefined) updateData.name = data.name;
+    if (data.add_modules_ids !== undefined)
+      updateData.add_modules_ids = data.add_modules_ids;
+    if (data.remove_modules_ids !== undefined)
+      updateData.remove_modules_ids = data.remove_modules_ids;
 
     const res = await fetchApi<CourseResponseData>(
       `${API_ENDPOINTS.ENTITY.COURSE}/${courseId}`,

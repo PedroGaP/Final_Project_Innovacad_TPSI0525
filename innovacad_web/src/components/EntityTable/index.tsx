@@ -3,7 +3,7 @@ import CopyToClipboard from "../CopyToClipboard";
 import capitalize from "@/utils/capitalize";
 import { Icon } from "../Icon";
 import ModalDelete from "../Modal/Delete";
-import ModalEdit from "../Modal/Edit";
+import ModalEdit, { type ModalFieldDefinition } from "../Modal/Edit";
 import { Toaster } from "solid-toast";
 
 const PAGE_SIZE = 10;
@@ -32,28 +32,21 @@ interface Props<T> {
     formData: T,
     setFormData: (prev: (prev: T) => T) => void,
   ) => JSXElement;
+  formFields?: ModalFieldDefinition<T>[];
 }
 
-export default function EntityTable<T>({
-  data,
-  fields,
-  title,
-  handleEditClick,
-  handleAddClick,
-  confirmDelete,
-  handleSave,
-  filter,
-  renderCustomFields,
-}: Props<T>) {
-  const [page, setPage] = createSignal(!data() ? 1 : 0);
+export default function EntityTable<T>(props: Props<T>) {
+  const [page, setPage] = createSignal(!props.data() ? 1 : 0);
   const [search, setSearch] = createSignal("");
   const [editingEntity, setEditingEntity] = createSignal<T | null>(null);
   const [deletingEntity, setDeletingEntity] = createSignal<T | null>(null);
   const [originalEntity, setOriginalEntity] = createSignal<T | null>(null);
 
   const filteredEntity = createMemo(() => {
-    const list = data() || [];
-    return list.filter((e: any) => (!filter ? true : filter(e, search())));
+    const list = props.data() || [];
+    return list.filter((e: any) =>
+      !props.filter ? true : props.filter(e, search()),
+    );
   });
 
   const totalPages = createMemo(() =>
@@ -73,7 +66,7 @@ export default function EntityTable<T>({
 
     if (!tableData) tableData = fieldValue;
 
-    if (field.capitalizeValue) tableData = capitalize(String(tableData));
+    if (field.capitalizeValue) tableData = capitalize(String(fieldValue));
 
     if (!fieldValue && fieldValueType != "boolean") return <td>N/A</td>;
 
@@ -100,6 +93,7 @@ export default function EntityTable<T>({
           </div>
         </CopyToClipboard>
       );
+    console.log(tableData);
 
     return (
       <td
@@ -119,11 +113,11 @@ export default function EntityTable<T>({
         <Toaster />
         <div class="card-body gap-4 flex-1 flex flex-col overflow-hidden min-h-0 p-6">
           <div class="flex justify-between items-center shrink-0">
-            <h2 class="card-title">{capitalize(title)}</h2>
+            <h2 class="card-title">{capitalize(props.title)}</h2>
             <button
               class="btn btn-primary btn-sm"
               onClick={() => {
-                const newItem = handleAddClick(null as any);
+                const newItem = props.handleAddClick(null as any);
                 setEditingEntity(() => newItem);
                 setOriginalEntity(null);
               }}
@@ -148,7 +142,7 @@ export default function EntityTable<T>({
               <thead>
                 <tr class="z-10">
                   {" "}
-                  <For each={fields}>
+                  <For each={props.fields}>
                     {(field) => (
                       <th
                         class="bg-base-100"
@@ -168,14 +162,14 @@ export default function EntityTable<T>({
                 <For each={paginatedEntity()}>
                   {(entity) => (
                     <tr>
-                      <For each={fields}>
+                      <For each={props.fields}>
                         {(field) => generateTableData(field, entity)}
                       </For>
                       <td class="text-right space-x-2">
                         <button
                           class="btn btn-ghost btn-sm"
                           onClick={() => {
-                            const prepared = handleEditClick(entity);
+                            const prepared = props.handleEditClick(entity);
                             setEditingEntity(() => prepared);
                             setOriginalEntity(() => prepared);
                           }}
@@ -236,13 +230,14 @@ export default function EntityTable<T>({
               value={u()}
               setValue={setEditingEntity}
               onSave={async (val) => {
-                await handleSave(val, originalEntity());
+                await props.handleSave(val, originalEntity());
                 setEditingEntity(null);
               }}
               onCancel={() => setEditingEntity(null)}
               title={originalEntity() ? "Edit" : "Add"}
+              fields={props.formFields}
               disabledFields={originalEntity() ? ["class_id"] : []}
-              renderCustomFields={renderCustomFields}
+              renderCustomFields={props.renderCustomFields}
             />
           )}
         </Show>
@@ -253,7 +248,7 @@ export default function EntityTable<T>({
               value={u}
               setValue={setDeletingEntity}
               onConfirm={async () => {
-                await confirmDelete(u());
+                await props.confirmDelete(u());
                 setDeletingEntity(null);
               }}
               onCancel={() => setDeletingEntity(null)}

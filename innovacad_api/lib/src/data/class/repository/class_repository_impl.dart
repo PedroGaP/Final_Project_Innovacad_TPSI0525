@@ -23,7 +23,7 @@ class ClassRepositoryImpl implements IClassRepository {
         final classId = classData['class_id'];
 
         final modulesResult = await db.query(
-          "SELECT courses_modules_id, current_duration FROM classes_modules WHERE class_id = ?",
+          "SELECT courses_modules_id, classes_modules_id, current_duration FROM classes_modules WHERE class_id = ?",
           whereValues: [classId],
           isStmt: true,
         );
@@ -33,6 +33,7 @@ class ClassRepositoryImpl implements IClassRepository {
         fullData['modules'] = modulesResult.rowsAssoc
             .map(
               (row) => {
+                "classes_modules_id": row.assoc()['classes_modules_id'],
                 "courses_modules_id": row.assoc()['courses_modules_id'],
                 "current_duration": row.assoc()['current_duration'],
               },
@@ -82,6 +83,7 @@ class ClassRepositoryImpl implements IClassRepository {
 
       fullData['modules'] = modulesResult.rowsAssoc.map((row) {
         return {
+          "classes_modules_id": row.assoc()['classes_modules_id'],
           "courses_modules_id": row.assoc()['courses_modules_id'],
           "current_duration": row.assoc()['current_duration'],
         };
@@ -142,13 +144,14 @@ class ClassRepositoryImpl implements IClassRepository {
 
       await db.commit();
 
-      return Result.success(
-        OutputClassDao.fromJson(
-          createdClass
-              .map((k, v) => MapEntry(k.toString(), v))
-              .cast<String, dynamic>(),
-        ),
-      );
+      final klass = await getById(newClassId);
+      if (klass.isFailure) throw Exception("Class creation failed");
+
+      final createdClassMap = klass.data!.toJson();
+
+      print(createdClassMap);
+
+      return Result.success(OutputClassDao.fromJson(createdClassMap));
     } catch (e, s) {
       await db?.rollback();
       return Result.failure(
@@ -164,6 +167,9 @@ class ClassRepositoryImpl implements IClassRepository {
   @override
   Future<Result<OutputClassDao>> update(String id, UpdateClassDto dto) async {
     MysqlUtils? db;
+
+    print(dto.toJson());
+    print(dto.removeClassesModulesIds);
 
     try {
       db = await MysqlConfiguration.connect();

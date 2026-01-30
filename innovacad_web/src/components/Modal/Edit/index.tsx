@@ -5,8 +5,35 @@ import {
   For,
   createEffect,
   type JSXElement,
+  createMemo,
 } from "solid-js";
 import { Portal } from "solid-js/web";
+
+// --- TYPES ---
+
+export type ModalFieldType =
+  | "text"
+  | "number"
+  | "email"
+  | "password"
+  | "datetime-local"
+  | "date"
+  | "checkbox"
+  | "select"
+  | "textarea";
+
+export interface ModalFieldDefinition<T> {
+  name: keyof T & string;
+  label?: string;
+  type?: ModalFieldType;
+  placeholder?: string;
+  disabled?: boolean;
+  hidden?: boolean;
+  // For 'select' type
+  options?: { label: string; value: string | number }[];
+  // Custom validation or props
+  required?: boolean;
+}
 
 interface ModalEditProps<T> {
   value: T;
@@ -14,12 +41,22 @@ interface ModalEditProps<T> {
   onSave: (value: T) => Promise<void>;
   onCancel: () => void;
   title: string;
+
+  // If provided, these define exactly what to show and how.
+  // If not provided, the modal attempts to auto-generate fields.
+  fields?: ModalFieldDefinition<T>[];
+
+  // Legacy support for auto-generation
   disabledFields?: string[];
+
+  // For completely custom complex UI (like your Module Manager)
   renderCustomFields?: (
     formData: T,
     setFormData: (prev: (prev: T) => T) => void,
   ) => JSXElement;
 }
+
+// --- HELPERS ---
 
 const PortalTooltip = (props: { text: string; children: any }) => {
   let ref: HTMLDivElement | undefined;
@@ -61,26 +98,11 @@ const PortalTooltip = (props: { text: string; children: any }) => {
   );
 };
 
-const getAutocompleteValue = (fieldName: string): string => {
-  const f = fieldName.toLowerCase();
-  if (f.includes("email")) return "email";
-  if (f.includes("password")) return "new-password";
-  if (f.includes("username")) return "username";
-  if (f.includes("name")) return "name";
-  if (f.includes("birth") || f.includes("date")) return "bday";
-  return "off";
-};
-
 const formatDateForInput = (val: any): string => {
   if (!val) return "";
-
   const numericVal =
-    typeof val === "string" && /^\d+$/.test(val)
-      ? Number.parseInt(val, 10)
-      : val;
-
+    typeof val === "string" && /^\d+$/.test(val) ? parseInt(val, 10) : val;
   const date = new Date(numericVal);
-
   if (isNaN(date.getTime())) return "";
 
   const YYYY = date.getFullYear();
@@ -88,9 +110,17 @@ const formatDateForInput = (val: any): string => {
   const DD = String(date.getDate()).padStart(2, "0");
   const hh = String(date.getHours()).padStart(2, "0");
   const mm = String(date.getMinutes()).padStart(2, "0");
-
   return `${YYYY}-${MM}-${DD}T${hh}:${mm}`;
 };
+
+const getFieldLabel = (fieldName: string): string => {
+  return fieldName
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (str) => str.toUpperCase())
+    .trim();
+};
+
+// --- MAIN COMPONENT ---
 
 const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
   const [formData, setFormData] = createSignal<T>(props.value);
@@ -100,17 +130,11 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
     setFormData(() => props.value);
   });
 
-  const isFieldDisabled = (fieldName: string): boolean => {
-    return props.disabledFields?.includes(fieldName) ?? false;
-  };
-
-  const handleInputChange = (field: string, value: any) => {
-    if (!isFieldDisabled(field)) {
-      setFormData((prev) => ({
-        ...prev,
-        [field]: value,
-      }));
-    }
+  const handleInputChange = (field: keyof T, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   const handleSave = async () => {
@@ -122,34 +146,14 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
     }
   };
 
-  const getFieldType = (fieldName: string, value: any): string => {
-    const f = fieldName.toLowerCase();
-    if (f.includes("email")) return "email";
-
-    if (
-      f.includes("date") ||
-      f.includes("birthday") ||
-      f.includes("time") ||
-      f.includes("createdAt") ||
-      f.includes("updatedAt")
-    ) {
-      return "datetime-local";
+  // --- LOGIC: Compute Fields ---
+  // If `props.fields` exists, use it. Otherwise, auto-generate based on data types.
+  const displayFields = createMemo(() => {
+    if (props.fields && props.fields.length > 0) {
+      return props.fields.filter((f) => !f.hidden);
     }
 
-    if (f.includes("password")) return "password";
-    if (typeof value === "boolean") return "checkbox";
-    if (typeof value === "number") return "number";
-    return "text";
-  };
-
-  const getFieldLabel = (fieldName: string): string => {
-    return fieldName
-      .replace(/([A-Z])/g, " $1")
-      .replace(/^./, (str) => str.toUpperCase())
-      .trim();
-  };
-
-  const shouldExcludeField = (fieldName: string): boolean => {
+    // Legacy Auto-Generation Logic
     const excludedFields = [
       "id",
       "traineeId",
@@ -164,16 +168,38 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
       "modules",
       "modules_ids",
     ];
-    return excludedFields.includes(fieldName.toLocaleLowerCase());
-  };
 
-  const getEditableFieldKeys = (): string[] => {
-    return Object.keys(formData()).filter((key) => !shouldExcludeField(key));
-  };
+    return Object.keys(formData())
+      .filter((key) => !excludedFields.includes(key.toLowerCase()))
+      .map((key) => {
+        const val = formData()[key];
+        const fKey = key.toLowerCase();
+        let type: ModalFieldType = "text";
+
+        if (fKey.includes("email")) type = "email";
+        else if (fKey.includes("password")) type = "password";
+        else if (
+          fKey.includes("date") ||
+          fKey.includes("time") ||
+          fKey.includes("at")
+        )
+          type = "datetime-local";
+        else if (typeof val === "boolean") type = "checkbox";
+        else if (typeof val === "number") type = "number";
+
+        return {
+          name: key as keyof T & string,
+          label: getFieldLabel(key),
+          type,
+          disabled: props.disabledFields?.includes(key),
+        } as ModalFieldDefinition<T>;
+      });
+  });
 
   return (
     <dialog id="edit_modal" class="modal modal-open">
       <div class="modal-box w-11/12 max-w-md p-0 overflow-hidden flex flex-col bg-base-100 rounded-xl">
+        {/* Header */}
         <div class="bg-linear-to-r from-primary to-primary/80 px-6 py-4 flex items-center justify-between shrink-0">
           <div class="flex-1">
             <h3 class="font-bold text-lg text-primary-content">
@@ -188,87 +214,134 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
           </button>
         </div>
 
-        <div class="px-6 py-4 overflow-y-auto max-h-[60vh]">
-          <For each={getEditableFieldKeys()}>
-            {(fieldName) => {
-              const fieldValue = () => formData()[fieldName];
-              const fieldType = getFieldType(fieldName, fieldValue());
+        {/* Body */}
+        <div class="px-6 py-4 overflow-y-auto max-h-[60vh] space-y-4">
+          <For each={displayFields()}>
+            {(field) => {
+              const value = () => formData()[field.name];
+              const isDisabled = field.disabled ?? false;
+              const label = field.label || getFieldLabel(field.name);
 
-              return (
-                <Show
-                  when={fieldType !== "checkbox"}
-                  fallback={
-                    <div class="form-control w-full mb-4">
-                      <label
-                        class="label cursor-pointer justify-start gap-3"
-                        for={`checkbox-${fieldName}`}
-                      >
-                        <input
-                          id={`checkbox-${fieldName}`}
-                          type="checkbox"
-                          class="checkbox checkbox-primary"
-                          checked={Boolean(fieldValue())}
-                          onChange={(e) =>
-                            handleInputChange(
-                              fieldName,
-                              e.currentTarget.checked,
-                            )
-                          }
-                          disabled={isFieldDisabled(fieldName)}
-                        />
-                        <span class="label-text">
-                          {getFieldLabel(fieldName)}
-                        </span>
-                      </label>
-                    </div>
-                  }
-                >
-                  <div class="form-control w-full mb-4">
-                    <label class="label" for={fieldName}>
-                      <span class="label-text">{getFieldLabel(fieldName)}</span>{" "}
-                      <Show when={isFieldDisabled(fieldName)}>
-                        <PortalTooltip text="Field cannot be changed">
-                          <CircleQuestionMark size={14} class="opacity-50" />
-                        </PortalTooltip>
-                      </Show>
-                    </label>
-                    <input
-                      id={fieldName}
-                      name={fieldName}
-                      type={fieldType}
-                      autocomplete={getAutocompleteValue(fieldName) as string}
-                      placeholder={`Enter ${getFieldLabel(fieldName).toLowerCase()}`}
-                      class="input input-bordered w-full focus:input-primary"
-                      value={
-                        fieldType === "datetime-local"
-                          ? formatDateForInput(fieldValue())
-                          : String(fieldValue() || "")
-                      }
-                      onInput={(e) => {
-                        const val = e.currentTarget.value;
-                        if (fieldType === "datetime-local") {
-                          const timestamp = new Date(val).getTime();
-                          if (!isNaN(timestamp)) {
-                            handleInputChange(fieldName, timestamp);
-                          }
-                        } else {
-                          handleInputChange(fieldName, val);
+              // 1. CHECKBOX RENDER
+              if (field.type === "checkbox") {
+                return (
+                  <div class="form-control w-full">
+                    <label
+                      class="label cursor-pointer justify-start gap-3"
+                      for={`field-${field.name}`}
+                    >
+                      <input
+                        id={`field-${field.name}`}
+                        type="checkbox"
+                        class="checkbox checkbox-primary"
+                        checked={Boolean(value())}
+                        disabled={isDisabled}
+                        onChange={(e) =>
+                          handleInputChange(field.name, e.currentTarget.checked)
                         }
-                      }}
-                      disabled={isFieldDisabled(fieldName)}
+                      />
+                      <span class="label-text">{label}</span>
+                    </label>
+                  </div>
+                );
+              }
+
+              // 2. SELECT RENDER
+              if (field.type === "select") {
+                return (
+                  <div class="form-control w-full">
+                    <FieldLabel field={field} label={label} />
+                    <select
+                      class="select select-bordered w-full focus:select-primary"
+                      value={String(value() || "")}
+                      disabled={isDisabled}
+                      onChange={(e) =>
+                        handleInputChange(field.name, e.currentTarget.value)
+                      }
+                    >
+                      <option value="" disabled>
+                        Select {label}
+                      </option>
+                      <For each={field.options}>
+                        {(opt) => (
+                          <option value={opt.value}>{opt.label}</option>
+                        )}
+                      </For>
+                    </select>
+                  </div>
+                );
+              }
+
+              // 3. TEXTAREA RENDER
+              if (field.type === "textarea") {
+                return (
+                  <div class="form-control w-full">
+                    <FieldLabel field={field} label={label} />
+                    <textarea
+                      class="textarea textarea-bordered h-24 focus:textarea-primary"
+                      placeholder={
+                        field.placeholder || `Enter ${label.toLowerCase()}`
+                      }
+                      value={String(value() || "")}
+                      disabled={isDisabled}
+                      onInput={(e) =>
+                        handleInputChange(field.name, e.currentTarget.value)
+                      }
                     />
                   </div>
-                </Show>
+                );
+              }
+
+              // 4. STANDARD INPUT RENDER (Text, Date, Number, etc)
+              return (
+                <div class="form-control w-full">
+                  <FieldLabel field={field} label={label} />
+                  <input
+                    id={`field-${field.name}`}
+                    type={field.type || "text"}
+                    placeholder={
+                      field.placeholder || `Enter ${label.toLowerCase()}`
+                    }
+                    class="input input-bordered w-full focus:input-primary"
+                    disabled={isDisabled}
+                    // Value Handling
+                    value={
+                      field.type === "datetime-local" || field.type === "date"
+                        ? formatDateForInput(value())
+                        : String(value() || "")
+                    }
+                    // Input Handling
+                    onInput={(e) => {
+                      const val = e.currentTarget.value;
+                      if (
+                        field.type === "datetime-local" ||
+                        field.type === "date"
+                      ) {
+                        const timestamp = new Date(val).getTime();
+                        if (!isNaN(timestamp))
+                          handleInputChange(field.name, timestamp);
+                      } else if (field.type === "number") {
+                        handleInputChange(field.name, Number(val));
+                      } else {
+                        handleInputChange(field.name, val);
+                      }
+                    }}
+                  />
+                </div>
               );
             }}
           </For>
 
+          {/* Custom Fields (Like Modules Manager) */}
           <Show when={props.renderCustomFields}>
-            <div class="divider">Configuration</div>
+            <div class="divider text-xs uppercase opacity-50 font-bold tracking-widest mt-6">
+              Configuration
+            </div>
             {props.renderCustomFields!(formData(), setFormData)}
           </Show>
         </div>
 
+        {/* Footer */}
         <div class="bg-base-200/50 px-6 py-3 flex gap-2 justify-end border-t border-base-300 shrink-0">
           <button
             class="btn btn-ghost btn-sm font-medium"
@@ -286,22 +359,36 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
             disabled={loading()}
           >
             {loading() ? (
-              <>
-                <span class="loading loading-spinner loading-xs"></span>
-                Saving
-              </>
+              <span class="loading loading-spinner loading-xs"></span>
             ) : (
               "Save"
             )}
           </button>
         </div>
       </div>
-
       <form method="dialog" class="modal-backdrop bg-black/40">
         <button onClick={props.onCancel}>Close</button>
       </form>
     </dialog>
   );
 };
+
+// Sub-component for Label consistency
+const FieldLabel = (props: {
+  field: ModalFieldDefinition<any>;
+  label: string;
+}) => (
+  <label class="label" for={`field-${props.field.name}`}>
+    <span class="label-text">
+      {props.label}
+      {props.field.required && <span class="text-error ml-1">*</span>}
+    </span>
+    <Show when={props.field.disabled}>
+      <PortalTooltip text="Field cannot be changed">
+        <CircleQuestionMark size={14} class="opacity-50" />
+      </PortalTooltip>
+    </Show>
+  </label>
+);
 
 export default ModalEdit;

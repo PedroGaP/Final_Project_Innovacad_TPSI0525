@@ -179,6 +179,32 @@ const AvailabilitiesPage = () => {
       handleAddClick={() => createEmptyAvailability()}
       confirmDelete={confirmDelete}
       handleSave={handleSaveTrainee}
+      formFields={[
+        {
+          label: "Trainer ID",
+          name: "trainer_id",
+          type: "text",
+        },
+        {
+          label: "Status Type",
+          name: "status",
+          type: "select",
+          options: Object.values(AvailabilityStatusEnum).map((value) => ({
+            label: value,
+            value: value,
+          })),
+        },
+        {
+          label: "Start Date",
+          name: "start_date_timestamp",
+          type: "datetime-local",
+        },
+        {
+          label: "End Date",
+          name: "end_date_timestamp",
+          type: "datetime-local",
+        },
+      ]}
       fields={[
         {
           formattedName: "Availability ID",

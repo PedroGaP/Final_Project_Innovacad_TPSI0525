@@ -33,6 +33,7 @@ class OutputClassDao {
   final DateTime endDateTimestamp;
 
   @annotation.JsonKey(name: 'modules')
+  @ModuleListConverter()
   final List<OutputClassModuleDao> modules;
 
   OutputClassDao({

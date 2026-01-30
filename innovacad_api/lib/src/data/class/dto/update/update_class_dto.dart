@@ -9,29 +9,37 @@ part 'update_class_dto.g.dart';
 @JsonSerializable()
 class UpdateClassDto {
   @JsonKey(name: 'course_id')
+  @v.JsonKey('course_id')
   final String? courseId;
 
   @JsonKey(name: 'location')
+  @v.JsonKey('location')
   final String? location;
 
   @JsonKey(name: 'identifier')
+  @v.JsonKey('identifier')
   final String? identifier;
 
   @JsonEnum(valueField: 'status')
+  @v.JsonKey('status')
   final ClassStatusEnum? status;
 
   @JsonKey(name: 'start_date_timestamp')
+  @v.JsonKey('start_date_timestamp')
   @DateTimeConverter()
   final DateTime? startDateTimestamp;
 
   @JsonKey(name: 'end_date_timestamp')
+  @v.JsonKey('end_date_timestamp')
   @DateTimeConverter()
   final DateTime? endDateTimestamp;
 
   @JsonKey(name: 'add_modules_ids')
+  @v.JsonKey('add_modules_ids')
   final List<String>? addModulesIds;
 
-  @JsonKey(name: 'remove_classes_modules_ids')
+  @JsonKey(name: 'remove_modules_ids')
+  @v.JsonKey('remove_modules_ids')
   final List<String>? removeClassesModulesIds;
 
   UpdateClassDto({
