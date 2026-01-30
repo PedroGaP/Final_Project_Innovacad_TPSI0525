@@ -14,6 +14,7 @@ import {
 } from "@/types/availability";
 import { Class, type ClassResponseData } from "@/types/class";
 import { Course, type CourseResponseData } from "@/types/course";
+import type { Document } from "@/types/document";
 import { Enrollment, type EnrollmentResponseData } from "@/types/enrollment";
 import { Grade, type GradeResponseData } from "@/types/grade";
 import { Module, type ModuleResponseData } from "@/types/module";
@@ -25,6 +26,7 @@ import {
   Trainee,
   Trainer,
   User,
+  type TrainerSkill,
   type UserResponseData,
 } from "@/types/user";
 import { useNavigate } from "@solidjs/router";
@@ -36,6 +38,9 @@ const headers = {
 };
 
 export const API_ENDPOINTS = {
+  BASE: "http://localhost:8080",
+  //BASE: "http://192.168.1.113:8080",
+  BASE_WEB: "http://localhost:5000",
   AUTH: {
     SIGN_IN: "/sign/in",
     SIGN_UP: "/sign/up",
@@ -67,11 +72,15 @@ export const API_ENDPOINTS = {
     AVAILABILITY: "/availabilities",
     SCHEDULE: "/schedules",
   },
+  DOCUMENTS: {
+    BASE: "/documents",
+    UPLOAD: "/documents/upload",
+  },
 } as const;
 
-const baseUrl = "http://localhost:8080";
+const baseUrl = API_ENDPOINTS.BASE;
 //const baseUrl = "http://192.168.1.113:8080";
-const baseWebUrl = "http://localhost:5000";
+const baseWebUrl = API_ENDPOINTS.BASE_WEB;
 const SESSION_COOKIE_KEY = "better-auth.session_data";
 
 export interface SignInResponse {
@@ -407,7 +416,7 @@ export const useApi = () => {
     username: string;
     password: string;
     birthdayDate: string;
-    specialization: string;
+    skills_to_add?: TrainerSkill[];
   }): Promise<Trainer> => {
     const res = await fetchApi<UserResponseData>(
       API_ENDPOINTS.USERS.TRAINERS,
@@ -418,7 +427,7 @@ export const useApi = () => {
         username: data.username,
         password: data.password,
         birthdayDate: data.birthdayDate,
-        specialization: data.specialization,
+        skills_to_add: data.skills_to_add,
       },
     );
 
@@ -441,16 +450,11 @@ export const useApi = () => {
     data: {
       name?: string;
       birthdayDate?: string;
-      specialization?: string;
+      skills_to_add?: TrainerSkill[];
+      skills_to_remove?: string;
     },
   ): Promise<Trainer> => {
-    const updateData: Record<string, any> = {};
-
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.birthdayDate !== undefined)
-      updateData.birthdayDate = data.birthdayDate;
-    if (data.specialization !== undefined)
-      updateData.specialization = data.specialization;
+    const updateData: Record<string, any> = { ...data };
 
     const res = await fetchApi<UserResponseData>(
       `${API_ENDPOINTS.USERS.TRAINERS}/${trainerId}`,
@@ -464,9 +468,9 @@ export const useApi = () => {
 
     return new Trainer(
       res.data,
-      res.data.trainee_id || "",
+      res.data.trainer_id || "",
       res.data.birthday_date,
-      res.data.specialization,
+      res.data.skills,
     );
   };
 
@@ -1442,6 +1446,75 @@ export const useApi = () => {
     return rooms;
   };
 
+  /**
+   * Fetch documents for a specific owner (Using User ID)
+   */
+  const fetchDocuments = async (ownerId: string): Promise<Document[]> => {
+    const res = await fetch(
+      `${baseUrl}${API_ENDPOINTS.DOCUMENTS.BASE}/${ownerId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${user()!.token}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (!res.ok) {
+      let errorMessage = "Documents fetch failed";
+      try {
+        const err = await res.json();
+        errorMessage = err.message || errorMessage;
+      } catch {}
+
+      throw new Error(errorMessage);
+    }
+
+    const data = await res.json();
+    return data;
+  };
+
+  /**
+   * Upload a document
+   */
+  const uploadDocument = async (
+    ownerId: string,
+    formData: FormData,
+  ): Promise<void> => {
+    if (!user() || !user()?.token) throw new Error("No token");
+
+    const res = await fetch(
+      `${baseUrl}${API_ENDPOINTS.DOCUMENTS.UPLOAD}/${ownerId}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${user()!.token}`,
+        },
+        body: formData,
+      },
+    );
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || "Upload failed");
+    }
+  };
+
+  /**
+   * Delete a document
+   */
+  const deleteDocument = async (documentId: string): Promise<void> => {
+    const res = await fetchApi<void>(
+      `${API_ENDPOINTS.DOCUMENTS.BASE}/${documentId}`,
+      "DELETE",
+    );
+
+    if (res.isError) {
+      throw new Error(`Delete document failed: ${res.error?.message}`);
+    }
+  };
+
   return {
     // Sign In/Up
     signIn,
@@ -1523,5 +1596,10 @@ export const useApi = () => {
 
     // Schedules
     fetchSchedules,
+
+    // Documents
+    fetchDocuments,
+    uploadDocument,
+    deleteDocument,
   };
 };

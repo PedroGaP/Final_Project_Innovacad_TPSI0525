@@ -131,6 +131,7 @@ export "trainee/service/trainee_service_impl.dart";
 
 export "trainer/dao/output/output_trainer_dao.dart";
 
+export "trainer/dto/skill/trainer_skill_dto.dart";
 export "trainer/dto/create/create_trainer_dto.dart";
 export "trainer/dto/update/update_trainer_dto.dart";
 

@@ -1,26 +1,44 @@
 import 'dart:io';
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
+import 'package:innovacad_api/src/core/middleware/cors_middleware.dart';
 import 'package:innovacad_api/vaden_application.dart';
+import 'package:shelf_static/shelf_static.dart';
+import 'package:vaden/vaden.dart';
+import 'package:shelf/shelf_io.dart' as io;
 
 Future<void> main(List<String> args) async {
   final vaden = VadenApp();
+
   vaden.injector.add(MysqlConfiguration.new);
+
   await vaden.setup();
-  final server = await vaden.run(args);
 
-  print('--- InnovAcad API Server ---');
-  print('Server is running on:');
-
-  final interfaces = await NetworkInterface.list(
-    includeLoopback: true,
-    type: InternetAddressType.IPv4,
+  final staticHandler = createStaticHandler(
+    'public',
+    defaultDocument: 'index.html',
+    listDirectories: true,
   );
 
-  for (var interface in interfaces) {
-    for (var addr in interface.addresses) {
-      print('  > https://${addr.address}:${server.port}');
-    }
-  }
+  final staticHandlerWithCors = Pipeline()
+      .addMiddleware(corsMiddleware())
+      .addHandler(staticHandler);
 
+  final apiHandler = Pipeline()
+      .addMiddleware(corsMiddleware())
+      .addVadenMiddleware(EnforceJsonContentType())
+      .addMiddleware(logRequests())
+      .addHandler(vaden.router.call);
+
+  final finalHandler = Cascade()
+      .add(staticHandlerWithCors)
+      .add(apiHandler)
+      .handler;
+
+  final port = int.tryParse(Platform.environment['PORT'] ?? '8080') ?? 8080;
+
+  final server = await io.serve(finalHandler, InternetAddress.anyIPv4, port);
+
+  print('--- InnovAcad API Server ---');
+  print('Server is running on port ${server.address.address}:${server.port}');
   print('----------------------------');
 }

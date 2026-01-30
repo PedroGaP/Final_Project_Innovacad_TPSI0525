@@ -1,7 +1,9 @@
 import EntityTable from "@/components/EntityTable";
 import { useApi } from "@/hooks/useApi";
 import { GradeTypeEnum, type Grade } from "@/types/grade";
-import { createResource } from "solid-js";
+import type { Trainee } from "@/types/user";
+import type { Class } from "@/types/class";
+import { createMemo, createResource } from "solid-js";
 import toast from "solid-toast";
 
 const createEmptyGrade = (): Grade =>
@@ -17,19 +19,24 @@ const createEmptyGrade = (): Grade =>
 const validateGrade = (grade: Grade): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
-  const grade_module_id = String(grade.grade || "").trim();
+  const grade_module_id = String(grade.class_module_id || "").trim();
   if (!grade_module_id) {
-    errors.push("Class Module Id is required");
+    errors.push("Class Module is required");
   }
 
   const trainee_id = String(grade.trainee_id || "").trim();
   if (!trainee_id) {
-    errors.push("Trainee Id is required");
+    errors.push("Trainee is required");
   }
 
-  const grade_val = String(grade.grade || "").trim();
-  if (!grade_val) {
-    errors.push("Grade is required");
+  if (
+    grade.grade === undefined ||
+    grade.grade === null ||
+    isNaN(Number(grade.grade))
+  ) {
+    errors.push("Grade is required and must be a number");
+  } else if (Number(grade.grade) < 0 || Number(grade.grade) > 20) {
+    errors.push("Grade must be between 0 and 20");
   }
 
   const grade_type = String(grade.grade_type || "").trim();
@@ -80,9 +87,64 @@ const getChangedFields = (
 const GradesPage = () => {
   const api = useApi();
 
-  const [gradeesData, { mutate }] = createResource<Grade[]>(api.fetchGrades);
+  const [gradesData, { mutate }] = createResource<Grade[]>(api.fetchGrades);
 
-  const handleSaveTrainee = async (grade: Grade, original: Grade | null) => {
+  const [trainees] = createResource<Trainee[]>(api.fetchTrainees);
+  const [classes] = createResource<Class[]>(api.fetchClasses);
+
+  const traineeOptions = createMemo(() => {
+    const list = trainees();
+    if (!list) return [];
+    return list.map((t) => ({
+      label: `${t.name} (${t.email})`,
+      value: t.traineeId!,
+    }));
+  });
+
+  const classModuleOptions = createMemo(() => {
+    const list = classes();
+    if (!list) return [];
+    
+    const options: { label: string; value: string }[] = [];
+    
+    list.forEach(cls => {
+        if(cls.modules && cls.modules.length > 0) {
+            cls.modules.forEach(mod => {
+
+                const valueId = (mod as any).classes_modules_id || mod.courses_modules_id; 
+                
+                options.push({
+                    label: `${cls.identifier} - ${mod.module_name} (${cls.location})`,
+                    value: valueId
+                });
+            })
+        }
+    });
+    
+    return options;
+  });
+
+  const getTraineeName = (id: string | undefined) => {
+    if (!id || !trainees()) return id;
+    const found = trainees()?.find((t) => t.traineeId === id);
+    return found ? found.name : id;
+  };
+
+  const getClassModuleName = (id: string | undefined) => {
+    if (!id || !classes()) return id;
+    for (const cls of classes()!) {
+        const foundMod = cls.modules?.find((m: any) => 
+            m.classes_modules_id === id || m.courses_modules_id === id
+        );
+        if(foundMod) {
+            return `${cls.identifier} - ${foundMod.module_name}`;
+        }
+    }
+    return id;
+  };
+
+
+  const handleSaveGrade = async (grade: Grade, original: Grade | null) => {
     try {
       const validation = validateGrade(grade);
       if (!validation.valid) {
@@ -103,12 +165,12 @@ const GradesPage = () => {
         );
 
         const changedFieldNames = Object.keys(changedFields).join(", ");
-        toast.success(`Trainee updated successfully (${changedFieldNames})`);
+        toast.success(`Grade updated successfully (${changedFieldNames})`);
       } else {
         const gradeObj = {
           class_module_id: String(grade.class_module_id),
           trainee_id: String(grade.trainee_id),
-          grade: grade.grade,
+          grade: String(grade.grade),
           grade_type: String(grade.grade_type),
         };
 
@@ -135,32 +197,47 @@ const GradesPage = () => {
 
   return (
     <EntityTable<Grade>
-      title="Manage Gradees"
-      data={gradeesData}
+      title="Manage Grades"
+      data={gradesData}
       handleEditClick={(grade) => ({
         ...grade,
       })}
       handleAddClick={() => createEmptyGrade()}
       confirmDelete={confirmDelete}
-      handleSave={handleSaveTrainee}
+      handleSave={handleSaveGrade}
+      filter={(e: Grade, search: string) => {
+        const s = search.toLowerCase();
+        const traineeName = getTraineeName(e.trainee_id)?.toLowerCase() || "";
+        const moduleName = getClassModuleName(e.class_module_id)?.toLowerCase() || "";
+
+        return (
+             String(e.grade).includes(s) ||
+             traineeName.includes(s) ||
+             moduleName.includes(s)
+        ) ?? false;
+      }}
       formFields={[
         {
-          label: "Class Module ID",
+          label: "Class Module",
           name: "class_module_id",
-          type: "text",
+          type: "select",
+          options: classModuleOptions(),
           required: true,
+          placeholder: classes.loading ? "Loading modules..." : "Select Class Module"
         },
         {
-          label: "Trainee Id",
+          label: "Trainee",
           name: "trainee_id",
-          type: "text",
+          type: "select",
+          options: traineeOptions(),
           required: true,
+          placeholder: trainees.loading ? "Loading trainees..." : "Select Trainee"
         },
         {
-          label: "Grade",
+          label: "Grade (0-20)",
           name: "grade",
           type: "number",
-          required: false,
+          required: true,
         },
         {
           label: "Grade Type",
@@ -178,28 +255,39 @@ const GradesPage = () => {
           formattedName: "Grade ID",
           fieldName: "grade_id",
           canCopy: true,
-          bigger: true,
+          smaller: true,
         },
         {
-          formattedName: "Class Module ID",
+          formattedName: "Class Module",
           fieldName: "class_module_id",
-          canCopy: true,
-          bigger: true,
+          customGeneration: (e) => (
+             <span class="font-mono text-xs">{getClassModuleName(e.class_module_id)}</span>
+          ),
+          smaller: true,
         },
         {
-          formattedName: "Trainee Id",
+          formattedName: "Trainee",
           fieldName: "trainee_id",
-          canCopy: true,
-          bigger: true,
+          customGeneration: (e) => (
+            <div class="flex flex-col">
+                <span class="font-medium">{getTraineeName(e.trainee_id)}</span>
+            </div>
+          ),
         },
         {
           formattedName: "Grade",
           fieldName: "grade",
+          customGeneration: (e) => (
+            <div class={`badge ${Number(e.grade) >= 10 ? 'badge-success' : 'badge-error'} badge-outline`}>
+                {e.grade}
+            </div>
+          )
         },
         {
-          formattedName: "Grade Type",
+          formattedName: "Type",
           fieldName: "grade_type",
           capitalizeValue: true,
+          smaller: true,
         },
       ]}
     ></EntityTable>

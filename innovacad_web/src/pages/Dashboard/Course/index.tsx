@@ -160,56 +160,34 @@ const CoursesPage = () => {
   };
 
   const renderModulesManager = (formData: Course, setFormData: any) => {
-    // Lista de módulos disponíveis (vem da API)
     const availableModules = createMemo(() => modulesData() || []);
 
-    // Lista de alvos válidos para sequência (usamos os módulos já selecionados na checkbox)
     const validSequenceTargets = createMemo(() => formData.modules || []);
 
-    /**
-     * TRADUTOR DE LEITURA (State -> UI)
-     * Converte o valor "estranho" que está no estado (UUID da relação ou ID temporário)
-     * para o module_id que a Select Box entende.
-     */
     const getSelectValue = (savedValue: string | null | undefined): string => {
-      if (!savedValue) return ""; // Se for null na BD, devolve vazio (None)
+      if (!savedValue) return "";
 
-      // CASO 1: O valor guardado é um UUID de Relação (Vem da BD)
-      // Temos de encontrar a qual módulo este UUID pertence.
       const parentByUuid = formData.modules?.find(
         (m) => m.courses_modules_id === savedValue,
       );
       if (parentByUuid) return parentByUuid.module_id;
 
-      // CASO 2: O valor guardado já é um module_id (Seleção local recente)
-      // Isto acontece quando acabas de selecionar um módulo que ainda não foi à BD.
       const parentById = formData.modules?.find(
         (m) => m.module_id === savedValue,
       );
       if (parentById) return parentById.module_id;
 
-      // Fallback: Se não encontrarmos nada (ex: dados inconsistentes), devolve vazio
       return "";
     };
 
-    /**
-     * TRADUTOR DE ESCRITA (UI -> State)
-     * Quando o user escolhe uma opção, tentamos guardar o UUID da relação (se existir).
-     * Se não existir (módulo novo), guardamos o module_id temporariamente.
-     */
     const handleSequenceChange = (
       currentModuleId: string,
-      targetParentModuleId: string | null, // O user selecionou um module_id na combobox
+      targetParentModuleId: string | null,
     ) => {
-      // Encontrar o objeto completo do "Pai" escolhido
       const targetParent = formData.modules?.find(
         (m) => m.module_id === targetParentModuleId,
       );
 
-      // Decidir o que guardar:
-      // 1. O UUID da relação (se o pai já existir na BD)
-      // 2. O ID do módulo (se o pai for novo e ainda não tiver UUID)
-      // 3. Null (se escolheu "None")
       const valueToSave =
         targetParent?.courses_modules_id || targetParentModuleId || null;
 
@@ -295,15 +273,11 @@ const CoursesPage = () => {
                         Previous:
                       </span>
 
-                      {/* AQUI ESTÁ O SELECT FIXADO */}
                       <select
                         class="select select-bordered select-xs flex-1"
-                        // 1. O value passa pelo Tradutor de Leitura
-                        // Isto garante que o select nunca recebe um UUID estranho
                         value={getSelectValue(
                           selectedEntry()?.sequence_course_module_id,
                         )}
-                        // 2. O onChange usa o Tradutor de Escrita
                         onChange={(e) =>
                           handleSequenceChange(
                             mod.module_id!,

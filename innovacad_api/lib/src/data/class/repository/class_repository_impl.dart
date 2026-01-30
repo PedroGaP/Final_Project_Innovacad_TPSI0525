@@ -17,33 +17,58 @@ class ClassRepositoryImpl implements IClassRepository {
 
       final classesResults = await db.getAll(table: 'classes');
 
-      final List<OutputClassDao> outputList = [];
-
-      for (final classData in classesResults) {
-        final classId = classData['class_id'];
-
-        final modulesResult = await db.query(
-          "SELECT courses_modules_id, classes_modules_id, current_duration FROM classes_modules WHERE class_id = ?",
-          whereValues: [classId],
-          isStmt: true,
-        );
-
-        final Map<String, dynamic> fullData = Map.from(classData);
-
-        fullData['modules'] = modulesResult.rowsAssoc
-            .map(
-              (row) => {
-                "classes_modules_id": row.assoc()['classes_modules_id'],
-                "courses_modules_id": row.assoc()['courses_modules_id'],
-                "current_duration": row.assoc()['current_duration'],
-              },
-            )
-            .toList();
-
-        outputList.add(OutputClassDao.fromJson(fullData));
+      if (classesResults.isEmpty) {
+        return Result.success([]);
       }
 
+      final classIdsString = classesResults
+          .map((c) => "'${c['class_id'].toString()}'")
+          .join(',');
+
+      final modulesQuery = """
+        SELECT 
+          clm.class_id, 
+          clm.courses_modules_id, 
+          clm.classes_modules_id, 
+          clm.current_duration, 
+          m.name AS module_name, 
+          m.duration AS total_duration 
+        FROM classes_modules clm
+        JOIN courses_modules cm ON clm.courses_modules_id = cm.courses_modules_id 
+        JOIN modules m ON cm.module_id = m.module_id 
+        WHERE clm.class_id IN ($classIdsString)
+      """;
+
+      final modulesResult = await db.query(modulesQuery);
+
+      final Map<String, List<Map<String, dynamic>>> modulesByClassId = {};
+
+      for (final row in modulesResult.rowsAssoc) {
+        final data = row.assoc();
+        final cId = data['class_id'].toString();
+
+        if (!modulesByClassId.containsKey(cId)) {
+          modulesByClassId[cId] = [];
+        }
+
+        final moduleData = Map<String, dynamic>.from(data);
+        moduleData.remove('class_id');
+        
+        modulesByClassId[cId]!.add(moduleData);
+      }
+
+      final List<OutputClassDao> outputList = classesResults.map((classData) {
+        final classId = classData['class_id'].toString();
+        
+        final Map<String, dynamic> fullData = Map.from(classData);
+        
+        fullData['modules'] = modulesByClassId[classId] ?? [];
+
+        return OutputClassDao.fromJson(fullData);
+      }).toList();
+
       return Result.success(outputList);
+
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -52,6 +77,8 @@ class ClassRepositoryImpl implements IClassRepository {
           details: {"error": e.toString(), "stacktrace": s.toString()},
         ),
       );
+    } finally {
+      //await db?.close();
     }
   }
 

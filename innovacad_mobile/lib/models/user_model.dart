@@ -8,7 +8,7 @@ class UserModel {
   @JsonKey(name: 'id')
   final String id;
 
-  @JsonKey(name: 'name') // Changeable
+  @JsonKey(name: 'name')
   final String name;
 
   @JsonKey(name: 'email')
@@ -24,7 +24,7 @@ class UserModel {
   @DateTimeConverter()
   final DateTime createdAt;
 
-  @JsonKey(name: 'image') // Changeable
+  @JsonKey(name: 'image')
   final String? image;
 
   @JsonKey(name: 'token')

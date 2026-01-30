@@ -11,8 +11,11 @@ export const ClassStatusEnumLookUp = {
 };
 
 export type ClassModule = {
+  classes_modules_id: string;
   courses_modules_id: string;
   current_duration?: number;
+  module_name?: string;
+  total_duration?: number;
 };
 
 export type ClassResponseData = {

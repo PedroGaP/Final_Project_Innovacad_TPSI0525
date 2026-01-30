@@ -9,8 +9,6 @@ import {
 } from "solid-js";
 import { Portal } from "solid-js/web";
 
-// --- TYPES ---
-
 export type ModalFieldType =
   | "text"
   | "number"
@@ -29,9 +27,7 @@ export interface ModalFieldDefinition<T> {
   placeholder?: string;
   disabled?: boolean;
   hidden?: boolean;
-  // For 'select' type
   options?: { label: string; value: string | number }[];
-  // Custom validation or props
   required?: boolean;
 }
 
@@ -42,21 +38,16 @@ interface ModalEditProps<T> {
   onCancel: () => void;
   title: string;
 
-  // If provided, these define exactly what to show and how.
-  // If not provided, the modal attempts to auto-generate fields.
   fields?: ModalFieldDefinition<T>[];
 
-  // Legacy support for auto-generation
   disabledFields?: string[];
 
-  // For completely custom complex UI (like your Module Manager)
   renderCustomFields?: (
     formData: T,
     setFormData: (prev: (prev: T) => T) => void,
   ) => JSXElement;
 }
 
-// --- HELPERS ---
 
 const PortalTooltip = (props: { text: string; children: any }) => {
   let ref: HTMLDivElement | undefined;
@@ -120,7 +111,6 @@ const getFieldLabel = (fieldName: string): string => {
     .trim();
 };
 
-// --- MAIN COMPONENT ---
 
 const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
   const [formData, setFormData] = createSignal<T>(props.value);
@@ -146,14 +136,11 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
     }
   };
 
-  // --- LOGIC: Compute Fields ---
-  // If `props.fields` exists, use it. Otherwise, auto-generate based on data types.
   const displayFields = createMemo(() => {
     if (props.fields && props.fields.length > 0) {
       return props.fields.filter((f) => !f.hidden);
     }
 
-    // Legacy Auto-Generation Logic
     const excludedFields = [
       "id",
       "traineeId",
@@ -222,7 +209,6 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
               const isDisabled = field.disabled ?? false;
               const label = field.label || getFieldLabel(field.name);
 
-              // 1. CHECKBOX RENDER
               if (field.type === "checkbox") {
                 return (
                   <div class="form-control w-full">
@@ -246,7 +232,6 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
                 );
               }
 
-              // 2. SELECT RENDER
               if (field.type === "select") {
                 return (
                   <div class="form-control w-full">
@@ -272,7 +257,6 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
                 );
               }
 
-              // 3. TEXTAREA RENDER
               if (field.type === "textarea") {
                 return (
                   <div class="form-control w-full">
@@ -292,7 +276,6 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
                 );
               }
 
-              // 4. STANDARD INPUT RENDER (Text, Date, Number, etc)
               return (
                 <div class="form-control w-full">
                   <FieldLabel field={field} label={label} />
@@ -304,13 +287,11 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
                     }
                     class="input input-bordered w-full focus:input-primary"
                     disabled={isDisabled}
-                    // Value Handling
                     value={
                       field.type === "datetime-local" || field.type === "date"
                         ? formatDateForInput(value())
                         : String(value() || "")
                     }
-                    // Input Handling
                     onInput={(e) => {
                       const val = e.currentTarget.value;
                       if (
@@ -373,7 +354,6 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
   );
 };
 
-// Sub-component for Label consistency
 const FieldLabel = (props: {
   field: ModalFieldDefinition<any>;
   label: string;

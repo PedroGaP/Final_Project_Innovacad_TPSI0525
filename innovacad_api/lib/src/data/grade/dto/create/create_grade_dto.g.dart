@@ -10,7 +10,7 @@ CreateGradeDto _$CreateGradeDtoFromJson(Map<String, dynamic> json) =>
     CreateGradeDto(
       classModuleId: json['class_module_id'] as String,
       traineeId: json['trainee_id'] as String,
-      grade: (json['grade'] as num).toDouble(),
+      grade: json['grade'] as String,
       gradeType: json['grade_type'] as String,
     );
 

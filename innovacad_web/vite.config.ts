@@ -10,11 +10,12 @@ export default defineConfig({
     port: 5000,
     cors: true,
     proxy: {
-      '^/(sign|trainees|trainers|classes|courses|grades|rooms|modules|enrollments|availabilities|schedules)': {
-        target: "http://localhost:8080",
-        changeOrigin: true,
-        secure: false,
-      },
+      "^/(sign|trainees|trainers|classes|courses|grades|rooms|modules|enrollments|availabilities|schedules|documents|uploads)":
+        {
+          target: "http://localhost:8080",
+          changeOrigin: true,
+          secure: false,
+        },
     },
   },
   build: {

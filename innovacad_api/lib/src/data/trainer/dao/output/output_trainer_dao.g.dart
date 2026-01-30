@@ -22,7 +22,9 @@ OutputTrainerDao _$OutputTrainerDaoFromJson(Map<String, dynamic> json) =>
       birthdayDate: const DateTimeConverter().fromJson(
         json['birthday_date'] as Object,
       ),
-      specialization: json['specialization'] as String,
+      skills: (json['skills'] as List<dynamic>)
+          .map((e) => TrainerSkillDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
       image: json['image'] as String?,
       token: json['token'] as String?,
       sessionToken: json['session_token'] as String?,
@@ -43,5 +45,5 @@ Map<String, dynamic> _$OutputTrainerDaoToJson(OutputTrainerDao instance) =>
       'twoFactorEnabled': instance.twoFactorEnabled,
       'trainer_id': instance.trainerId,
       'birthday_date': const DateTimeConverter().toJson(instance.birthdayDate),
-      'specialization': instance.specialization,
+      'skills': instance.skills,
     };

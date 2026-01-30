@@ -30,7 +30,6 @@ const validateEnrollment = (
     errors.push("Trainee is required");
   }
 
-  // Final grade might be optional initially, but if provided, validate range
   const final_grade = String(enrollment.final_grade || "").trim();
   if (
     final_grade &&
@@ -75,20 +74,17 @@ const getChangedFields = (
 const EnrollmentsPage = () => {
   const api = useApi();
 
-  // 1. Fetch main data
   const [enrollmentsData, { mutate }] = createResource<Enrollment[]>(
     api.fetchEnrollments,
   );
 
-  // 2. Fetch Relations for Dropdowns (Lazy Loading via Resource)
   const [trainees] = createResource<Trainee[]>(api.fetchTrainees);
   const [classes] = createResource<Class[]>(api.fetchClasses);
 
-  // 3. Prepare Options for Select Boxes
   const traineeOptions = createMemo(() => {
     const list = trainees();
     if (!list) return [];
-    // Format: "Name (Email)" to make it searchable by native browser typing
+
     return list.map((t) => ({
       label: `${t.name} (${t.email})`,
       value: t.traineeId!,
@@ -104,7 +100,6 @@ const EnrollmentsPage = () => {
     }));
   });
 
-  // 4. Helpers for Table Display (Show Names instead of IDs)
   const getTraineeName = (id: string | undefined) => {
     if (!id || !trainees()) return id;
     const found = trainees()?.find((t) => t.traineeId === id);
@@ -179,7 +174,6 @@ const EnrollmentsPage = () => {
     toast.success("Enrollment deleted successfully");
   };
 
-  // 5. Define Form Fields for the Modal
   const formFieldsConfig = createMemo<ModalFieldDefinition<Enrollment>[]>(
     () => [
       {
@@ -193,7 +187,7 @@ const EnrollmentsPage = () => {
       {
         name: "trainee_id",
         label: "Trainee",
-        type: "select", // <--- Converted to Select Box
+        type: "select",
         options: traineeOptions(),
         required: true,
         placeholder: trainees.loading
@@ -218,10 +212,10 @@ const EnrollmentsPage = () => {
       handleAddClick={() => createEmptyEnrollment()}
       confirmDelete={confirmDelete}
       handleSave={handleSaveEnrollment}
-      formFields={formFieldsConfig()} // <--- Pass the config here
+      formFields={formFieldsConfig()}
       filter={(e: Enrollment, search: string) => {
         const s = search.toLowerCase();
-        // Allow searching by grade, or by the resolved name of the trainee/class
+        
         const traineeName = getTraineeName(e.trainee_id)?.toLowerCase() || "";
         const classIdent = getClassIdentifier(e.class_id)?.toLowerCase() || "";
 
@@ -242,7 +236,7 @@ const EnrollmentsPage = () => {
         {
           formattedName: "Class",
           fieldName: "class_id",
-          // Use custom generation to show readable name instead of UUID
+          
           customGeneration: (e) => (
             <span class="font-mono text-xs">
               {getClassIdentifier(e.class_id)}
@@ -253,7 +247,7 @@ const EnrollmentsPage = () => {
         {
           formattedName: "Trainee",
           fieldName: "trainee_id",
-          // Use custom generation to show readable name instead of UUID
+          
           customGeneration: (e) => (
             <div class="flex flex-col">
               <span class="font-medium">{getTraineeName(e.trainee_id)}</span>

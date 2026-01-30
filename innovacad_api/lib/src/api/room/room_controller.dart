@@ -10,23 +10,46 @@ class RoomController {
 
   RoomController(this._service);
 
+  @ApiOperation(
+    summary: 'Get all rooms',
+    description: 'Retrieves a list of all rooms',
+  )
   @Get('/')
   Future<Response> getAll() async => resultToResponse(await _service.getAll());
 
+  @ApiOperation(
+    summary: 'Get room by ID',
+    description: 'Retrieves a room by their unique identifier',
+  )
+  @ApiParam(name: 'id', description: 'The room ID', required: true)
   @Get('/<id>')
   Future<Response> getById(@Param("id") String id) async =>
       resultToResponse(await _service.getById(id));
 
+  @ApiOperation(
+    summary: 'Create a new room',
+    description: 'Creates a new room with the provided data',
+  )
   @Post("/")
   Future<Response> create(@Body() CreateRoomDto dto) async =>
       resultToResponse(await _service.create(dto));
 
+  @ApiOperation(
+    summary: 'Update a room',
+    description: 'Updates an existing room with the provided data',
+  )
+  @ApiParam(name: 'id', description: 'The room ID', required: true)
   @Put("/<id>")
   Future<Response> update(
     @Param("id") String id,
     @Body() UpdateRoomDto dto,
   ) async => resultToResponse(await _service.update(id, dto));
 
+  @ApiOperation(
+    summary: 'Delete a room',
+    description: 'Deletes a room by their unique identifier',
+  )
+  @ApiParam(name: 'id', description: 'The room ID', required: true)
   @Delete('/<id>')
   Future<Response> delete(@Param("id") String id) async =>
       resultToResponse(await _service.delete(id));

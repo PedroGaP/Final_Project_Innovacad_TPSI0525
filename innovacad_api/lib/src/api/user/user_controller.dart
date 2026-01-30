@@ -1,6 +1,7 @@
 import 'package:innovacad_api/src/domain/domain.dart';
 import 'package:vaden/vaden.dart';
 
+@Api(tag: 'Users', description: 'User management endpoints')
 @Controller('/user')
 class UserController {
   final IUserService _service;
