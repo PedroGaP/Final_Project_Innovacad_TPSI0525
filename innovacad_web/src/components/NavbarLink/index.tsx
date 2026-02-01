@@ -9,7 +9,7 @@ export interface NavProps {
   collapsed?: boolean;
   title: string;
   children?: Omit<NavProps, "collapsed">[];
-  role?: string;
+  role?: string | string[];
 }
 
 export const NavbarLink = (props: NavProps) => {

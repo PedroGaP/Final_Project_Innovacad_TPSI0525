@@ -32,10 +32,16 @@ class OutputScheduleDao {
   final Duration? endTime;
 
   @annotation.JsonKey(name: 'is_online')
-  final String? isOnline;
+  final bool? isOnline;
 
   @annotation.JsonKey(name: 'room_name')
   final String? roomName;
+
+  @annotation.JsonKey(name: 'start')
+  final String? start;
+
+  @annotation.JsonKey(name: 'end')
+  final String? end;
 
   OutputScheduleDao({
     this.scheduleId,
@@ -47,7 +53,13 @@ class OutputScheduleDao {
     this.dateDay,
     this.regimeType,
     this.roomName,
-  });
+  }) :
+       start = (dateDay != null && startTime != null)
+           ? dateDay.add(startTime).toIso8601String()
+           : null,
+       end = (dateDay != null && endTime != null)
+           ? dateDay.add(endTime).toIso8601String()
+           : null;
 
   Map<String, dynamic> toJson() => _$OutputScheduleDaoToJson(this);
 

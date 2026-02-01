@@ -18,6 +18,14 @@ class CreateTrainerDto extends CreateUserDto
   @vaden.JsonKey('skills_to_add')
   final List<TrainerSkillDto>? skillsToAdd;
 
+  @annotation.JsonKey(name: 'is_coordinator')
+  @vaden.JsonKey('is_coordinator')
+  final bool? isCoordinator;
+
+  @annotation.JsonKey(name: 'class_ids')
+  @vaden.JsonKey('class_ids')
+  final List<String>? classIds;
+
   CreateTrainerDto({
     required super.name,
     required super.email,
@@ -25,6 +33,8 @@ class CreateTrainerDto extends CreateUserDto
     required super.password,
     required this.birthdayDate,
     this.skillsToAdd,
+    this.isCoordinator,
+    this.classIds,
   });
 
   Map<String, dynamic> toJson() => _$CreateTrainerDtoToJson(this);

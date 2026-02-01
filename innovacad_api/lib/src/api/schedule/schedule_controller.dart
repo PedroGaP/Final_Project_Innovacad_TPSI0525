@@ -20,10 +20,25 @@ class ScheduleController {
   }
 
   @ApiOperation(
-    summary: 'Get schedule by ID',
-    description: 'Retrieves a schedule by their unique identifier',
+    summary: 'Get schedules by User ID',
+    description:
+        'Retrieves schedules associated with a specific user (Trainer)',
   )
-  @ApiParam(name: 'id', description: 'The schedule ID', required: true)
+  @ApiParam(
+    name: 'userId',
+    description: 'The User ID (from auth)',
+    required: true,
+  )
+  @Get('/user/<userId>')
+  Future<Response> getByUser(@Param("userId") String userId) async {
+    return resultToResponse(await _service.getByUser(userId));
+  }
+
+  @ApiOperation(
+    summary: 'Get schedule by ID',
+    description: 'Retrieves a schedule by a class unique identifier',
+  )
+  @ApiParam(name: 'id', description: 'The class ID', required: true)
   @Get('/<id>')
   Future<Response> getById(@Param("id") String id) async {
     return resultToResponse(await _service.getById(id));

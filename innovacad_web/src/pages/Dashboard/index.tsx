@@ -61,24 +61,28 @@ const DashboardLayout = (props: any) => {
       size: 22,
       path: "courses",
       title: "Courses",
+      role: "admin",
     },
     {
       icon: "Users",
       size: 22,
       path: "classes",
       title: "Classes",
+      role: "admin",
     },
     {
       icon: "Book",
       size: 22,
       path: "modules",
       title: "Modules",
+      role: "admin",
     },
     {
       icon: "Armchair",
       size: 22,
       path: "rooms",
       title: "Rooms",
+      role: "admin",
     },
     {
       icon: "Sigma",
@@ -91,12 +95,14 @@ const DashboardLayout = (props: any) => {
       size: 22,
       path: "enrollments",
       title: "Enrollments",
+      role: ["admin", "trainee"],
     },
     {
       icon: "CalendarDays",
       size: 22,
       path: "availabilities",
       title: "Availabilities",
+      role: ["admin", "trainer"],
     },
   ];
 
@@ -107,7 +113,7 @@ const DashboardLayout = (props: any) => {
           <input id="dashboard-drawer" type="checkbox" class="drawer-toggle" />
 
           <div class="drawer-content flex flex-col bg-base-200 h-screen overflow-hidden">
-            <header class="navbar bg-base-100 border-b border-base-300 h-16 min-h-16 px-4 sticky top-0 z-10 gap-2 flex-none">
+            <header class="navbar bg-base-100 border-b border-base-300 h-16 min-h-16 px-4 sticky top-0 z-[100] gap-2 flex-none">
               <div class="flex-none">
                 <label
                   for="dashboard-drawer"
@@ -141,7 +147,8 @@ const DashboardLayout = (props: any) => {
                 </div>
               </div>
 
-              <div class="navbar-end gap-3">
+              <div class="flex-none flex items-center gap-2">
+                {/* Theme Switcher */}
                 <label class="btn btn-ghost btn-circle swap swap-rotate">
                   <input
                     type="checkbox"
@@ -155,8 +162,8 @@ const DashboardLayout = (props: any) => {
                     <Icon name="Moon" size={20} />
                   </div>
                 </label>
-              </div>
-              <div class="flex-none flex items-center gap-2">
+
+                {/* Notifications */}
                 <button class="btn btn-ghost btn-circle">
                   <div class="indicator">
                     <Icon name="Bell" size={20} />
@@ -165,66 +172,52 @@ const DashboardLayout = (props: any) => {
                     </span>
                   </div>
                 </button>
-                <div class="dropdown dropdown-end">
+
+                {/* User Menu */}
+                <div class="dropdown dropdown-end z-[110]">
                   <label
                     tabindex="0"
-                    class="btn btn-ghost flex items-center gap-2 px-2"
+                    class="btn btn-ghost flex items-center gap-2 px-2 no-animation"
                   >
                     <Show when={!!user()}>
                       <div class="avatar">
-                        <div class="w-9 rounded-full">
-                          <Show
-                            when={!!user()?.image}
-                            fallback={
-                              <img
-                                src={
-                                  "https://ui-avatars.com/api/?name=" +
-                                  user()!.name
-                                }
-                                alt="User avatar"
-                              />
+                        <div class="w-8 h-8 rounded-full border border-base-300">
+                          <img
+                            src={
+                              user()?.image ||
+                              `https://ui-avatars.com/api/?name=${user()?.name}&background=random`
                             }
-                          >
-                            <img src={user()!.image} alt="avatar" />
-                          </Show>
+                            alt="Avatar"
+                          />
                         </div>
                       </div>
+                      <div class="hidden md:flex flex-col items-start leading-tight">
+                        <span class="text-sm font-bold">{user()?.name}</span>
+                        <span class="text-[10px] uppercase opacity-50 font-black tracking-wider">
+                          {user()?.role || "Guest"}
+                        </span>
+                      </div>
                     </Show>
-                    <div class="hidden md:flex flex-col items-start leading-tight">
-                      <Show when={!!user()}>
-                        <span class="text-sm font-semibold">
-                          {user()!.name}
-                        </span>
-                        <span class="text-xs opacity-60">
-                          {!!user()?.role
-                            ? capitalize(user()!.role!)
-                            : "No Role"}
-                        </span>
-                      </Show>
-                    </div>
-                    <Icon name="ChevronDown" size={16} />
+                    <Icon name="ChevronDown" size={14} />
                   </label>
                   <ul
                     tabindex="0"
-                    class="dropdown-content z-1 menu p-2 shadow bg-base-100 rounded-box w-52 mt-3"
+                    class="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-box w-52 mt-3 border border-base-200"
                   >
                     <li>
                       <a>
-                        <Icon name="User" size={16} />
-                        Profile
+                        <Icon name="User" size={16} /> Profile
                       </a>
                     </li>
                     <li>
                       <a href="/dashboard/settings">
-                        <Icon name="Settings" size={16} />
-                        Settings
+                        <Icon name="Settings" size={16} /> Settings
                       </a>
                     </li>
-                    <li class="divider my-1"></li>
+                    <li class="divider- my-1"></li>
                     <li>
                       <a class="text-error" onclick={() => logout()}>
-                        <Icon name={"LogOut"} size={16} />
-                        Logout
+                        <Icon name="LogOut" size={16} /> Logout
                       </a>
                     </li>
                   </ul>
@@ -262,7 +255,14 @@ const DashboardLayout = (props: any) => {
               <ul class="p-4 w-full text-base flex-1 overflow-y-auto overflow-x-visible gap-1">
                 <For each={NavItems}>
                   {(item) => (
-                    <Show when={!item.role || item.role === user()?.role}>
+                    <Show
+                      when={
+                        !item.role ||
+                        (Array.isArray(item.role)
+                          ? item.role.includes(user()?.role!)
+                          : item.role === user()?.role)
+                      }
+                    >
                       <NavbarLink {...item} collapsed={isCollapsed()} />
                     </Show>
                   )}

@@ -8,29 +8,67 @@ import {
   username,
   UserWithTwoFactor,
 } from "better-auth/plugins";
-import { createPool } from "mysql2/promise";
+import { createPool, RowDataPacket } from "mysql2/promise";
 import { API } from "@/src/utils/env";
 import nodemailer from "nodemailer";
 import { sendVerificationEmail, sendTwoFactorEmail } from "@/src/modules/email";
 
 async function getUserExtras(userId: string, role: string) {
-  if (role === "trainer") {
-    const [rows] = await pool.execute(
-      "SELECT trainer_id, birthday_date, specialization FROM trainers WHERE user_id = ?",
-      [userId],
-    );
-    return (rows as any[])[0] || {};
-  }
+  try {
+    if (role === "trainer" || role === "coordinator") {
+      const [trainerRows] = await pool.execute<RowDataPacket[]>(
+        "SELECT trainer_id, birthday_date, is_coordinator FROM trainers WHERE user_id = ?",
+        [userId],
+      );
 
-  if (role === "trainee") {
-    const [rows] = await pool.execute(
-      "SELECT trainee_id, birthday_date FROM trainees WHERE user_id = ?",
-      [userId],
-    );
-    return (rows as any[])[0] || {};
-  }
+      const trainerData = trainerRows[0];
+      if (!trainerData) return {};
 
-  return {};
+      const trainerId = trainerData.trainer_id;
+
+      const [skillsRows] = await pool.execute<RowDataPacket[]>(
+        "SELECT module_id, competence_level FROM trainer_skills WHERE trainer_id = ?",
+        [trainerId],
+      );
+
+      const [coordinatorRows] = await pool.execute<RowDataPacket[]>(
+        "SELECT class_id FROM trainers_classes_coordinator WHERE trainer_id = ?",
+        [trainerId],
+      );
+
+      const coordinatedClassIds = coordinatorRows.map((row) => row.class_id);
+
+      return {
+        trainer_id: trainerId,
+        birthday_date: trainerData.birthday_date,
+        is_coordinator:
+          trainerData.is_coordinator === 1 || coordinatedClassIds.length > 0,
+        coordinated_class_ids: coordinatedClassIds,
+        skills: skillsRows || [],
+      };
+    }
+
+    if (role === "trainee") {
+      const [traineeRows] = await pool.execute<RowDataPacket[]>(
+        "SELECT trainee_id, birthday_date, class_id FROM trainees WHERE user_id = ?",
+        [userId],
+      );
+
+      const traineeData = traineeRows[0];
+      if (!traineeData) return {};
+
+      return {
+        trainee_id: traineeData.trainee_id,
+        birthday_date: traineeData.birthday_date,
+        class_id: traineeData.class_id,
+      };
+    }
+
+    return {};
+  } catch (error) {
+    console.error("Erro ao buscar user extras:", error);
+    return {};
+  }
 }
 
 const pool = createPool({
@@ -192,7 +230,7 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       role: {
-        type: ["trainee", "admin", "trainer"],
+        type: ["trainee", "admin", "trainer", "coordinator"],
         defaultValue: "trainee",
         required: true,
         input: false,

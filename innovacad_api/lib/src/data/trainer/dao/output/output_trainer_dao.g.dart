@@ -25,6 +25,10 @@ OutputTrainerDao _$OutputTrainerDaoFromJson(Map<String, dynamic> json) =>
       skills: (json['skills'] as List<dynamic>)
           .map((e) => TrainerSkillDto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      isCoordinator: json['is_coordinator'] as bool?,
+      coordinatedClassIds: (json['coordinated_class_ids'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
       image: json['image'] as String?,
       token: json['token'] as String?,
       sessionToken: json['session_token'] as String?,
@@ -46,4 +50,6 @@ Map<String, dynamic> _$OutputTrainerDaoToJson(OutputTrainerDao instance) =>
       'trainer_id': instance.trainerId,
       'birthday_date': const DateTimeConverter().toJson(instance.birthdayDate),
       'skills': instance.skills,
+      'is_coordinator': instance.isCoordinator,
+      'coordinated_class_ids': instance.coordinatedClassIds,
     };

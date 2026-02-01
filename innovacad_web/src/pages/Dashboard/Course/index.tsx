@@ -289,7 +289,6 @@ const CoursesPage = () => {
                         <For each={validSequenceTargets()}>
                           {(m) => (
                             <Show when={m.module_id !== mod.module_id}>
-                              {/* 3. A Option usa SEMPRE o module_id como chave estável */}
                               <option value={m.module_id}>
                                 After {m.module_name}
                               </option>

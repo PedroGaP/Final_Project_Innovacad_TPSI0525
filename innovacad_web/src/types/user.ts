@@ -13,6 +13,9 @@ export type UserResponseData = {
   trainer_id?: string | undefined;
   trainee_id?: string | undefined;
   skills?: TrainerSkill[];
+  is_coordinator?: boolean;
+  coordinated_class_ids?: string[];
+
   image?: string | undefined;
   birthday_date?: number | undefined;
   emailVerified: boolean | undefined;
@@ -70,6 +73,9 @@ class Trainer extends User {
   birthdayDate: number | undefined;
   skills: TrainerSkill[] = [];
 
+  is_coordinator: boolean = false;
+  coordinated_class_ids: string[] = [];
+
   constructor(
     data: UserResponseData,
     trainerId: string,
@@ -80,6 +86,23 @@ class Trainer extends User {
     this.trainerId = trainerId || data.trainer_id;
     this.birthdayDate = birthdayDate || data.birthday_date;
     this.skills = skills || data.skills || [];
+
+    if (data.coordinated_class_ids) {
+      this.coordinated_class_ids = data.coordinated_class_ids;
+    }
+    else if ((data as any).user?.coordinated_class_ids) {
+      this.coordinated_class_ids = (data as any).user.coordinated_class_ids;
+    }
+
+    if (data.is_coordinator !== undefined) {
+      this.is_coordinator = !!data.is_coordinator;
+    } else if ((data as any).user?.is_coordinator !== undefined) {
+      this.is_coordinator = !!(data as any).user.is_coordinator;
+    }
+
+    if (this.role === "coordinator") {
+      this.is_coordinator = true;
+    }
   }
 }
 

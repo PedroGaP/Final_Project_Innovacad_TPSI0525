@@ -142,7 +142,6 @@ export "trainer/service/trainer_service_impl.dart";
 /* User */
 
 export "user/dao/output/output_user_dao.dart";
-export "user/dao/signin/user_signin_dao.dart";
 
 export "user/dto/create/create_user_dto.dart";
 export "user/dto/link/user_link_account_dto.dart";

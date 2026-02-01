@@ -15,17 +15,31 @@ class ClassRepositoryImpl implements IClassRepository {
     try {
       db = await MysqlConfiguration.connect();
 
-      final classesResults = await db.getAll(table: 'classes');
+      // CHANGED: Replaced db.getAll with a specific query including JOIN
+      // We alias courses.identifier as 'course_identifier'
+      final query = """
+        SELECT c.*, co.identifier AS course_identifier
+        FROM classes c
+        JOIN courses co ON c.course_id = co.course_id
+      """;
 
-      if (classesResults.isEmpty) {
+      final classesResults = await db.query(query);
+
+      if (classesResults.numOfRows < 1) {
         return Result.success([]);
       }
 
-      final classIdsString = classesResults
+      // Convert rows to a list of Maps to be mutable
+      final classesList = classesResults.rowsAssoc
+          .map((r) => r.assoc())
+          .toList();
+
+      final classIdsString = classesList
           .map((c) => "'${c['class_id'].toString()}'")
           .join(',');
 
-      final modulesQuery = """
+      final modulesQuery =
+          """
         SELECT 
           clm.class_id, 
           clm.courses_modules_id, 
@@ -53,22 +67,21 @@ class ClassRepositoryImpl implements IClassRepository {
 
         final moduleData = Map<String, dynamic>.from(data);
         moduleData.remove('class_id');
-        
+
         modulesByClassId[cId]!.add(moduleData);
       }
 
-      final List<OutputClassDao> outputList = classesResults.map((classData) {
+      final List<OutputClassDao> outputList = classesList.map((classData) {
         final classId = classData['class_id'].toString();
-        
+
         final Map<String, dynamic> fullData = Map.from(classData);
-        
+
         fullData['modules'] = modulesByClassId[classId] ?? [];
 
         return OutputClassDao.fromJson(fullData);
       }).toList();
 
       return Result.success(outputList);
-
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -89,12 +102,21 @@ class ClassRepositoryImpl implements IClassRepository {
     try {
       db = await MysqlConfiguration.connect();
 
-      final classResult = await db.getOne(
-        table: 'classes',
-        where: {"class_id": id},
+      // CHANGED: Replaced db.getOne with a specific query including JOIN
+      final query = """
+        SELECT c.*, co.identifier AS course_identifier
+        FROM classes c
+        JOIN courses co ON c.course_id = co.course_id
+        WHERE c.class_id = ?
+      """;
+
+      final classResult = await db.query(
+        query,
+        whereValues: [id],
+        isStmt: true,
       );
 
-      if (classResult.isEmpty) {
+      if (classResult.numOfRows < 1) {
         return Result.failure(
           AppError(AppErrorType.notFound, "Class not found"),
         );
@@ -106,7 +128,9 @@ class ClassRepositoryImpl implements IClassRepository {
         isStmt: true,
       );
 
-      final Map<String, dynamic> fullData = Map.from(classResult);
+      final Map<String, dynamic> fullData = Map.from(
+        classResult.rowsAssoc.first.assoc(),
+      );
 
       fullData['modules'] = modulesResult.rowsAssoc.map((row) {
         return {

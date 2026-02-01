@@ -15,6 +15,9 @@ class OutputClassDao {
   @annotation.JsonKey(name: 'course_id')
   final String courseId;
 
+  @annotation.JsonKey(name: 'course_identifier')
+  final String courseIdentifier;
+
   @annotation.JsonKey(name: 'location')
   final String location;
 
@@ -45,6 +48,7 @@ class OutputClassDao {
     required this.startDateTimestamp,
     required this.endDateTimestamp,
     required this.modules,
+    required this.courseIdentifier,
   });
 
   Map<String, dynamic> toJson() => _$OutputClassDaoToJson(this);

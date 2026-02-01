@@ -4,9 +4,10 @@ USE innovacad_tpsi0525;
 
 CREATE TABLE IF NOT EXISTS trainers
 (
-    trainer_id    VARCHAR(36) DEFAULT (UUID()) PRIMARY KEY,
-    user_id       VARCHAR(36) NOT NULL,
-    birthday_date TIMESTAMP,
+    trainer_id     VARCHAR(36) DEFAULT (UUID()) PRIMARY KEY,
+    user_id        VARCHAR(36) NOT NULL,
+    birthday_date  TIMESTAMP,
+    is_coordinator TINYINT(1)  DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES user (id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
@@ -136,6 +137,8 @@ CREATE TABLE IF NOT EXISTS schedules
     regime_type     TINYINT(1)    DEFAULT 0, -- 0=daytime, 1=post-work
     total_hours     DECIMAL(4, 2) DEFAULT 6.0,
     created_at      TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+    start_date_timestamp TIMESTAMP NOT NULL,
+    end_date_timestamp TIMESTAMP NOT NULL,
     FOREIGN KEY (class_module_id) REFERENCES classes_modules (classes_modules_id) ON UPDATE CASCADE ON DELETE CASCADE,
     FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id) ON UPDATE CASCADE ON DELETE RESTRICT,
     FOREIGN KEY (room_id) REFERENCES rooms (room_id) ON UPDATE CASCADE ON DELETE SET NULL
@@ -193,6 +196,16 @@ CREATE TABLE IF NOT EXISTS documents
 
     FOREIGN KEY (type_code) REFERENCES document_types (code),
     FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS trainers_classes_coordinator
+(
+    trainers_classes_coordinator_id VARCHAR(36) DEFAULT (UUID()) PRIMARY KEY,
+    trainer_id                      VARCHAR(36) NOT NULL,
+    class_id                        VARCHAR(36) NOT NULL,
+    UNIQUE (trainer_id, class_id),
+    FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id) ON DELETE CASCADE,
+    FOREIGN KEY (class_id) REFERENCES classes (class_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_trainer_user ON trainers (user_id);

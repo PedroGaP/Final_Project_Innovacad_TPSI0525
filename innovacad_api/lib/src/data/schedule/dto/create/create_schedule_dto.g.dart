@@ -10,20 +10,18 @@ CreateScheduleDto _$CreateScheduleDtoFromJson(Map<String, dynamic> json) =>
     CreateScheduleDto(
       classModuleId: json['class_module_id'] as String,
       trainerId: json['trainer_id'] as String,
-      availabilityId: json['availability_id'] as String,
-      roomId: (json['room_id'] as num).toInt(),
-      isOnline: json['is_online'] as bool,
-      regimeType: (json['regime_type'] as num).toInt(),
-      totalHours: (json['total_hours'] as num).toDouble(),
+      roomId: (json['room_id'] as num?)?.toInt(),
+      startTime: DateTime.parse(json['start_time'] as String),
+      endTime: DateTime.parse(json['end_time'] as String),
+      forceTrainerChange: json['force_trainer_change'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$CreateScheduleDtoToJson(CreateScheduleDto instance) =>
     <String, dynamic>{
       'class_module_id': instance.classModuleId,
       'trainer_id': instance.trainerId,
-      'availability_id': instance.availabilityId,
       'room_id': instance.roomId,
-      'is_online': instance.isOnline,
-      'regime_type': instance.regimeType,
-      'total_hours': instance.totalHours,
+      'start_time': instance.startTime.toIso8601String(),
+      'end_time': instance.endTime.toIso8601String(),
+      'force_trainer_change': instance.forceTrainerChange,
     };

@@ -28,6 +28,61 @@ class RemoteUserService {
 
   RemoteUserService(this._settings, this._dio);
 
+  Future<Map<String, dynamic>> _enrichWithLocalData(
+    Map<String, dynamic> userData,
+  ) async {
+    MysqlUtils? db;
+    try {
+      db = await MysqlConfiguration.connect();
+      final userId = userData['id'];
+
+      final trainerRow = await db.getOne(
+        table: 'trainers',
+        where: {'user_id': userId},
+      );
+
+      if (trainerRow.isNotEmpty) {
+        final String trainerId = trainerRow['trainer_id'].toString();
+        userData['trainer_id'] = trainerId;
+        userData['birthday_date'] = trainerRow['birthday_date'];
+
+        final classesResult = await db.query(
+          "SELECT class_id FROM trainers_classes_coordinator WHERE trainer_id = ?",
+          whereValues: [trainerId],
+          isStmt: true,
+        );
+
+        List<String> coordinatedIds = [];
+        for (var row in classesResult.rowsAssoc) {
+          coordinatedIds.add(row.assoc()['class_id'].toString());
+        }
+
+        userData['is_coordinator'] = coordinatedIds.isNotEmpty;
+        userData['coordinated_class_ids'] = coordinatedIds;
+
+        final skillsResult = await db.query(
+          "SELECT module_id, competence_level FROM trainers_skills WHERE trainer_id = ?",
+          whereValues: [trainerId],
+          isStmt: true,
+        );
+
+        userData['skills'] = skillsResult.rowsAssoc
+            .map((row) => row.assoc())
+            .toList();
+      } else if (userData['role'] == 'coordinator') {
+        userData['is_coordinator'] = true;
+        userData['coordinated_class_ids'] = [];
+      }
+
+      return userData;
+    } catch (e) {
+      print("[Enrichment Error] Failed to fetch local data: $e");
+      return userData;
+    } finally {
+      //await db?.close();
+    }
+  }
+
   Future<Result<SignInAdminResult>> signInAdmin() async {
     try {
       final uri = Uri(
@@ -204,7 +259,6 @@ class RemoteUserService {
         );
       }
 
-      print("ÄAA: ${response.headers['set-cookie']}");
       final signInCookies = response.headers['set-cookie'] ?? [];
 
       final res = await _dio.get(
@@ -212,11 +266,19 @@ class RemoteUserService {
         options: Options(headers: {"cookie": signInCookies}),
       );
 
-      print("--------------------------------------------");
-      print(res.data);
-      print(res.requestOptions.headers);
-      print(res.statusCode);
-      print("--------------------------------------------");
+      if ((res.statusCode != HttpStatus.ok || res.data == null) &&
+          response.data['user'] != null) {
+        var userData = response.data['user'] as Map<String, dynamic>;
+        userData["token"] = token;
+
+        if (response.data['session'] != null) {
+          userData["session_token"] = response.data['session']['token'];
+        }
+
+        userData = await _enrichWithLocalData(userData);
+
+        return Result.success(userData, headers: {"set-cookie": signInCookies});
+      }
 
       if (res.statusCode != HttpStatus.ok || res.data == null) {
         return Result.failure(
@@ -228,16 +290,16 @@ class RemoteUserService {
         );
       }
 
-      final userData = res.data["user"] as Map<String, dynamic>;
+      var userData = res.data["user"] as Map<String, dynamic>;
 
       userData["session_token"] = res.data["session"]["token"];
       userData["token"] = token;
       userData["headers"] = {"set-cookie": res.headers["set-cookie"]};
 
+      userData = await _enrichWithLocalData(userData);
+
       final sessionCookies = res.headers['set-cookie'] ?? [];
       final allCookies = [...signInCookies, ...sessionCookies];
-
-      log("Repo: ${jsonEncode(userData["headers"])}");
 
       return Result.success(userData, headers: {"set-cookie": allCookies});
     } catch (e, s) {
@@ -378,7 +440,6 @@ class RemoteUserService {
         ),
       );
 
-
       if (response.statusCode != HttpStatus.ok)
         return Result.failure(
           AppError(
@@ -482,44 +543,85 @@ class RemoteUserService {
 
   Future<Result<OutputUserDao>> getSession(String sessionCookie) async {
     try {
+      print("🔍 GetSession Cookie received from Frontend: $sessionCookie");
+
       final res = await _dio.get(
         "http://localhost:10000/api/auth/get-session",
         options: Options(
           headers: {
-            "Authorization":
-                "Bearer ${TokenUtils.getUserSessionToken(sessionCookie)}",
+            "cookie": sessionCookie,
+            "Content-Type": "application/json",
           },
+          validateStatus: (status) => true,
         ),
       );
 
+      print("🔍 Better Auth Response Status: ${res.statusCode}");
+      print("🔍 Better Auth Response Data: ${res.data}");
+
       if (res.statusCode != 200 || res.data == null) {
-        print(res.data);
-        print(res.requestOptions.headers);
         return Result.failure(
           AppError(
             AppErrorType.notFound,
-            "No session found, sign in and try again later.",
-            details: res.data,
+            "No session found (Better Auth refused).",
+            details: {"status": res.statusCode, "data": res.data},
           ),
         );
       }
 
-      print(res.headers);
+      dynamic rawData = res.data;
+      if (rawData is String) {
+        rawData = jsonDecode(rawData);
+      }
 
-      final userData = res.data["user"];
-      final cookies = res.headers["set-cookie"].toString();
-      userData["session_token"] = res.data["session"]["token"];
-      userData["token"] = TokenUtils.getUserToken(cookies);
+      if (rawData['user'] == null) {
+        return Result.failure(
+          AppError(
+            AppErrorType.notFound,
+            "Session valid but no user data found",
+          ),
+        );
+      }
 
-      print(userData);
+      var userData = Map<String, dynamic>.from(rawData['user']);
 
-      if (userData.containsKey("trainer_id") && userData["trainer_id"] != null)
-        return Result.success(OutputTrainerDao.fromJson(userData));
-      if (userData.containsKey("trainee_id") && userData["trainee_id"] != null)
-        return Result.success(OutputTraineeDao.fromJson(userData));
+      String cookieHeader = "";
+      if (res.headers['set-cookie'] != null &&
+          res.headers['set-cookie']!.isNotEmpty) {
+        cookieHeader = res.headers['set-cookie']!.join('; ');
+      }
+      if (cookieHeader.isEmpty) cookieHeader = sessionCookie;
+
+      userData["session_token"] = rawData["session"]?["token"];
+      userData["token"] = TokenUtils.getUserToken(cookieHeader);
+
+      userData = await _enrichWithLocalData(userData);
+
+      final role = userData['role'];
+
+      if (role == 'trainer' &&
+          userData.containsKey('trainer_id') &&
+          userData['trainer_id'] != null) {
+        try {
+          return Result.success(OutputTrainerDao.fromJson(userData));
+        } catch (e, s) {
+          print("⚠️ Falha DAO Trainer: $e");
+        }
+      }
+
+      if (role == 'trainee' &&
+          userData.containsKey('trainee_id') &&
+          userData['trainee_id'] != null) {
+        try {
+          return Result.success(OutputTraineeDao.fromJson(userData));
+        } catch (e) {
+          print("⚠️ Falha DAO Trainee: $e");
+        }
+      }
 
       return Result.success(OutputUserDao.fromJson(userData));
     } catch (e, s) {
+      print("🔥 Erro crítico no getSession: $e");
       print(s);
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }

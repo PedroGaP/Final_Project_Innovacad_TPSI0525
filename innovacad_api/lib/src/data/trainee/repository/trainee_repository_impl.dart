@@ -3,6 +3,7 @@ import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
 import 'package:innovacad_api/src/domain/trainee/repository/i_trainee_repository.dart';
 import 'package:mysql_utils/mysql_utils.dart';
+import 'package:uuid/uuid.dart';
 import 'package:vaden/vaden.dart';
 
 @Repository()
@@ -26,7 +27,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       final query =
           "SELECT $relationFields FROM `trainees` t JOIN `user` u ON t.user_id = u.id";
       final results = await db.query(query);
-
 
       for (var row in results.rows) {
         daos.add(OutputTraineeDao.fromJson(row));
@@ -70,21 +70,21 @@ class TraineeRepositoryImpl implements ITraineeRepository {
     String? createdUserId;
 
     try {
-      final result = await getAll();
+      db = await MysqlConfiguration.connect();
 
-      if (result.isFailure)
+      final checkExists = await db.query(
+        "SELECT id FROM user WHERE email = ? OR username = ? LIMIT 1",
+        whereValues: [dto.email, dto.username],
+        isStmt: true,
+      );
+
+      if (checkExists.rows.isNotEmpty) {
         return Result.failure(
-          AppError(AppErrorType.internal, "Failed to fetch trainees."),
+          AppError(
+            AppErrorType.internal,
+            "A trainee with the username or email provided already exists.",
+          ),
         );
-
-      for (var trainee in result.data!) {
-        if (trainee.email == dto.email || trainee.username == dto.username)
-          return Result.failure(
-            AppError(
-              AppErrorType.internal,
-              "A trainee with the username or email provided already exists.",
-            ),
-          );
       }
 
       final responseUser = await _remoteUserService.signUpUser(
@@ -93,23 +93,23 @@ class TraineeRepositoryImpl implements ITraineeRepository {
         dto.password,
       );
 
-      if (responseUser.isFailure)
+      if (responseUser.isFailure) {
         return Result.failure(
           AppError(
             AppErrorType.internal,
-            "Failed to singup the trainee user.",
+            "Failed to signup the trainee user.",
             details: {"error": responseUser.error},
           ),
         );
+      }
 
       final role = "trainee";
-
       final userData = responseUser.data as Map<String, dynamic>;
       userData["username"] = dto.username;
       userData["role"] = role;
       createdUserId = userData["id"];
 
-      db = await MysqlConfiguration.connect();
+      await db.startTrans();
 
       final updateCount = await db.update(
         table: "user",
@@ -117,40 +117,30 @@ class TraineeRepositoryImpl implements ITraineeRepository {
         where: {"id": createdUserId},
       );
 
-      if (updateCount < BigInt.from(0))
-        throw "Something went wrong while updating the role or username for tainee user.";
+      if (updateCount < BigInt.from(0)) {
+        throw "Something went wrong while updating the role or username.";
+      }
+
+      final traineeId = Uuid().v4();
 
       await db.insert(
         table: table,
         insertData: {
+          "trainee_id": traineeId,
           "user_id": createdUserId,
           "birthday_date": dto.birthdayDate,
         },
       );
 
-      final updatedResult = await getAll();
+      await db.commit();
 
-      if (updatedResult.isFailure) throw "Failed to fetch trainees.";
-
-      var traineeExists = false;
-
-      for (var trainee in updatedResult.data!) {
-        if (trainee.id == createdUserId) {
-          traineeExists = true;
-          userData["trainee_id"] = trainee.traineeId;
-          userData["user_id"] = trainee.id;
-          userData["birthday_date"] = trainee.birthdayDate;
-          break;
-        }
-      }
-
-      if (traineeExists == false) throw "Failed to create the trainee.";
-
-      final dao = OutputTraineeDao.fromJson(userData);
-
-      return Result.success(dao);
+      return await getById(traineeId);
     } catch (e) {
-      _remoteUserService.deleteUserAsAdmin(createdUserId!);
+      if (db != null) await db.rollback();
+
+      if (createdUserId != null) {
+        await _remoteUserService.deleteUserAsAdmin(createdUserId);
+      }
 
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }

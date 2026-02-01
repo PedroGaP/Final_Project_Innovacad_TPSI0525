@@ -18,6 +18,10 @@ CreateTrainerDto _$CreateTrainerDtoFromJson(Map<String, dynamic> json) =>
       skillsToAdd: (json['skills_to_add'] as List<dynamic>?)
           ?.map((e) => TrainerSkillDto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      isCoordinator: json['is_coordinator'] as bool?,
+      classIds: (json['class_ids'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
     );
 
 Map<String, dynamic> _$CreateTrainerDtoToJson(CreateTrainerDto instance) =>
@@ -28,4 +32,6 @@ Map<String, dynamic> _$CreateTrainerDtoToJson(CreateTrainerDto instance) =>
       'password': instance.password,
       'birthday_date': const DateTimeConverter().toJson(instance.birthdayDate),
       'skills_to_add': instance.skillsToAdd,
+      'is_coordinator': instance.isCoordinator,
+      'class_ids': instance.classIds,
     };

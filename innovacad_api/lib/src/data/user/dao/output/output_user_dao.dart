@@ -40,6 +40,12 @@ class OutputUserDao {
   @annotation.JsonKey(name: 'twoFactorEnabled', defaultValue: false)
   final bool twoFactorEnabled;
 
+  @annotation.JsonKey(name: 'is_coordinator')
+  final bool? isCoordinator;
+
+  @annotation.JsonKey(name: 'coordinated_class_ids')
+  final List<String>? coordinatedClassIds;
+
   OutputUserDao({
     required this.id,
     required this.username,
@@ -49,6 +55,8 @@ class OutputUserDao {
     required this.role,
     required this.verified,
     required this.twoFactorEnabled,
+    this.isCoordinator,
+    this.coordinatedClassIds,
     this.image,
     this.token,
     this.sessionToken,

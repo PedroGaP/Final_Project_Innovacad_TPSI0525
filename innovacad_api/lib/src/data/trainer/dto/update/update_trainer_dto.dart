@@ -8,7 +8,7 @@ part 'update_trainer_dto.g.dart';
 @vaden.DTO()
 @annotation.JsonSerializable()
 class UpdateTrainerDto extends UpdateUserDto
-    with vaden.Validator<UpdateTraineeDto> {
+    with vaden.Validator<UpdateTrainerDto> {
   @annotation.JsonKey(name: 'birthday_date')
   @DateTimeConverter()
   final DateTime? birthdayDate;
@@ -21,17 +21,32 @@ class UpdateTrainerDto extends UpdateUserDto
   @vaden.JsonKey('skills_to_remove')
   final String? skillsToRemove;
 
+  @annotation.JsonKey(name: 'is_coordinator')
+  @vaden.JsonKey('is_coordinator')
+  final bool? isCoordinator;
+
+  @annotation.JsonKey(name: 'class_ids_to_add')
+  @vaden.JsonKey('class_ids_to_add')
+  final List<String>? classIdsToAdd;
+
+  @annotation.JsonKey(name: 'class_ids_to_remove')
+  @vaden.JsonKey('class_ids_to_remove')
+  final List<String>? classIdsToRemove;
+
   UpdateTrainerDto({
     super.name,
     super.image,
     this.birthdayDate,
     this.skillsToAdd,
     this.skillsToRemove,
+    this.isCoordinator,
+    this.classIdsToAdd,
+    this.classIdsToRemove,
   });
 
   @override
-  vaden.LucidValidator<UpdateTraineeDto> validate(
-    vaden.ValidatorBuilder<UpdateTraineeDto> builder,
+  vaden.LucidValidator<UpdateTrainerDto> validate(
+    vaden.ValidatorBuilder<UpdateTrainerDto> builder,
   ) {
     return builder;
   }

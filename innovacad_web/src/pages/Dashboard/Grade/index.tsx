@@ -104,23 +104,23 @@ const GradesPage = () => {
   const classModuleOptions = createMemo(() => {
     const list = classes();
     if (!list) return [];
-    
-    const options: { label: string; value: string }[] = [];
-    
-    list.forEach(cls => {
-        if(cls.modules && cls.modules.length > 0) {
-            cls.modules.forEach(mod => {
 
-                const valueId = (mod as any).classes_modules_id || mod.courses_modules_id; 
-                
-                options.push({
-                    label: `${cls.identifier} - ${mod.module_name} (${cls.location})`,
-                    value: valueId
-                });
-            })
-        }
+    const options: { label: string; value: string }[] = [];
+
+    list.forEach((cls) => {
+      if (cls.modules && cls.modules.length > 0) {
+        cls.modules.forEach((mod) => {
+          const valueId =
+            (mod as any).classes_modules_id || mod.courses_modules_id;
+
+          options.push({
+            label: `${cls.identifier} - ${mod.module_name} (${cls.location})`,
+            value: valueId,
+          });
+        });
+      }
     });
-    
+
     return options;
   });
 
@@ -133,16 +133,15 @@ const GradesPage = () => {
   const getClassModuleName = (id: string | undefined) => {
     if (!id || !classes()) return id;
     for (const cls of classes()!) {
-        const foundMod = cls.modules?.find((m: any) => 
-            m.classes_modules_id === id || m.courses_modules_id === id
-        );
-        if(foundMod) {
-            return `${cls.identifier} - ${foundMod.module_name}`;
-        }
+      const foundMod = cls.modules?.find(
+        (m: any) => m.classes_modules_id === id || m.courses_modules_id === id,
+      );
+      if (foundMod) {
+        return `${cls.identifier} - ${foundMod.module_name}`;
+      }
     }
     return id;
   };
-
 
   const handleSaveGrade = async (grade: Grade, original: Grade | null) => {
     try {
@@ -208,13 +207,15 @@ const GradesPage = () => {
       filter={(e: Grade, search: string) => {
         const s = search.toLowerCase();
         const traineeName = getTraineeName(e.trainee_id)?.toLowerCase() || "";
-        const moduleName = getClassModuleName(e.class_module_id)?.toLowerCase() || "";
+        const moduleName =
+          getClassModuleName(e.class_module_id)?.toLowerCase() || "";
 
         return (
-             String(e.grade).includes(s) ||
-             traineeName.includes(s) ||
-             moduleName.includes(s)
-        ) ?? false;
+          (String(e.grade).includes(s) ||
+            traineeName.includes(s) ||
+            moduleName.includes(s)) ??
+          false
+        );
       }}
       formFields={[
         {
@@ -223,7 +224,9 @@ const GradesPage = () => {
           type: "select",
           options: classModuleOptions(),
           required: true,
-          placeholder: classes.loading ? "Loading modules..." : "Select Class Module"
+          placeholder: classes.loading
+            ? "Loading modules..."
+            : "Select Class Module",
         },
         {
           label: "Trainee",
@@ -231,7 +234,9 @@ const GradesPage = () => {
           type: "select",
           options: traineeOptions(),
           required: true,
-          placeholder: trainees.loading ? "Loading trainees..." : "Select Trainee"
+          placeholder: trainees.loading
+            ? "Loading trainees..."
+            : "Select Trainee",
         },
         {
           label: "Grade (0-20)",
@@ -261,7 +266,9 @@ const GradesPage = () => {
           formattedName: "Class Module",
           fieldName: "class_module_id",
           customGeneration: (e) => (
-             <span class="font-mono text-xs">{getClassModuleName(e.class_module_id)}</span>
+            <span class="font-mono text-xs">
+              {getClassModuleName(e.class_module_id)}
+            </span>
           ),
           smaller: true,
         },
@@ -270,7 +277,7 @@ const GradesPage = () => {
           fieldName: "trainee_id",
           customGeneration: (e) => (
             <div class="flex flex-col">
-                <span class="font-medium">{getTraineeName(e.trainee_id)}</span>
+              <span class="font-medium">{getTraineeName(e.trainee_id)}</span>
             </div>
           ),
         },
@@ -278,10 +285,12 @@ const GradesPage = () => {
           formattedName: "Grade",
           fieldName: "grade",
           customGeneration: (e) => (
-            <div class={`badge ${Number(e.grade) >= 10 ? 'badge-success' : 'badge-error'} badge-outline`}>
-                {e.grade}
+            <div
+              class={`badge ${Number(e.grade) >= 10 ? "badge-success" : "badge-error"} badge-outline`}
+            >
+              {e.grade}
             </div>
-          )
+          ),
         },
         {
           formattedName: "Type",

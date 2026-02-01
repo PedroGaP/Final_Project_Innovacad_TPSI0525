@@ -18,6 +18,13 @@ UpdateTrainerDto _$UpdateTrainerDtoFromJson(Map<String, dynamic> json) =>
           ?.map((e) => TrainerSkillDto.fromJson(e as Map<String, dynamic>))
           .toList(),
       skillsToRemove: json['skills_to_remove'] as String?,
+      isCoordinator: json['is_coordinator'] as bool?,
+      classIdsToAdd: (json['class_ids_to_add'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      classIdsToRemove: (json['class_ids_to_remove'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
     );
 
 Map<String, dynamic> _$UpdateTrainerDtoToJson(UpdateTrainerDto instance) =>
@@ -30,6 +37,9 @@ Map<String, dynamic> _$UpdateTrainerDtoToJson(UpdateTrainerDto instance) =>
       ),
       'skills_to_add': instance.skillsToAdd,
       'skills_to_remove': instance.skillsToRemove,
+      'is_coordinator': instance.isCoordinator,
+      'class_ids_to_add': instance.classIdsToAdd,
+      'class_ids_to_remove': instance.classIdsToRemove,
     };
 
 Value? _$JsonConverterFromJson<Json, Value>(
