@@ -1,40 +1,42 @@
-import 'package:vaden/vaden.dart';
 import 'package:json_annotation/json_annotation.dart' as annotation;
+import 'package:vaden/vaden.dart' as v;
 
 part 'create_schedule_dto.g.dart';
 
-@DTO()
 @annotation.JsonSerializable()
+@v.DTO()
 class CreateScheduleDto {
   @annotation.JsonKey(name: 'class_module_id')
+  @v.JsonKey('class_module_id')
   final String classModuleId;
 
   @annotation.JsonKey(name: 'trainer_id')
+  @v.JsonKey('trainer_id')
   final String trainerId;
 
-  @annotation.JsonKey(name: 'availability_id')
-  final String availabilityId;
-
   @annotation.JsonKey(name: 'room_id')
-  final int roomId;
+  @v.JsonKey('room_id')
+  final int? roomId;
 
-  @annotation.JsonKey(name: 'is_online')
-  final bool isOnline;
+  @annotation.JsonKey(name: 'start_time')
+  @v.JsonKey('start_time')
+  final DateTime startTime;
 
-  @annotation.JsonKey(name: 'regime_type')
-  final int regimeType;
+  @annotation.JsonKey(name: 'end_time')
+  @v.JsonKey('end_time')
+  final DateTime endTime;
 
-  @annotation.JsonKey(name: 'total_hours')
-  final double totalHours;
+  @annotation.JsonKey(name: 'force_trainer_change')
+  @v.JsonKey('force_trainer_change')
+  final bool forceTrainerChange;
 
   CreateScheduleDto({
     required this.classModuleId,
     required this.trainerId,
-    required this.availabilityId,
-    required this.roomId,
-    required this.isOnline,
-    required this.regimeType,
-    required this.totalHours,
+    this.roomId,
+    required this.startTime,
+    required this.endTime,
+    this.forceTrainerChange = false,
   });
 
   Map<String, dynamic> toJson() => _$CreateScheduleDtoToJson(this);

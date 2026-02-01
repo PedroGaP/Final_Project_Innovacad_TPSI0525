@@ -151,7 +151,7 @@ export const useApi = () => {
       };
 
       // const res = await fetch(`${baseUrl}${path}`, {
-      const res = await fetch(`${path}`, {
+      const res = await fetch(`${baseUrl}${path}`, {
         headers: reqHeaders,
         method,
         credentials: "include",
@@ -200,17 +200,38 @@ export const useApi = () => {
   /**
    * Map response data to appropriate User type
    */
+  /**
+   * Map response data to appropriate User type
+   */
   const mapToUserType = (data: UserResponseData): User => {
-    console.log(data);
+    console.log("Mapeando utilizador:", data);
 
     if (!data) throw new Error("The user data is undefined");
 
-    if ("trainer_id" in data) {
-      return new Trainer(data, data.trainer_id!, data.birthday_date);
+    if (
+      data.role === "coordinator" ||
+      data.role === "trainer" ||
+      "trainer_id" in data
+    ) {
+      const trainer = new Trainer(
+        data,
+        data.trainer_id! || data.id!,
+        data.birthday_date,
+      );
+
+      (trainer as any).is_coordinator = !!data.is_coordinator;
+      (trainer as any).coordinated_class_ids = Array.isArray(
+        data.coordinated_class_ids,
+      )
+        ? data.coordinated_class_ids
+        : [];
+      return trainer;
     }
-    if ("trainee_id" in data) {
-      return new Trainee(data, data.trainee_id!, data.birthday_date);
+
+    if ("trainee_id" in data || data.role === "trainee") {
+      return new Trainee(data, data.trainee_id || data.id!, data.birthday_date);
     }
+
     return new User(data);
   };
 
@@ -426,7 +447,7 @@ export const useApi = () => {
         email: data.email,
         username: data.username,
         password: data.password,
-        birthdayDate: data.birthdayDate,
+        birthday_date: data.birthdayDate,
         skills_to_add: data.skills_to_add,
       },
     );
@@ -449,7 +470,7 @@ export const useApi = () => {
     trainerId: string,
     data: {
       name?: string;
-      birthdayDate?: string;
+      birthday_date?: string;
       skills_to_add?: TrainerSkill[];
       skills_to_remove?: string;
     },
@@ -1361,22 +1382,29 @@ export const useApi = () => {
     if (res.isError || !res.data) {
       throw new Error(`Fetch availabilities failed: ${res.error?.message}`);
     }
-    const rooms = res.data.map((item) => new Availability(item));
-    console.log(rooms);
-    return rooms;
+    const availabilities = res.data.map((item) => new Availability(item));
+    console.log(availabilities);
+    return availabilities;
   };
 
   /**
    * Create a new availability
    */
   const createAvailability = async (data: {
-    trainer_id: string | undefined;
-    status: string | undefined;
+    trainer_id: string;
+    date_day: string;
+    slot_number: number;
+    is_booked?: boolean | number;
   }): Promise<Availability> => {
     const res = await fetchApi<AvailabilityResponseData>(
       `${API_ENDPOINTS.ENTITY.AVAILABILITY}`,
       "POST",
-      data,
+      {
+        trainer_id: data.trainer_id,
+        date_day: data.date_day,
+        slot_number: Number(data.slot_number),
+        is_booked: data.is_booked ?? 0,
+      },
     );
     if (res.isError || !res.data) {
       throw new Error(`Create availability failed: ${res.error?.message}`);
@@ -1391,14 +1419,18 @@ export const useApi = () => {
     availabilityId: string,
     data: {
       trainer_id?: string;
-      status?: string;
+      date_day?: string;
+      slot_number?: number;
+      is_booked?: boolean | number;
     },
   ): Promise<Availability> => {
     const updateData: Record<string, any> = {};
 
     if (data.trainer_id !== undefined) updateData.trainer_id = data.trainer_id;
-
-    if (data.status !== undefined) updateData.status = data.status;
+    if (data.date_day !== undefined) updateData.date_day = data.date_day;
+    if (data.slot_number !== undefined)
+      updateData.slot_number = Number(data.slot_number);
+    if (data.is_booked !== undefined) updateData.is_booked = data.is_booked;
 
     const res = await fetchApi<AvailabilityResponseData>(
       `${API_ENDPOINTS.ENTITY.AVAILABILITY}/${availabilityId}`,
@@ -1515,6 +1547,105 @@ export const useApi = () => {
     }
   };
 
+  const createSchedule = async (data: {
+    class_module_id: string;
+    trainer_id: string;
+    room_id?: number;
+    start_time: string;
+    end_time: string;
+    force_trainer_change?: boolean;
+  }): Promise<Schedule> => {
+    const res = await fetchApi<ScheduleResponseData>(
+      `${API_ENDPOINTS.ENTITY.SCHEDULE}`,
+      "POST",
+      {
+        class_module_id: data.class_module_id,
+        trainer_id: data.trainer_id,
+        room_id: data.room_id,
+        start_time: data.start_time,
+        end_time: data.end_time,
+        force_trainer_change: data.force_trainer_change ?? false,
+      },
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(res.error?.message || "Create schedule failed");
+    }
+    return new Schedule(res.data);
+  };
+
+  /**
+   * Update an existing schedule
+   */
+  const updateSchedule = async (
+    scheduleId: string,
+    data: {
+      trainer_id?: string;
+      room_id?: number;
+      is_online?: boolean;
+      regime_type?: number;
+      start_time?: string;
+      end_time?: string;
+    },
+  ): Promise<Schedule> => {
+    const payload = {
+      trainer_id: data.trainer_id,
+      room_id: data.room_id,
+      is_online: data.is_online,
+      regime_type: data.regime_type,
+      start_time: data.start_time,
+      end_time: data.end_time,
+    };
+
+    const res = await fetchApi<ScheduleResponseData>(
+      `${API_ENDPOINTS.ENTITY.SCHEDULE}/${scheduleId}`,
+      "PUT",
+      payload,
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(res.error?.message || "Update schedule failed");
+    }
+    return new Schedule(res.data);
+  };
+
+  /**
+   * Delete a schedule
+   */
+  const deleteSchedule = async (scheduleId: string): Promise<void> => {
+    const res = await fetchApi<void>(
+      `${API_ENDPOINTS.ENTITY.SCHEDULE}/${scheduleId}`,
+      "DELETE",
+    );
+
+    if (res.isError) {
+      throw new Error(res.error?.message || "Delete schedule failed");
+    }
+  };
+
+  /**
+   * Fetch schedules for the current logged-in user
+   */
+  const fetchUserSchedules = async (): Promise<Schedule[]> => {
+    const userId = user()?.id;
+
+    if (!userId) {
+      throw new Error("Fetch user schedules failed: No user ID found.");
+    }
+
+    const res = await fetchApi<ScheduleResponseData[]>(
+      `${API_ENDPOINTS.ENTITY.SCHEDULE}/user/${userId}`,
+      "GET",
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(`Fetch user schedules failed: ${res.error?.message}`);
+    }
+
+    const schedules = res.data.map((item) => new Schedule(item));
+    return schedules;
+  };
+
   return {
     // Sign In/Up
     signIn,
@@ -1596,6 +1727,10 @@ export const useApi = () => {
 
     // Schedules
     fetchSchedules,
+    fetchUserSchedules,
+    createSchedule,
+    updateSchedule,
+    deleteSchedule,
 
     // Documents
     fetchDocuments,

@@ -15,10 +15,28 @@ const hydrateUser = (
   data: UserResponseData | null,
 ): User | Trainee | Trainer | null => {
   if (!data) return null;
-  if (data.trainer_id) return new Trainer(data, data.trainer_id);
-  if (data.trainee_id)
-    return new Trainee(data, data.trainee_id, data.birthday_date);
-  return new User(data);
+
+  let instance: User | Trainee | Trainer;
+
+  if (data.trainee_id) {
+    instance = new Trainee(data, data.trainee_id, data.birthday_date);
+  } else if (
+    data.trainer_id ||
+    data.role === "trainer" ||
+    data.role === "coordinator"
+  ) {
+    instance = new Trainer(
+      data,
+      data.trainer_id || data.id || "unknown_trainer_id",
+      data.birthday_date,
+    );
+  } else {
+    instance = new User(data);
+  }
+
+  Object.assign(instance, data);
+
+  return instance;
 };
 
 export const UserDetailsProvider = (props: { children: JSX.Element }) => {
@@ -44,7 +62,6 @@ export const UserDetailsProvider = (props: { children: JSX.Element }) => {
 
     Object.keys(allCookies).forEach((cookieName) => {
       Cookies.remove(cookieName);
-
       Cookies.remove(cookieName, { path: "/" });
     });
 

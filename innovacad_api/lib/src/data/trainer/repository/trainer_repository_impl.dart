@@ -14,6 +14,13 @@ class TrainerRepositoryImpl implements ITrainerRepository {
 
   TrainerRepositoryImpl(this._remoteUserService);
 
+  bool _parseBool(dynamic value) {
+    if (value == null) return false;
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    return value.toString() == '1' || value.toString() == 'true';
+  }
+
   @override
   Future<Result<List<OutputTrainerDao>>> getAll() async {
     MysqlUtils? db;
@@ -21,7 +28,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       db = await MysqlConfiguration.connect();
 
       final query = """
-        SELECT t.trainer_id, t.user_id, t.birthday_date, 
+        SELECT t.trainer_id, t.user_id, t.birthday_date, t.is_coordinator,
                u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt, u.emailVerified 
         FROM `trainers` t 
         JOIN `user` u ON t.user_id = u.id
@@ -37,8 +44,26 @@ class TrainerRepositoryImpl implements ITrainerRepository {
           whereValues: [row['trainer_id']],
           isStmt: true,
         );
-
         row['skills'] = skillResults.rows;
+
+        final isCoordinator = _parseBool(row['is_coordinator']);
+        print("COORDENAODR? $isCoordinator");
+        row['is_coordinator'] =
+            isCoordinator;
+
+        if (isCoordinator) {
+          final classResults = await db.query(
+            "SELECT class_id FROM trainers_classes_coordinator WHERE trainer_id = ?",
+            whereValues: [row['trainer_id']],
+            isStmt: true,
+          );
+          row['coordinated_class_ids'] = classResults.rows
+              .map((c) => c['class_id'].toString())
+              .toList();
+        } else {
+          row['coordinated_class_ids'] = [];
+        }
+
         daos.add(OutputTrainerDao.fromJson(row));
       }
 
@@ -48,7 +73,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
         AppError(
           AppErrorType.internal,
           e.toString(),
-          details: {"stacktrace": s.toString()},
+          details: {"stack": s.toString()},
         ),
       );
     }
@@ -60,7 +85,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
     try {
       db = await MysqlConfiguration.connect();
       final results = await db.query(
-        "SELECT t.trainer_id, t.user_id, t.birthday_date, u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt, u.emailVerified "
+        "SELECT t.trainer_id, t.user_id, t.birthday_date, t.is_coordinator, u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt, u.emailVerified "
         "FROM `trainers` t JOIN `user` u ON t.user_id = u.id WHERE t.trainer_id = ? LIMIT 1",
         whereValues: [trainerId],
         isStmt: true,
@@ -71,14 +96,31 @@ class TrainerRepositoryImpl implements ITrainerRepository {
           AppError(AppErrorType.notFound, "Trainer not found"),
         );
 
-      final trainerMap = results.rows[0];
+      final trainerMap = Map<String, dynamic>.from(results.rows[0]);
+
+      final isCoordinator = _parseBool(trainerMap['is_coordinator']);
+      trainerMap['is_coordinator'] = isCoordinator;
+
       final skillResults = await db.query(
         "SELECT module_id, competence_level FROM trainer_skills WHERE trainer_id = ?",
         whereValues: [trainerId],
         isStmt: true,
       );
-
       trainerMap['skills'] = skillResults.rows;
+
+      if (isCoordinator) {
+        final classResults = await db.query(
+          "SELECT class_id FROM trainers_classes_coordinator WHERE trainer_id = ?",
+          whereValues: [trainerId],
+          isStmt: true,
+        );
+        trainerMap['coordinated_class_ids'] = classResults.rows
+            .map((c) => c['class_id'].toString())
+            .toList();
+      } else {
+        trainerMap['coordinated_class_ids'] = [];
+      }
+
       return Result.success(OutputTrainerDao.fromJson(trainerMap));
     } catch (e) {
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
@@ -103,19 +145,23 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       db = await MysqlConfiguration.connect();
       await db.startTrans();
 
+      final userRole = (dto.isCoordinator == true) ? "coordinator" : "trainer";
+
       await db.update(
         table: "user",
-        updateData: {"username": dto.username, "role": "trainer"},
+        updateData: {"username": dto.username, "role": userRole},
         where: {"id": createdUserId},
       );
 
-      final trainerId = Uuid().toString();
+      final trainerId = Uuid().v4();
+
       await db.insert(
         table: table,
         insertData: {
           "trainer_id": trainerId,
           "user_id": createdUserId,
           "birthday_date": dto.birthdayDate,
+          "is_coordinator": (dto.isCoordinator == true) ? 1 : 0,
         },
       );
 
@@ -128,6 +174,16 @@ class TrainerRepositoryImpl implements ITrainerRepository {
               "module_id": skill.moduleId,
               "competence_level": skill.competenceLevel ?? 1,
             },
+          );
+        }
+      }
+
+      if (dto.isCoordinator == true && dto.classIds != null) {
+        for (var classId in dto.classIds!) {
+          await db.query(
+            "INSERT INTO trainer_class_coordinator (trainer_id, class_id) VALUES (?, ?)",
+            whereValues: [trainerId, classId],
+            isStmt: true,
           );
         }
       }
@@ -157,10 +213,36 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       db = await MysqlConfiguration.connect();
       await db.startTrans();
 
-      if (dto.birthdayDate != null) {
+      final updateData = <String, dynamic>{};
+      if (dto.birthdayDate != null)
+        updateData["birthday_date"] = dto.birthdayDate;
+
+      bool isNowCoordinator = _parseBool(res.data!.isCoordinator);
+
+      if (dto.isCoordinator != null) {
+        updateData["is_coordinator"] = dto.isCoordinator! ? 1 : 0;
+        isNowCoordinator = dto.isCoordinator!;
+
+        final newRole = isNowCoordinator ? "coordinator" : "trainer";
+        await db.update(
+          table: "user",
+          updateData: {"role": newRole},
+          where: {"id": res.data!.id},
+        );
+
+        if (!isNowCoordinator) {
+          await db.delete(
+            table:
+                "trainers_classes_coordinator",
+            where: {"trainer_id": trainerId},
+          );
+        }
+      }
+
+      if (updateData.isNotEmpty) {
         await db.update(
           table: table,
-          updateData: {"birthday_date": dto.birthdayDate},
+          updateData: updateData,
           where: {"trainer_id": trainerId},
         );
       }
@@ -181,8 +263,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       if (dto.skillsToAdd != null) {
         for (var skill in dto.skillsToAdd!) {
           await db.query(
-            "INSERT INTO trainer_skills (trainer_id, module_id, competence_level) "
-            "VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE competence_level = ?",
+            "INSERT INTO trainer_skills (trainer_id, module_id, competence_level) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE competence_level = ?",
             whereValues: [
               trainerId,
               skill.moduleId,
@@ -194,11 +275,34 @@ class TrainerRepositoryImpl implements ITrainerRepository {
         }
       }
 
-      await db.commit();
+      if (isNowCoordinator) {
+        if (dto.classIdsToRemove != null && dto.classIdsToRemove!.isNotEmpty) {
+          print("🗑️ [Update] Removendo turmas: ${dto.classIdsToRemove}");
+          final placeholders = dto.classIdsToRemove!.map((_) => "?").join(",");
 
+          await db.query(
+            "DELETE FROM trainers_classes_coordinator WHERE trainer_id = ? AND class_id IN ($placeholders)",
+            whereValues: [trainerId, ...dto.classIdsToRemove!],
+            isStmt: true,
+          );
+        }
+
+        if (dto.classIdsToAdd != null && dto.classIdsToAdd!.isNotEmpty) {
+          for (var classId in dto.classIdsToAdd!) {
+            await db.query(
+              "INSERT IGNORE INTO trainers_classes_coordinator (trainer_id, class_id) VALUES (?, ?)",
+              whereValues: [trainerId, classId],
+              isStmt: true,
+            );
+          }
+        }
+      }
+
+      await db.commit();
       return await getById(trainerId);
     } catch (e) {
       if (db != null) await db.rollback();
+      print("🔥 [Update Error]: $e");
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }

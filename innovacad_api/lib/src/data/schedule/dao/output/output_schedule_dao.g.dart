@@ -19,7 +19,7 @@ OutputScheduleDao _$OutputScheduleDaoFromJson(Map<String, dynamic> json) =>
         json['end_time'],
         const DurationConverter().fromJson,
       ),
-      isOnline: json['is_online'] as String?,
+      isOnline: json['is_online'] as bool?,
       dateDay: _$JsonConverterFromJson<Object, DateTime>(
         json['date_day'],
         const DateTimeConverter().fromJson,

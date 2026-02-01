@@ -1,3 +1,4 @@
+import 'package:innovacad_api/src/core/core.dart';
 import 'package:vaden/vaden.dart' as vaden;
 import 'package:json_annotation/json_annotation.dart' as annotation;
 
@@ -6,10 +7,6 @@ part 'update_schedule_dto.g.dart';
 @vaden.DTO()
 @annotation.JsonSerializable()
 class UpdateScheduleDto {
-  @annotation.JsonKey(name: 'class_module_id')
-  @vaden.JsonKey('class_module_id')
-  final String? classModuleId;
-
   @annotation.JsonKey(name: 'trainer_id')
   @vaden.JsonKey('trainer_id')
   final String? trainerId;
@@ -26,18 +23,23 @@ class UpdateScheduleDto {
   @vaden.JsonKey('regime_type')
   final int? regimeType;
 
-  @annotation.JsonKey(name: 'total_hours')
-  @vaden.JsonKey('total_hours')
-  final int? totalHours;
+  @annotation.JsonKey(name: 'start_time')
+  @vaden.JsonKey('start_time')
+  @DateTimeConverter()
+  final DateTime? startTime;
 
+  @annotation.JsonKey(name: 'end_time')
+  @vaden.JsonKey('end_time')
+  @DateTimeConverter()
+  final DateTime? endTime;
 
   UpdateScheduleDto({
-    this.classModuleId,
     this.trainerId,
     this.roomId,
     this.isOnline,
     this.regimeType,
-    this.totalHours,
+    this.startTime,
+    this.endTime,
   });
 
   Map<String, dynamic> toJson() => _$UpdateScheduleDtoToJson(this);

@@ -27,6 +27,7 @@ export type ClassResponseData = {
   start_date_timestamp: number | undefined;
   end_date_timestamp: number | undefined;
   modules?: ClassModule[];
+  course_identifier: string | undefined;
 };
 
 export class Class {
@@ -38,6 +39,7 @@ export class Class {
   start_date_timestamp: number | undefined;
   end_date_timestamp: number | undefined;
   modules: ClassModule[];
+  course_identifier: string;
 
   constructor(data: ClassResponseData) {
     this.class_id = data.class_id;
@@ -48,6 +50,7 @@ export class Class {
     this.start_date_timestamp = data.start_date_timestamp;
     this.end_date_timestamp = data.end_date_timestamp;
     this.modules = data.modules || [];
+    this.course_identifier = data.course_identifier || "";
   }
 
   toJson = (): string => JSON.stringify(this);

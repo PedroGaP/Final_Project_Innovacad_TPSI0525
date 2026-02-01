@@ -6,6 +6,25 @@ import 'package:shelf_static/shelf_static.dart';
 import 'package:vaden/vaden.dart';
 import 'package:shelf/shelf_io.dart' as io;
 
+Middleware errorHandlingMiddleware() {
+  return (Handler innerHandler) {
+    return (Request request) async {
+      try {
+        return await innerHandler(request);
+      } catch (e, s) {
+        print('🔥 CRITICAL SERVER ERROR: $e');
+        print(s);
+
+        return Response.internalServerError(
+          body:
+              '{"error": "Internal Server Error", "details": "${e.toString().replaceAll('"', "'")}"}',
+          headers: {'content-type': 'application/json'},
+        );
+      }
+    };
+  };
+}
+
 Future<void> main(List<String> args) async {
   final vaden = VadenApp();
 
@@ -25,6 +44,7 @@ Future<void> main(List<String> args) async {
 
   final apiHandler = Pipeline()
       .addMiddleware(corsMiddleware())
+      .addMiddleware(errorHandlingMiddleware())
       .addVadenMiddleware(EnforceJsonContentType())
       .addMiddleware(logRequests())
       .addHandler(vaden.router.call);

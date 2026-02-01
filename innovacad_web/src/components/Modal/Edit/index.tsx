@@ -34,6 +34,7 @@ export interface ModalFieldDefinition<T> {
 interface ModalEditProps<T> {
   value: T;
   setValue: (value: T | null) => void;
+  onDelete?: () => Promise<void>;
   onSave: (value: T) => Promise<void>;
   onCancel: () => void;
   title: string;
@@ -47,7 +48,6 @@ interface ModalEditProps<T> {
     setFormData: (prev: (prev: T) => T) => void,
   ) => JSXElement;
 }
-
 
 const PortalTooltip = (props: { text: string; children: any }) => {
   let ref: HTMLDivElement | undefined;
@@ -89,18 +89,29 @@ const PortalTooltip = (props: { text: string; children: any }) => {
   );
 };
 
-const formatDateForInput = (val: any): string => {
+const formatDateForInput = (val: any, type: ModalFieldType): string => {
   if (!val) return "";
+
+  if (typeof val === "string" && type === "date" && val.includes("T")) {
+    return val.split("T")[0];
+  }
+
   const numericVal =
     typeof val === "string" && /^\d+$/.test(val) ? parseInt(val, 10) : val;
   const date = new Date(numericVal);
   if (isNaN(date.getTime())) return "";
 
+  const pad = (n: number) => n.toString().padStart(2, "0");
   const YYYY = date.getFullYear();
-  const MM = String(date.getMonth() + 1).padStart(2, "0");
-  const DD = String(date.getDate()).padStart(2, "0");
-  const hh = String(date.getHours()).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
+  const MM = pad(date.getMonth() + 1);
+  const DD = pad(date.getDate());
+
+  if (type === "date") {
+    return `${YYYY}-${MM}-${DD}`;
+  }
+
+  const hh = pad(date.getHours());
+  const mm = pad(date.getMinutes());
   return `${YYYY}-${MM}-${DD}T${hh}:${mm}`;
 };
 
@@ -110,7 +121,6 @@ const getFieldLabel = (fieldName: string): string => {
     .replace(/^./, (str) => str.toUpperCase())
     .trim();
 };
-
 
 const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
   const [formData, setFormData] = createSignal<T>(props.value);
@@ -289,7 +299,7 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
                     disabled={isDisabled}
                     value={
                       field.type === "datetime-local" || field.type === "date"
-                        ? formatDateForInput(value())
+                        ? formatDateForInput(value(), field.type)
                         : String(value() || "")
                     }
                     onInput={(e) => {
@@ -313,7 +323,6 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
             }}
           </For>
 
-          {/* Custom Fields (Like Modules Manager) */}
           <Show when={props.renderCustomFields}>
             <div class="divider text-xs uppercase opacity-50 font-bold tracking-widest mt-6">
               Configuration

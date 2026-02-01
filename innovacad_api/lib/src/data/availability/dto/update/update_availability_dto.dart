@@ -22,7 +22,8 @@ class UpdateAvailabilityDto {
 
   @annotation.JsonKey(name: 'is_booked')
   @vaden.JsonKey('is_booked')
-  final int? isBooked;
+  @booleanConverter
+  final bool? isBooked;
 
   UpdateAvailabilityDto({
     this.trainerId,
