@@ -43,12 +43,22 @@ BEGIN
     DECLARE v_room_id INT;
     DECLARE v_availability_id VARCHAR(36);
     DECLARE v_schedule_id VARCHAR(36);
-    
     DECLARE v_required_seats INT;
     DECLARE v_need_pc BOOLEAN;
     DECLARE v_need_proj BOOLEAN;
+    DECLARE v_start_time TIME;
+    DECLARE v_end_time TIME;
+    DECLARE v_start_timestamp DATETIME;
+    DECLARE v_end_timestamp DATETIME;
 
     SET p_success = FALSE;
+
+    SELECT start_time, end_time INTO v_start_time, v_end_time
+    FROM ref_slots 
+    WHERE slot_number = p_slot_number;
+
+    SET v_start_timestamp = CONCAT(p_target_date, ' ', v_start_time);
+    SET v_end_timestamp = CONCAT(p_target_date, ' ', v_end_time);
 
     SELECT 
         (SELECT COUNT(*) FROM enrollments WHERE class_id = p_class_id),
@@ -94,8 +104,26 @@ BEGIN
     IF v_trainer_id IS NOT NULL THEN
         SET v_schedule_id = UUID();
 
-        INSERT INTO schedules (schedule_id, class_module_id, trainer_id, room_id, is_online, created_at)
-        VALUES (v_schedule_id, p_class_module_id, v_trainer_id, v_room_id, p_is_online, NOW());
+        INSERT INTO schedules (
+            schedule_id, 
+            class_module_id, 
+            trainer_id, 
+            room_id, 
+            is_online, 
+            created_at, 
+            start_date_timestamp,
+            end_date_timestamp
+        )
+        VALUES (
+            v_schedule_id, 
+            p_class_module_id, 
+            v_trainer_id, 
+            v_room_id, 
+            p_is_online, 
+            NOW(), 
+            v_start_timestamp,
+            v_end_timestamp
+        );
 
         INSERT INTO schedule_slots (schedule_id, availability_id, slot_status)
         VALUES (v_schedule_id, v_availability_id, 1);

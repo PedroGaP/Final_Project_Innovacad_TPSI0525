@@ -1,5 +1,6 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
+import 'package:innovacad_api/src/data/schedule/dto/auto/auto_schedule_dto.dart';
 import 'package:innovacad_api/src/domain/schedule/repository/i_schedule_repository.dart';
 import 'package:innovacad_api/src/domain/schedule/service/i_schedule_service.dart';
 import 'package:vaden/vaden.dart';
@@ -18,7 +19,7 @@ class ScheduleServiceImpl implements IScheduleService {
   Future<Result<List<OutputScheduleDao>>> getById(String id) async =>
       await _repository.getById(id);
 
-      @override
+  @override
   Future<Result<List<OutputScheduleDao>>> getByUser(String userId) async =>
       await _repository.getByUser(userId);
 
@@ -35,4 +36,8 @@ class ScheduleServiceImpl implements IScheduleService {
   @override
   Future<Result<OutputScheduleDao>> delete(String id) async =>
       await _repository.delete(id);
+
+  @override
+  Future<Result<bool>> generateAutomaticSchedule(AutoScheduleDto dto) async =>
+      await _repository.generateAutomaticSchedule(dto);
 }
