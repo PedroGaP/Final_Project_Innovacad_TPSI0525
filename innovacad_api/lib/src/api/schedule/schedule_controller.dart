@@ -1,5 +1,6 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
+import 'package:innovacad_api/src/data/schedule/dto/auto/auto_schedule_dto.dart';
 import 'package:innovacad_api/src/domain/schedule/service/i_schedule_service.dart';
 import 'package:vaden/vaden.dart';
 
@@ -74,5 +75,16 @@ class ScheduleController {
   @Delete('/<id>')
   Future<Response> delete(@Param("id") String id) async {
     return resultToResponse(await _service.delete(id));
+  }
+
+  @ApiOperation(
+    summary: 'Auto Generate Schedule',
+    description: 'Tries to generate a schedule for a class',
+  )
+  @Post('/auto')
+  Future<Response> generateAutomaticSchedule(
+    @Body() AutoScheduleDto dto,
+  ) async {
+    return resultToResponse(await _service.generateAutomaticSchedule(dto));
   }
 }

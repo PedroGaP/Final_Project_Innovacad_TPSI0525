@@ -2,6 +2,7 @@ import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/core/extensions/mysql_utils_extension.dart';
 import 'package:innovacad_api/src/data/data.dart';
+import 'package:innovacad_api/src/data/schedule/dto/auto/auto_schedule_dto.dart';
 import 'package:innovacad_api/src/domain/schedule/repository/i_schedule_repository.dart';
 import 'package:mysql_utils/mysql_utils.dart';
 import 'package:uuid/uuid.dart';
@@ -83,7 +84,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
 
     if (availableSlots.isEmpty) return false;
 
-
     DateTime currentCoverageEnd = start;
 
     for (var slot in availableSlots) {
@@ -141,7 +141,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         "$scheduleQuerySql WHERE classm.class_id = ? ORDER BY s.start_date_timestamp ASC",
         isStmt: true,
         whereValues: [classId],
-        debug: true,
       );
 
       if (result.numOfRows <= 0) {
@@ -667,5 +666,124 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
           ? 'Pós-laboral'
           : 'Diurno',
     );
+  }
+
+  @override
+  Future<Result<bool>> generateAutomaticSchedule(AutoScheduleDto dto) async {
+    MysqlUtils? db;
+
+    try {
+      db = await MysqlConfiguration.connect();
+
+      String timeCondition;
+
+      if (dto.regimeType == 0)
+        timeCondition =
+            "start_time >= '08:00:00' "
+            "AND start_time <= '14:00:00' "
+            "AND start_time != '11:00:00'";
+      else
+        timeCondition =
+            "start_time >= '16:00:00'"
+            "AND start_time < '23:00:00'"
+            "AND start_time != '19:00:00'";
+
+      final slotsQuery =
+          "SELECT slot_number FROM ref_slots WHERE $timeCondition ORDER BY start_time ASC";
+
+      final slotsResult = await db.query(slotsQuery);
+
+      if (slotsResult.numOfRows <= 0)
+        return Result.failure(
+          AppError(
+            AppErrorType.badRequest,
+            "Não existem slots configurados para este horário.",
+          ),
+        );
+
+      final List<int> allowedSlots = slotsResult.rows
+          .map((r) => int.parse(r['slot_number'].toString()))
+          .toList();
+
+      final modulesQuery = """
+        SELECT cm.classes_modules_id, m.module_id, m.duration
+        FROM classes_modules cm
+        JOIN courses_modules crm ON cm.courses_modules_id = crm.courses_modules_id
+        JOIN modules m ON crm.module_id = m.module_id
+        WHERE cm.class_id = ?
+      """;
+
+      final modulesResult = await db.query(
+        modulesQuery,
+        whereValues: [dto.classId],
+        isStmt: true,
+      );
+
+      if (modulesResult.numOfRows <= 0)
+        return Result.failure(
+          AppError(AppErrorType.notFound, "Turma sem módulos associados."),
+        );
+
+      DateTime currentDateCursor = dto.startDate;
+      int daysChecked = 0;
+
+      await db.transaction((txn) async {
+        for (var row in modulesResult.rowsAssoc) {
+          final data = row.assoc();
+          final String classModuleId = data['classes_modules_id'].toString();
+          final String moduleId = data['module_id'].toString();
+          final String moduleName = data['name']?.toString() ?? moduleId;
+          double hoursRemaining =
+              double.tryParse(data['duration'].toString()) ?? 0.0;
+
+          while (hoursRemaining > 0) {
+            if (currentDateCursor.weekday != DateTime.sunday) {
+              for (int slotNum in allowedSlots) {
+                if (hoursRemaining <= 0) break;
+
+                final sqlDate = _toSqlDate(currentDateCursor);
+                final onlineVal = dto.isOnline ? 1 : 0;
+                final classId = dto.classId.trim();
+
+                final callQuery =
+                    "CALL sp_book_slot_if_available('$classId', '$moduleId', '$classModuleId', '$sqlDate', $slotNum, $onlineVal, @success)";
+
+                await txn.query(callQuery);
+
+                final res = await txn.query("SELECT @success as success");
+                final val = res.rows.first['success'];
+                final bool booked = (val == 1 || val == '1' || val == true);
+
+                if (booked) {
+                  hoursRemaining -= 1.0;
+                  await txn.query(
+                    "UPDATE classes_modules SET current_duration = current_duration + 1 WHERE classes_modules_id = ?",
+                    whereValues: [classModuleId],
+                  );
+                }
+              }
+            }
+
+            if (hoursRemaining > 0) {
+              currentDateCursor = currentDateCursor.add(Duration(days: 1));
+              daysChecked++;
+
+              if (daysChecked > 365) {
+                throw AppError(
+                  AppErrorType.conflict,
+                  "Falha Crítica: Passou 1 ano e não conseguiu acabar o módulo $moduleName. Verifique Disponibilidade dos Formadores.",
+                );
+              }
+            }
+          }
+        }
+      });
+
+      return Result.success(true);
+    } catch (e) {
+      return Result.failure(
+        AppError(AppErrorType.internal, "Erro ao gerar horário: $e"),
+      );
+    }
   }
 }

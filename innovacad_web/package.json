@@ -11,6 +11,7 @@
 	},
 	"dependencies": {
 		"@solidjs/router": "^0.15.4",
+		"fullcalendar": "^6.1.20",
 		"js-cookie": "^3.0.5",
 		"lucide-solid": "^0.562.0",
 		"nodemailer": "^7.0.12",
