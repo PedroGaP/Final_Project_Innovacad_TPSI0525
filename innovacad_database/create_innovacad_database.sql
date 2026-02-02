@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS courses
     course_id  VARCHAR(36) DEFAULT (UUID()) PRIMARY KEY,
     identifier VARCHAR(8)  NOT NULL,
     name       VARCHAR(64) NOT NULL,
+    area       varchar(64) not null,
     UNIQUE (identifier, name)
 );
 
@@ -129,16 +130,16 @@ CREATE TABLE IF NOT EXISTS availabilities
 
 CREATE TABLE IF NOT EXISTS schedules
 (
-    schedule_id     VARCHAR(36)   DEFAULT (UUID()) PRIMARY KEY,
-    class_module_id VARCHAR(36) NOT NULL,
-    trainer_id      VARCHAR(36) NOT NULL,
-    room_id         INT,
-    is_online       BOOLEAN       DEFAULT FALSE,
-    regime_type     TINYINT(1)    DEFAULT 0, -- 0=daytime, 1=post-work
-    total_hours     DECIMAL(4, 2) DEFAULT 6.0,
-    created_at      TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
-    start_date_timestamp TIMESTAMP NOT NULL,
-    end_date_timestamp TIMESTAMP NOT NULL,
+    schedule_id          VARCHAR(36)   DEFAULT (UUID()) PRIMARY KEY,
+    class_module_id      VARCHAR(36) NOT NULL,
+    trainer_id           VARCHAR(36) NOT NULL,
+    room_id              INT,
+    is_online            BOOLEAN       DEFAULT FALSE,
+    regime_type          TINYINT(1)    DEFAULT 0, -- 0=daytime, 1=post-work
+    total_hours          DECIMAL(4, 2) DEFAULT 6.0,
+    created_at           TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+    start_date_timestamp TIMESTAMP   NOT NULL,
+    end_date_timestamp   TIMESTAMP   NOT NULL,
     FOREIGN KEY (class_module_id) REFERENCES classes_modules (classes_modules_id) ON UPDATE CASCADE ON DELETE CASCADE,
     FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id) ON UPDATE CASCADE ON DELETE RESTRICT,
     FOREIGN KEY (room_id) REFERENCES rooms (room_id) ON UPDATE CASCADE ON DELETE SET NULL
