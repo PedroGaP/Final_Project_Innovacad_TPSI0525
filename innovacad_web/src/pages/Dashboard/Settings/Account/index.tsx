@@ -8,20 +8,24 @@ import FacebookLogo from "@/assets/facebook.svg";
 import { API_ENDPOINTS, useApi } from "@/hooks/useApi";
 import { type Document, DocumentTypeLabels } from "@/types/document";
 import toast from "solid-toast";
+import type { Trainee, Trainer } from "@/types/user";
 
 const AccountSettingsPage = () => {
-  const { user } = useUserDetails();
-  const { listAccounts, fetchDocuments, uploadDocument, deleteDocument } =
-    useApi();
+  const { user, setUser } = useUserDetails();
+  const {
+    listAccounts,
+    fetchDocuments,
+    uploadDocument,
+    deleteDocument,
+    updateTrainer,
+    updateTrainee,
+  } = useApi();
 
   const [accounts] = createResource(async () => listAccounts());
 
   const getOwnerId = () => {
     const u = user();
     if (!u) return "";
-
-    console.log(`ID DO USER: ${u.id}`);
-
     return u.id;
   };
 
@@ -32,7 +36,9 @@ const AccountSettingsPage = () => {
 
   const [isUploading, setIsUploading] = createSignal(false);
   const [selectedDocType, setSelectedDocType] = createSignal("CV");
+
   let fileInputRef: HTMLInputElement | undefined;
+  let avatarInputRef: HTMLInputElement | undefined;
 
   const formatDateForInput = (epoch: number | undefined | null) => {
     if (!epoch) return "";
@@ -44,9 +50,10 @@ const AccountSettingsPage = () => {
   const getUserBirthday = () => {
     const currentUser = user();
     if (!currentUser) return "";
-    if ("birthdayDate" in currentUser) {
-      return formatDateForInput((currentUser as any).birthdayDate);
-    }
+    // Ajustado para bater com as propriedades do objeto carregado
+    const bday =
+      (currentUser as any).birthday_date || (currentUser as any).birthdayDate;
+    if (bday) return formatDateForInput(Number(bday) / 1000);
     return "";
   };
 
@@ -61,7 +68,6 @@ const AccountSettingsPage = () => {
   const handleFileChange = async (e: Event) => {
     const target = e.target as HTMLInputElement;
     const file = target.files?.[0];
-
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
@@ -78,12 +84,89 @@ const AccountSettingsPage = () => {
       await uploadDocument(getOwnerId()!, formData);
       toast.success("Document uploaded successfully!");
       refetchDocs();
-
       if (fileInputRef) fileInputRef.value = "";
     } catch (error: any) {
       toast.error(error.message || "Failed to upload document");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  // Handler para Foto de Perfil com atualização de Entidade
+  // Handler para Foto de Perfil com atualização de Entidade
+  // Handler para Foto de Perfil com atualização de Entidade
+  const handleAvatarChange = async (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    const file = target.files?.[0];
+    const u = user(); // Obtemos a instância atual
+
+    if (!file || !u) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file.");
+      return;
+    }
+
+    const toastId = toast.loading("Updating profile picture...");
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("type", "PROFILE_PIC");
+
+    try {
+      // 1. Upload do ficheiro para o storage
+      await uploadDocument(u.id!, formData);
+
+      // 2. Buscar a lista atualizada
+      // DICA: Adicionamos um pequeno delay para garantir que o backend processou a transação DB
+      await new Promise((r) => setTimeout(r, 500));
+      const updatedDocs = await fetchDocuments(u.id!);
+      const newPic = updatedDocs.find((d) => d.type_code === "PROFILE_PIC");
+
+      if (!newPic) {
+        throw new Error(
+          "Upload successful, but image not found. Check Database types.",
+        );
+      }
+
+      const imagePath = `${newPic.file_path.replace(/^public[\\/]/, "")}`;
+
+      // 3. Chamar endpoint de update de perfil conforme a role
+      if (u.role === "trainer" || u.role === "coordinator") {
+        // Type assertion segura
+        const trainerUser = u as Trainer;
+        const trainerId = trainerUser.trainerId;
+        console.log("trainerId", trainerId);
+        console.log("imagePath", imagePath);
+        console.log("trainerUser", trainerUser);
+        console.log("u", u);
+        await updateTrainer(trainerId!, { image: imagePath } as any);
+      } else if (u.role === "trainee") {
+        const traineeUser = u as Trainee;
+        const traineeId = traineeUser.traineeId;
+        await updateTrainee(traineeId!, { image: imagePath } as any);
+      }
+
+      // 4. Atualizar estado local corretamente (Solução TypeScript)
+      // Clonamos o objeto mantendo a herança da classe (Trainer/Trainee)
+      const updatedUser = Object.assign(
+        Object.create(Object.getPrototypeOf(u)),
+        u,
+      );
+      updatedUser.image = imagePath;
+
+      setUser(updatedUser);
+
+      // Atualiza o toast de loading para sucesso
+      toast.success("Profile picture updated!", { id: toastId });
+      refetchDocs();
+    } catch (error: any) {
+      console.error(error);
+      // Atualiza o toast de loading para erro, garantindo que ele fecha
+      toast.error(error.message || "Failed to update profile picture", {
+        id: toastId,
+      });
+    } finally {
+      if (avatarInputRef) avatarInputRef.value = "";
     }
   };
 
@@ -98,55 +181,35 @@ const AccountSettingsPage = () => {
     }
   };
 
-  const openFileSelector = () => {
-    fileInputRef?.click();
-  };
+  const openFileSelector = () => fileInputRef?.click();
+  const openAvatarSelector = () => avatarInputRef?.click();
 
   const handleDownload = async (doc: Document) => {
     const toastId = toast.loading(`Downloading ${doc.file_name}...`);
-
     try {
       const cleanPath = doc.file_path.replace(/^public[\\/]/, "");
-
-      const backendUrl = API_ENDPOINTS.BASE;
-      const fileUrl = `${backendUrl}/${cleanPath}`;
-
+      const fileUrl = `${API_ENDPOINTS.BASE}/${cleanPath}`;
       const response = await fetch(fileUrl);
-
-      if (!response.ok) {
-        throw new Error(`File not found (Status: ${response.status})`);
-      }
-
+      if (!response.ok) throw new Error(`File not found`);
       const blob = await response.blob();
-
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-
       link.setAttribute("download", doc.file_name);
-
       document.body.appendChild(link);
-
       link.click();
-
       link.parentNode?.removeChild(link);
       window.URL.revokeObjectURL(url);
-
       toast.dismiss(toastId);
-      toast.success("Download completed");
     } catch (error) {
-      console.error("Download error:", error);
       toast.dismiss(toastId);
-      toast.error(
-        "Failed to download file. It might be missing from the server.",
-      );
+      toast.error("Failed to download file.");
     }
   };
 
   return (
     <>
       <div class="w-full flex-1 min-h-full border-base-300 bg-base-100">
-        {/* Header */}
         <div class="flex justify-between items-center p-6 border-b border-base-200">
           <div>
             <h3 class="text-lg font-bold">Personal Info</h3>
@@ -170,12 +233,12 @@ const AccountSettingsPage = () => {
             </label>
             <div class="flex items-center gap-6">
               <div class="avatar">
-                <div class="w-16 h-16 rounded-full ring ring-base-200 ring-offset-2 ring-offset-base-100">
+                <div class="w-16 h-16 rounded-full ring ring-base-200 ring-offset-2 ring-offset-base-100 overflow-hidden">
                   <Show
                     when={!!user()?.image}
                     fallback={
                       <img
-                        src={"https://ui-avatars.com/api/?name=" + user()!.name}
+                        src={`https://ui-avatars.com/api/?name=${user()?.name}`}
                         alt="User avatar"
                       />
                     }
@@ -186,7 +249,17 @@ const AccountSettingsPage = () => {
               </div>
               <div class="flex flex-col gap-1">
                 <div class="flex items-center gap-3">
-                  <button class="btn btn-sm btn-outline border-base-300 hover:border-base-content hover:bg-base-200 hover:text-base-content normal-case font-normal">
+                  <input
+                    type="file"
+                    class="hidden"
+                    accept="image/*"
+                    ref={avatarInputRef}
+                    onChange={handleAvatarChange}
+                  />
+                  <button
+                    onClick={openAvatarSelector}
+                    class="btn btn-sm btn-outline border-base-300 normal-case font-normal"
+                  >
                     <Upload size={14} class="mr-1" /> Upload Image
                   </button>
                   <span class="text-xs opacity-50">JPG or PNG. 1MB max</span>
@@ -203,35 +276,32 @@ const AccountSettingsPage = () => {
               </label>
               <input
                 type="text"
-                value={user()!.name || ""}
+                value={user()?.name || ""}
                 class="input input-bordered w-full bg-base-200 focus:bg-base-100 focus:border-primary transition-colors"
               />
             </div>
-
             <div class="form-control w-full">
               <label class="label">
                 <span class="label-text opacity-70 font-medium">Username</span>
               </label>
               <input
                 type="text"
-                value={user()!.username || ""}
-                class="input input-bordered w-full bg-base-200 focus:bg-base-100 focus:border-primary transition-colors"
+                value={user()?.username || ""}
+                class="input input-bordered w-full bg-base-200 disabled:opacity-50"
                 disabled
               />
             </div>
-
             <div class="form-control w-full">
               <label class="label">
                 <span class="label-text opacity-70 font-medium">Email</span>
               </label>
               <input
                 type="email"
-                value={user()!.email || ""}
-                class="input input-bordered w-full bg-base-200 focus:bg-base-100 focus:border-primary transition-colors"
+                value={user()?.email || ""}
+                class="input input-bordered w-full bg-base-200 disabled:opacity-50"
                 disabled
               />
             </div>
-
             <div class="form-control w-full">
               <label class="label">
                 <span class="label-text opacity-70 font-medium">
@@ -248,20 +318,17 @@ const AccountSettingsPage = () => {
 
           <div class="divider"></div>
 
-          {/* --- DOCUMENTS SECTION --- */}
+          {/* Documents Section */}
           <div>
             <div class="flex justify-between items-end mb-4">
               <div>
                 <h3 class="text-md font-bold flex items-center gap-2">
-                  <FileCheck size={18} class="text-primary" />
-                  Documents
+                  <FileCheck size={18} class="text-primary" /> Documents
                 </h3>
                 <p class="text-xs opacity-60 mt-1">
                   Manage your CVs, Certificates, and IDs.
                 </p>
               </div>
-
-              {/* Upload Controls */}
               <div class="flex items-center gap-2">
                 <select
                   class="select select-bordered select-sm text-xs w-32"
@@ -272,29 +339,24 @@ const AccountSettingsPage = () => {
                     <option value={key}>{label}</option>
                   ))}
                 </select>
-
                 <input
                   type="file"
                   class="hidden"
                   ref={fileInputRef}
                   onChange={handleFileChange}
                 />
-
                 <button
                   class="btn btn-sm btn-primary"
                   onClick={openFileSelector}
                   disabled={isUploading()}
                 >
-                  {isUploading() ? (
+                  <Show when={isUploading()} fallback={<Upload size={14} />}>
                     <span class="loading loading-spinner loading-xs"></span>
-                  ) : (
-                    <Upload size={14} />
-                  )}
+                  </Show>{" "}
                   Upload
                 </button>
               </div>
             </div>
-
             <div class="bg-base-200/50 rounded-xl border border-base-200 overflow-hidden">
               <Show
                 when={!documents.loading}
@@ -322,10 +384,7 @@ const AccountSettingsPage = () => {
                               <FileText size={20} />
                             </div>
                             <div class="flex flex-col">
-                              <span
-                                class="font-medium text-sm truncate max-w-50 sm:max-w-xs"
-                                title={doc.file_name}
-                              >
+                              <span class="font-medium text-sm truncate max-w-50 sm:max-w-xs">
                                 {doc.file_name}
                               </span>
                               <div class="flex gap-2 text-[10px] opacity-60 font-mono uppercase">
@@ -345,18 +404,15 @@ const AccountSettingsPage = () => {
                               </div>
                             </div>
                           </div>
-
                           <div class="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
-                              class="btn btn-ghost btn-sm btn-square text-base-content/70 hover:text-primary tooltip tooltip-left"
-                              data-tip="Download"
+                              class="btn btn-ghost btn-sm btn-square"
                               onClick={() => handleDownload(doc)}
                             >
                               <Download size={16} />
                             </button>
                             <button
-                              class="btn btn-ghost btn-sm btn-square text-error/70 hover:text-error hover:bg-error/10 tooltip tooltip-left"
-                              data-tip="Delete"
+                              class="btn btn-ghost btn-sm btn-square text-error"
                               onClick={() => handleDeleteDoc(doc.document_id)}
                             >
                               <Trash2 size={16} />
@@ -380,23 +436,20 @@ const AccountSettingsPage = () => {
                 Linked Accounts
               </span>
             </label>
-
             <div class="flex flex-col gap-4">
               <SocialAuthCard
                 logo={GoogleLogo}
-                logo_alt="Google Logo"
+                logo_alt="Google"
                 title="Google"
-                is_linked={
-                  accounts()?.find((a) => a.providerId == "google") != null
-                }
+                is_linked={!!accounts()?.find((a) => a.providerId == "google")}
                 provider="google"
               />
               <SocialAuthCard
                 logo={FacebookLogo}
-                logo_alt="Facebook Logo"
+                logo_alt="Facebook"
                 title="Facebook"
                 is_linked={
-                  accounts()?.find((a) => a.providerId == "facebook") != null
+                  !!accounts()?.find((a) => a.providerId == "facebook")
                 }
                 provider="facebook"
               />
@@ -404,16 +457,7 @@ const AccountSettingsPage = () => {
           </div>
 
           <div class="divider pt-2"></div>
-
-          {/* Security */}
-          <div class="form-control w-full">
-            <label class="label">
-              <span class="label-text opacity-70 font-medium">
-                Security Settings
-              </span>
-            </label>
-            <TwoFactorCard />
-          </div>
+          <TwoFactorCard />
         </div>
       </div>
     </>

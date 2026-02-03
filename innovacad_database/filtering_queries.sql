@@ -131,3 +131,11 @@ GROUP BY t.trainer_id, u.name
 ORDER BY total_hours_taught DESC
 LIMIT 10;
 
+select * from schedule_slots;
+select * from documents;
+select * from user;
+
+insert into document_types values ('PROFILE_PIC', 'PROFILE PICTURE');
+
+select * from trainers where user_id = '6a3qQS4s44S1dRPa9qoPF4sCctpkwH49'
+

@@ -61,7 +61,7 @@ class RemoteUserService {
         userData['coordinated_class_ids'] = coordinatedIds;
 
         final skillsResult = await db.query(
-          "SELECT module_id, competence_level FROM trainers_skills WHERE trainer_id = ?",
+          "SELECT module_id, competence_level FROM trainer_skills WHERE trainer_id = ?",
           whereValues: [trainerId],
           isStmt: true,
         );
@@ -599,14 +599,15 @@ class RemoteUserService {
 
       final role = userData['role'];
 
+      print("USER DATA: ");
+      print(userData);
+      print("ROLE: $role");
+      print("TRAINER ID: ${userData['trainer_id']}");
+
       if (role == 'trainer' &&
           userData.containsKey('trainer_id') &&
           userData['trainer_id'] != null) {
-        try {
-          return Result.success(OutputTrainerDao.fromJson(userData));
-        } catch (e, s) {
-          print("⚠️ Falha DAO Trainer: $e");
-        }
+        return Result.success(OutputTrainerDao.fromJson(userData));
       }
 
       if (role == 'trainee' &&
