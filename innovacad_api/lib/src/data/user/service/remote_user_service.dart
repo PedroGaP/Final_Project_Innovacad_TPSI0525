@@ -604,7 +604,7 @@ class RemoteUserService {
       print("ROLE: $role");
       print("TRAINER ID: ${userData['trainer_id']}");
 
-      if (role == 'trainer' &&
+      if ((role == 'trainer' || role == 'coordinator') &&
           userData.containsKey('trainer_id') &&
           userData['trainer_id'] != null) {
         return Result.success(OutputTrainerDao.fromJson(userData));

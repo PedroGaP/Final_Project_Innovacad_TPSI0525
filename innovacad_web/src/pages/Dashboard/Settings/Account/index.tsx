@@ -93,8 +93,6 @@ const AccountSettingsPage = () => {
   };
 
   // Handler para Foto de Perfil com atualização de Entidade
-  // Handler para Foto de Perfil com atualização de Entidade
-  // Handler para Foto de Perfil com atualização de Entidade
   const handleAvatarChange = async (e: Event) => {
     const target = e.target as HTMLInputElement;
     const file = target.files?.[0];
@@ -234,17 +232,13 @@ const AccountSettingsPage = () => {
             <div class="flex items-center gap-6">
               <div class="avatar">
                 <div class="w-16 h-16 rounded-full ring ring-base-200 ring-offset-2 ring-offset-base-100 overflow-hidden">
-                  <Show
-                    when={!!user()?.image}
-                    fallback={
-                      <img
-                        src={`https://ui-avatars.com/api/?name=${user()?.name}`}
-                        alt="User avatar"
-                      />
-                    }
-                  >
-                    <img src={user()!.image!} alt="avatar" />
-                  </Show>
+                  <img
+                    onError={(e: any) => {
+                      e.target.src = `https://ui-avatars.com/api/?name=${user()?.name}&background=random`;
+                    }}
+                    src={`${API_ENDPOINTS.BASE}/${user()?.image}`}
+                    alt="Avatar"
+                  />
                 </div>
               </div>
               <div class="flex flex-col gap-1">
@@ -377,49 +371,51 @@ const AccountSettingsPage = () => {
                 >
                   <div class="divide-y divide-base-200">
                     <For each={documents()}>
-                      {(doc) => (
-                        <div class="flex items-center justify-between p-4 hover:bg-base-100 transition-colors group">
-                          <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                              <FileText size={20} />
-                            </div>
-                            <div class="flex flex-col">
-                              <span class="font-medium text-sm truncate max-w-50 sm:max-w-xs">
-                                {doc.file_name}
-                              </span>
-                              <div class="flex gap-2 text-[10px] opacity-60 font-mono uppercase">
-                                <span class="badge badge-xs badge-ghost font-normal">
-                                  {DocumentTypeLabels[doc.type_code] ||
-                                    doc.type_code}
+                      {(doc) =>
+                        doc.type_code !== "PROFILE_PIC" && (
+                          <div class="flex items-center justify-between p-4 hover:bg-base-100 transition-colors group">
+                            <div class="flex items-center gap-4">
+                              <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                                <FileText size={20} />
+                              </div>
+                              <div class="flex flex-col">
+                                <span class="font-medium text-sm truncate max-w-50 sm:max-w-xs">
+                                  {doc.file_name}
                                 </span>
-                                <span>
-                                  {formatFileSize(doc.file_size_bytes)}
-                                </span>
-                                <span class="hidden sm:inline">
-                                  •{" "}
-                                  {new Date(
-                                    doc.created_at,
-                                  ).toLocaleDateString()}
-                                </span>
+                                <div class="flex gap-2 text-[10px] opacity-60 font-mono uppercase">
+                                  <span class="badge badge-xs badge-ghost font-normal">
+                                    {DocumentTypeLabels[doc.type_code] ||
+                                      doc.type_code}
+                                  </span>
+                                  <span>
+                                    {formatFileSize(doc.file_size_bytes)}
+                                  </span>
+                                  <span class="hidden sm:inline">
+                                    •{" "}
+                                    {new Date(
+                                      doc.created_at,
+                                    ).toLocaleDateString()}
+                                  </span>
+                                </div>
                               </div>
                             </div>
+                            <div class="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                class="btn btn-ghost btn-sm btn-square"
+                                onClick={() => handleDownload(doc)}
+                              >
+                                <Download size={16} />
+                              </button>
+                              <button
+                                class="btn btn-ghost btn-sm btn-square text-error"
+                                onClick={() => handleDeleteDoc(doc.document_id)}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </div>
-                          <div class="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              class="btn btn-ghost btn-sm btn-square"
-                              onClick={() => handleDownload(doc)}
-                            >
-                              <Download size={16} />
-                            </button>
-                            <button
-                              class="btn btn-ghost btn-sm btn-square text-error"
-                              onClick={() => handleDeleteDoc(doc.document_id)}
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                        )
+                      }
                     </For>
                   </div>
                 </Show>

@@ -200,35 +200,55 @@ export const useApi = () => {
   /**
    * Map response data to appropriate User type
    */
-  /**
-   * Map response data to appropriate User type
-   */
   const mapToUserType = (data: UserResponseData): User => {
-    console.log("Mapeando utilizador:", data);
+    // Debug para veres o que chega
+    console.log("Raw API Data:", data); 
 
     if (!data) throw new Error("The user data is undefined");
 
+    // Lógica para Trainer e Coordinator
     if (
-      data.role === "coordinator" ||
-      data.role === "trainer" ||
+      data.role === "coordinator" || 
+      data.role === "trainer" || 
       "trainer_id" in data
     ) {
-      const trainer = new Trainer(data, data.trainer_id!, data.birthday_date);
+      // CORREÇÃO: Usar APENAS o trainer_id se existir. 
+      // Se não existir, usamos string vazia ou undefined, mas NÃO o data.id
+      // O data.id é o ID de login, o trainer_id é o ID da entidade. São coisas diferentes.
+      const tId = data.trainer_id || ""; 
+      
+      const trainer = new Trainer(
+        data,
+        tId,
+        data.birthday_date,
+      );
 
+      // Campos extra
       (trainer as any).is_coordinator = !!data.is_coordinator;
-      (trainer as any).coordinated_class_ids = Array.isArray(
-        data.coordinated_class_ids,
-      )
+      // Reforço se a role for explicita
+      if (data.role === "coordinator") (trainer as any).is_coordinator = true;
+      
+      (trainer as any).coordinated_class_ids = Array.isArray(data.coordinated_class_ids)
         ? data.coordinated_class_ids
         : [];
+      
+      // Merge final
+      Object.assign(trainer, data);
+      
       return trainer;
     }
 
     if ("trainee_id" in data || data.role === "trainee") {
-      return new Trainee(data, data.trainee_id || data.id!, data.birthday_date);
+      // Mesma lógica: sem fallback para data.id
+      const tId = data.trainee_id || ""; 
+      const trainee = new Trainee(data, tId, data.birthday_date);
+      Object.assign(trainee, data);
+      return trainee;
     }
 
-    return new User(data);
+    const user = new User(data);
+    Object.assign(user, data);
+    return user;
   };
 
   /**
@@ -606,7 +626,7 @@ export const useApi = () => {
       undefined,
       true,
     );
-    
+
     console.log("SESSION DATA", res.data);
 
     if (res.isError || !res.data) {

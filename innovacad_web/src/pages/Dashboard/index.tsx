@@ -6,6 +6,7 @@ import { useLocation } from "@solidjs/router";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import capitalize from "@/utils/capitalize";
+import { API_ENDPOINTS } from "@/hooks/useApi";
 
 const DashboardLayout = (props: any) => {
   const { user, logout } = useUserDetails();
@@ -183,10 +184,10 @@ const DashboardLayout = (props: any) => {
                       <div class="avatar">
                         <div class="w-8 h-8 rounded-full border border-base-300">
                           <img
-                            src={
-                              user()?.image ||
-                              `https://ui-avatars.com/api/?name=${user()?.name}&background=random`
-                            }
+                            onError={(e: any) => {
+                              e.target.src = `https://ui-avatars.com/api/?name=${user()?.name}&background=random`;
+                            }}
+                            src={`${API_ENDPOINTS.BASE}/${user()?.image}`}
                             alt="Avatar"
                           />
                         </div>
