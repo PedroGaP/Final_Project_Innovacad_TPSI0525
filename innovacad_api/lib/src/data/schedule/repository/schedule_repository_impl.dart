@@ -405,8 +405,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       print("Schedule Create Error: $e");
       print(s);
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
-    } finally {
-      //await db?.close();
     }
   }
 
@@ -550,8 +548,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
           details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
-    } finally {
-      //await db?.close();
     }
   }
 
@@ -725,7 +721,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         );
 
       DateTime currentDateCursor = dto.startDate;
-      int daysChecked = 0;
 
       await db.transaction((txn) async {
         for (var row in modulesResult.rowsAssoc) {
@@ -764,17 +759,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
               }
             }
 
-            if (hoursRemaining > 0) {
+            if (hoursRemaining > 0)
               currentDateCursor = currentDateCursor.add(Duration(days: 1));
-              daysChecked++;
-
-              if (daysChecked > 365) {
-                throw AppError(
-                  AppErrorType.conflict,
-                  "Falha Crítica: Passou 1 ano e não conseguiu acabar o módulo $moduleName. Verifique Disponibilidade dos Formadores.",
-                );
-              }
-            }
           }
         }
       });

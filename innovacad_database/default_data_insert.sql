@@ -22,6 +22,7 @@ VALUES
     ('CV', 'Curriculum Vitae'),
     ('DIPLOMA', 'Certificate/Diploma'),
     ('ID_CARD', 'Identification Document'),
+    ('PROFILE_PIC', 'PROFILE PICTURE'),
     ('OTHER', 'Other Attachment');
 
 INSERT INTO

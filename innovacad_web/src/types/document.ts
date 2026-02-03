@@ -4,7 +4,7 @@ export interface Document {
   file_path: string;
   mime_type: string;
   file_size_bytes: number;
-  type_code: "CV" | "DIPLOMA" | "ID_CARD" | "OTHER";
+  type_code: "CV" | "DIPLOMA" | "ID_CARD" | "OTHER" | "PROFILE_PIC";
   created_at: string;
 }
 

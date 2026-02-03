@@ -20,16 +20,9 @@ const hydrateUser = (
 
   if (data.trainee_id) {
     instance = new Trainee(data, data.trainee_id, data.birthday_date);
-  } else if (
-    data.trainer_id ||
-    data.role === "trainer" ||
-    data.role === "coordinator"
-  ) {
-    instance = new Trainer(
-      data,
-      data.trainer_id || data.id || "unknown_trainer_id",
-      data.birthday_date,
-    );
+  } else if (data.trainer_id) {
+    instance = new Trainer(data, data.trainer_id, data.birthday_date);
+    console.log("INSTANCIA", instance);
   } else {
     instance = new User(data);
   }

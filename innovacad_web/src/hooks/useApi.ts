@@ -213,11 +213,7 @@ export const useApi = () => {
       data.role === "trainer" ||
       "trainer_id" in data
     ) {
-      const trainer = new Trainer(
-        data,
-        data.trainer_id! || data.id!,
-        data.birthday_date,
-      );
+      const trainer = new Trainer(data, data.trainer_id!, data.birthday_date);
 
       (trainer as any).is_coordinator = !!data.is_coordinator;
       (trainer as any).coordinated_class_ids = Array.isArray(
@@ -261,6 +257,7 @@ export const useApi = () => {
     }
 
     const userData = res.data;
+    console.log("USER DATA", userData);
     const user = mapToUserType(userData);
     setUser(user);
 
@@ -609,6 +606,8 @@ export const useApi = () => {
       undefined,
       true,
     );
+    
+    console.log("SESSION DATA", res.data);
 
     if (res.isError || !res.data) {
       logout();

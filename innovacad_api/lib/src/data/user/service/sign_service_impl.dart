@@ -46,7 +46,8 @@ class SignServiceImpl implements ISignService {
 
     if (role == 'admin') user = OutputUserDao.fromJson(authResult.data!);
 
-    if (role == 'trainer') user = OutputTrainerDao.fromJson(authResult.data!);
+    if (role == 'trainer' || role == 'coordinator')
+      user = OutputTrainerDao.fromJson(authResult.data!);
 
     if (role == 'trainee') user = OutputTraineeDao.fromJson(authResult.data!);
 
@@ -61,6 +62,7 @@ class SignServiceImpl implements ISignService {
       AppError(
         AppErrorType.unauthorized,
         "The provided user doesn't have a application use associated.",
+        details: user?.toJson() ?? (authResult.error?.details ?? {}),
       ),
     );
   }
