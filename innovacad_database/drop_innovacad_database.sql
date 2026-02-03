@@ -38,6 +38,7 @@ DROP TABLE IF EXISTS
     modules,
     trainers,
     trainees,
-    document_types;
+    document_types
+    ;
 
 SET FOREIGN_KEY_CHECKS = 1;

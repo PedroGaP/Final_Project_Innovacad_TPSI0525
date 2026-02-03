@@ -27,7 +27,6 @@ export const EventCalendar = (props: Props) => {
   let calendarEl: HTMLDivElement | undefined;
   let calendar: Calendar | undefined;
 
-  // 1. Update events when data changes
   createEffect(() => {
     const rawEvents = props.events;
 
@@ -36,7 +35,6 @@ export const EventCalendar = (props: Props) => {
       calendar.removeAllEvents();
       calendar.addEventSource(cleanEvents);
 
-      // Navigate to the first event if exists and is valid
       if (cleanEvents.length > 0) {
         const firstEventDate = new Date(cleanEvents[0].start);
         if (
@@ -51,7 +49,6 @@ export const EventCalendar = (props: Props) => {
     }
   });
 
-  // 2. Toggle Edit mode dynamically
   createEffect(() => {
     const editable = props.isEditable;
     if (calendar) {
@@ -69,7 +66,6 @@ export const EventCalendar = (props: Props) => {
   };
 
   const handleEventClick = (clickInfo: EventClickArg) => {
-    // FIX: Renamed variable to 'eventProps' to avoid shadowing component 'props'
     const eventProps = clickInfo.event.extendedProps;
 
     if (!props.isEditable) {
@@ -114,13 +110,10 @@ export const EventCalendar = (props: Props) => {
 
     const revert = info.revert;
 
-    // FIX: FullCalendar 'end' can be null if it's the default duration.
-    // We force a calculation to ensure the backend gets a valid date.
     const start = info.event.start!;
     let end = info.event.end;
 
     if (!end) {
-      // Default to start + 1 hour if end is missing
       end = new Date(start.getTime() + 60 * 60 * 1000);
     }
 
@@ -178,7 +171,6 @@ export const EventCalendar = (props: Props) => {
       nowIndicator: true,
       events: initialEvents,
 
-      // HTML Render for Event Card
       eventContent: function (arg) {
         const p = arg.event.extendedProps;
         return {

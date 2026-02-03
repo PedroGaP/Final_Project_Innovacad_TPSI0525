@@ -87,14 +87,12 @@ class Trainer extends User {
   ) {
     super(data);
 
-    // Garantimos que ambos os formatos existem
     this.trainerId = trainerId || data.trainer_id;
     this.trainer_id = this.trainerId;
 
     this.birthdayDate = birthdayDate || data.birthday_date;
     this.skills = skills || data.skills || [];
 
-    // Mapeamento robusto dos dados de coordenação
     if (data.coordinated_class_ids) {
       this.coordinated_class_ids = data.coordinated_class_ids;
     } else if ((data as any).user?.coordinated_class_ids) {

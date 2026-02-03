@@ -22,7 +22,6 @@ const pool = createPool({
 
 async function getUserExtras(userId: string, role: string) {
   try {
-    // --- TRAINER / COORDINATOR ---
     if (role === "trainer" || role === "coordinator") {
       const [trainerRows] = await pool.execute<RowDataPacket[]>(
         "SELECT trainer_id, birthday_date, is_coordinator FROM trainers WHERE user_id = ?",
@@ -32,7 +31,6 @@ async function getUserExtras(userId: string, role: string) {
       const trainerData = trainerRows[0];
       if (!trainerData) return { trainer_id: null };
 
-      // Conversão explícita para string para evitar problemas de Buffer/Binary
       const trainerId = String(trainerData.trainer_id);
 
       const [skillsRows] = await pool.execute<RowDataPacket[]>(
@@ -48,7 +46,7 @@ async function getUserExtras(userId: string, role: string) {
       const coordinatedClassIds = coordinatorRows.map((row) => row.class_id);
 
       const extras = {
-        trainer_id: trainerId, // Garante snake_case
+        trainer_id: trainerId,
         birthday_date: trainerData.birthday_date,
         is_coordinator:
           trainerData.is_coordinator === 1 || coordinatedClassIds.length > 0,
@@ -56,11 +54,10 @@ async function getUserExtras(userId: string, role: string) {
         skills: skillsRows || [],
       };
 
-      console.log(`[Auth] User ${userId} extras:`, extras); // DEBUG LOG
+      console.log(`[Auth] User ${userId} extras:`, extras);
       return extras;
     }
 
-    // --- TRAINEE ---
     if (role === "trainee") {
       const [traineeRows] = await pool.execute<RowDataPacket[]>(
         "SELECT trainee_id, birthday_date, class_id FROM trainees WHERE user_id = ?",
@@ -144,7 +141,6 @@ export const auth = betterAuth({
       };
       const extraData = await getUserExtras(currUser.id, currUser.role);
 
-      // O Better Auth faz o merge, mas garantimos que o trainer_id vai no topo
       return {
         user: {
           ...currUser,

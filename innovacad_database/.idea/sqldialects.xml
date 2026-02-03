@@ -7,6 +7,7 @@
     <file url="file://$PROJECT_DIR$/drop_stored_procedures_innovacad.sql" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/filtering_queries.sql" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/stored_procedures_innovacad.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/testing_innovacad.sql" dialect="MySQL" />
     <file url="PROJECT" dialect="MySQL" />
   </component>
 </project>
