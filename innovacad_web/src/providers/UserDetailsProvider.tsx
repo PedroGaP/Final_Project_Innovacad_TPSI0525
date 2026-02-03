@@ -18,15 +18,33 @@ const hydrateUser = (
 
   let instance: User | Trainee | Trainer;
 
-  if (data.trainee_id) {
-    instance = new Trainee(data, data.trainee_id, data.birthday_date);
-  } else if (data.trainer_id) {
-    instance = new Trainer(data, data.trainer_id, data.birthday_date);
-    console.log("INSTANCIA", instance);
-  } else {
+  // 1. Verificar se é Trainee
+  if (data.trainee_id || data.role === "trainee") {
+    // Fallback seguro se o ID não vier
+    const tId = data.trainee_id || data.id || "unknown_trainee";
+    instance = new Trainee(data, tId, data.birthday_date);
+  }
+  // 2. Verificar se é Trainer OU Coordinator (ambos usam classe Trainer)
+  else if (
+    data.trainer_id ||
+    data.role === "trainer" ||
+    data.role === "coordinator"
+  ) {
+    // Fallback seguro se o ID não vier
+    const tId = data.trainer_id || data.id || "unknown_trainer";
+    instance = new Trainer(data, tId, data.birthday_date);
+
+    // Forçar a flag de coordenador se o role o disser
+    if (data.role === "coordinator") {
+      (instance as Trainer).is_coordinator = true;
+    }
+  }
+  // 3. Utilizador genérico (Admin, etc)
+  else {
     instance = new User(data);
   }
 
+  // Copiar todas as propriedades do JSON para a instância para garantir que nada se perde
   Object.assign(instance, data);
 
   return instance;
@@ -34,7 +52,13 @@ const hydrateUser = (
 
 export const UserDetailsProvider = (props: { children: JSX.Element }) => {
   const saved = Cookies.get("user_session");
-  const initialData = saved ? JSON.parse(saved) : null;
+  let initialData = null;
+
+  try {
+    initialData = saved ? JSON.parse(saved) : null;
+  } catch (e) {
+    console.error("Erro ao ler cookie user_session", e);
+  }
 
   const [user, setUser] = createSignal<User | Trainee | Trainer | null>(
     hydrateUser(initialData),
@@ -43,6 +67,8 @@ export const UserDetailsProvider = (props: { children: JSX.Element }) => {
   createEffect(() => {
     const currentUser = user();
     if (currentUser) {
+      // Usamos JSON.stringify que vai chamar o .toJson() das classes se existir,
+      // ou serializar as propriedades públicas.
       Cookies.set("user_session", JSON.stringify(currentUser), { expires: 7 });
     } else {
       Cookies.remove("user_session");
@@ -52,12 +78,10 @@ export const UserDetailsProvider = (props: { children: JSX.Element }) => {
   const logout = () => {
     setUser(null);
     const allCookies = Cookies.get();
-
     Object.keys(allCookies).forEach((cookieName) => {
       Cookies.remove(cookieName);
       Cookies.remove(cookieName, { path: "/" });
     });
-
     window.location.href = "/";
   };
 

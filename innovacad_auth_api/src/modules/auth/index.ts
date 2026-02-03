@@ -10,6 +10,8 @@ import {
 } from "better-auth/plugins";
 import { createPool, RowDataPacket } from "mysql2/promise";
 import { API } from "@/src/utils/env";
+import { sendTwoFactorEmail } from "../email";
+import nodemailer from "nodemailer";
 
 const pool = createPool({
   host: API.MYSQL.HOSTNAME,
@@ -110,7 +112,27 @@ export const auth = betterAuth({
       skipVerificationOnEnable: true,
       otpOptions: {
         async sendOTP({ user, otp }) {
-          /* ... lógica de email mantida ... */
+          try {
+            const transporter = nodemailer.createTransport({
+              service: "gmail",
+
+              auth: {
+                user: "peterdroidyt@gmail.com",
+                pass: API.GOOGLE.GMAIL_SECRET,
+              },
+            });
+
+            await sendTwoFactorEmail({
+              user: user,
+              toEmail: user.email,
+              otp: otp,
+              subject: "Verification Code from Innovacad",
+              transporter: transporter,
+            });
+            console.log("Email sent successfully!");
+          } catch (error) {
+            console.error("Error sending email:", error);
+          }
         },
       },
     }),
