@@ -188,11 +188,30 @@ const Calendar = () => {
 
   const handleMoveRequest = async (id: string, start: Date, end: Date) => {
     if (!canEdit()) return;
-    await updateSchedule(id, {
+
+    const allEvents = schedules() || [];
+    const originalEvent = allEvents.find(
+      (s: any) => (s.schedule_id || s.scheduleId) === id,
+    );
+
+    if (!originalEvent) return;
+
+    const payload = {
+      trainer_id: originalEvent.trainer_id,
+      room_id: originalEvent.room_id,
+      is_online: originalEvent.is_online,
+      regime_type: Number(originalEvent.regime_type),
       start_time: start.toISOString(),
       end_time: end.toISOString(),
-    } as any);
-    refetchSchedules();
+    };
+
+    try {
+      await updateSchedule(id, payload);
+      refetchSchedules();
+    } catch (e) {
+      console.error("Payload rejection:", e);
+      toast.error("Update failed: Check data types.");
+    }
   };
 
   const handleCreateRequest = (start: string, end: string) => {
@@ -234,23 +253,25 @@ const Calendar = () => {
       return;
     }
     try {
+      // Inside handleSave
       if (modalMode() === "create") {
         await createSchedule({
           class_module_id: data.moduleId,
           trainer_id: data.trainerId,
           room_id: data.roomId ? parseInt(data.roomId) : undefined,
-          start_time: data.start,
-          end_time: data.end,
-          force_trainer_change: data.force,
+          start_time: new Date(data.start).toISOString(),
+          end_time: new Date(data.end).toISOString(),
+          force_trainer_change: !!data.force,
         });
-        toast.success("Schedule created!");
       } else {
-        if (!currentScheduleId()) return;
         await updateSchedule(currentScheduleId()!, {
           trainer_id: data.trainerId,
           room_id: data.roomId ? parseInt(data.roomId) : undefined,
           is_online: data.isOnline,
+          start_time: new Date(data.start).toISOString(),
+          end_time: new Date(data.end).toISOString(),
         });
+
         toast.success("Schedule updated!");
       }
       setIsEditModalOpen(false);

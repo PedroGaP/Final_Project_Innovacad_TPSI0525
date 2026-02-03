@@ -1,5 +1,4 @@
 import 'package:innovacad_api/src/core/middleware/cors_middleware.dart';
-import 'package:shelf_static/shelf_static.dart';
 import 'package:vaden/vaden.dart';
 
 @Configuration()

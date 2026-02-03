@@ -314,10 +314,7 @@ class CourseRepositoryImpl implements ICourseRepository {
 
         final List<String> modulesToInsert =
             [...implicitParents, ...explicitIds]
-                .where(
-                  (modId) =>
-                      !moduleToRelationMap.containsKey(modId!) && modId != null,
-                )
+                .where((modId) => !moduleToRelationMap.containsKey(modId!))
                 .cast<String>()
                 .toList();
 
@@ -343,14 +340,15 @@ class CourseRepositoryImpl implements ICourseRepository {
         }
 
         print("[DEBUG] Updating sequences...");
-        
+
         for (final item in dto.addCoursesModules!) {
-          
           final modKey = item.moduleId.trim().toLowerCase();
           final currentUuid = moduleToRelationMap[modKey];
 
           if (currentUuid == null) {
-            print("[DEBUG] ERRO: UUID não encontrado para o módulo ${item.moduleId}");
+            print(
+              "[DEBUG] ERRO: UUID não encontrado para o módulo ${item.moduleId}",
+            );
             continue;
           }
 
@@ -365,10 +363,11 @@ class CourseRepositoryImpl implements ICourseRepository {
                 where: {"courses_modules_id": currentUuid},
               );
             } else {
-              print("[DEBUG] AVISO: Pai ${item.sequenceModuleId} não encontrado no mapa.");
+              print(
+                "[DEBUG] AVISO: Pai ${item.sequenceModuleId} não encontrado no mapa.",
+              );
             }
           } else {
-            
             await db.update(
               table: 'courses_modules',
               updateData: {"sequence_course_module_id": null},

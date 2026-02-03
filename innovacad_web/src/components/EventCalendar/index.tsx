@@ -27,18 +27,18 @@ export const EventCalendar = (props: Props) => {
   let calendarEl: HTMLDivElement | undefined;
   let calendar: Calendar | undefined;
 
+  // 1. Update events when data changes
   createEffect(() => {
     const rawEvents = props.events;
 
     if (calendar) {
       const cleanEvents = JSON.parse(JSON.stringify(rawEvents));
-
       calendar.removeAllEvents();
       calendar.addEventSource(cleanEvents);
 
+      // Navigate to the first event if exists and is valid
       if (cleanEvents.length > 0) {
         const firstEventDate = new Date(cleanEvents[0].start);
-
         if (
           !isNaN(firstEventDate.getTime()) &&
           firstEventDate.getFullYear() > 2000
@@ -51,6 +51,7 @@ export const EventCalendar = (props: Props) => {
     }
   });
 
+  // 2. Toggle Edit mode dynamically
   createEffect(() => {
     const editable = props.isEditable;
     if (calendar) {
@@ -68,13 +69,15 @@ export const EventCalendar = (props: Props) => {
   };
 
   const handleEventClick = (clickInfo: EventClickArg) => {
+    // FIX: Renamed variable to 'eventProps' to avoid shadowing component 'props'
+    const eventProps = clickInfo.event.extendedProps;
+
     if (!props.isEditable) {
-      const props = clickInfo.event.extendedProps;
       toast.custom((_) => (
-        <div class="bg-base-100 border border-base-300 p-4 rounded-lg shadow-xl text-sm pointer-events-auto z-9999">
+        <div class="bg-base-100 border border-base-300 p-4 rounded-lg shadow-xl text-sm pointer-events-auto z-50">
           <h4 class="font-bold text-lg mb-1">{clickInfo.event.title}</h4>
-          <p>👤 {props.instructor || "N/A"}</p>
-          <p>🏠 {props.roomName || props.room || "N/A"}</p>
+          <p>👤 {eventProps.instructor || "N/A"}</p>
+          <p>🏠 {eventProps.roomName || eventProps.room || "N/A"}</p>
           <p>
             🕒{" "}
             {clickInfo.event.start?.toLocaleTimeString([], {
@@ -87,6 +90,11 @@ export const EventCalendar = (props: Props) => {
               minute: "2-digit",
             })}
           </p>
+          {eventProps.regime && (
+            <span class="badge badge-sm badge-ghost mt-2">
+              {eventProps.regime === "post-work" ? "Pós-Laboral" : "Diurno"}
+            </span>
+          )}
         </div>
       ));
       return;
@@ -97,7 +105,7 @@ export const EventCalendar = (props: Props) => {
       title: clickInfo.event.title,
       start: clickInfo.event.start,
       end: clickInfo.event.end,
-      extendedProps: clickInfo.event.extendedProps,
+      extendedProps: eventProps,
     });
   };
 
@@ -106,17 +114,23 @@ export const EventCalendar = (props: Props) => {
 
     const revert = info.revert;
 
+    // FIX: FullCalendar 'end' can be null if it's the default duration.
+    // We force a calculation to ensure the backend gets a valid date.
+    const start = info.event.start!;
+    let end = info.event.end;
+
+    if (!end) {
+      // Default to start + 1 hour if end is missing
+      end = new Date(start.getTime() + 60 * 60 * 1000);
+    }
+
     try {
-      await props.onMoveRequest(
-        info.event.id,
-        info.event.start!,
-        info.event.end!,
-      );
-      toast.success("Horário atualizado!");
+      await props.onMoveRequest(info.event.id, start, end);
+      toast.success("Schedule moved!");
     } catch (e) {
       console.error(e);
       revert();
-      toast.error("Não foi possível mover a aula.");
+      toast.error("Could not move session.");
     }
   };
 
@@ -163,16 +177,18 @@ export const EventCalendar = (props: Props) => {
       weekends: true,
       nowIndicator: true,
       events: initialEvents,
+
+      // HTML Render for Event Card
       eventContent: function (arg) {
-        const props = arg.event.extendedProps;
+        const p = arg.event.extendedProps;
         return {
           html: `
             <div class="fc-event-main-frame h-full flex flex-col justify-start p-1 gap-0.5 overflow-hidden text-xs">
               <div class="font-bold opacity-80">${arg.timeText}</div>
               <div class="font-bold text-sm leading-tight truncate">${arg.event.title}</div>
-              ${props.roomName ? `<div class="flex items-center gap-1 mt-1 opacity-90 truncate">🏠 ${props.roomName}</div>` : ""}
-              ${props.instructor ? `<div class="flex items-center gap-1 opacity-90 truncate">👤 ${props.instructor}</div>` : ""}
-              ${props.isOnline ? `<div class="absolute top-1 right-1 text-[10px]">🌐</div>` : ""}
+              ${p.roomName ? `<div class="flex items-center gap-1 mt-1 opacity-90 truncate">🏠 ${p.roomName}</div>` : ""}
+              ${p.instructor ? `<div class="flex items-center gap-1 opacity-90 truncate">👤 ${p.instructor}</div>` : ""}
+              ${p.isOnline ? `<div class="absolute top-1 right-1 text-[10px]">🌐</div>` : ""}
             </div>
           `,
         };

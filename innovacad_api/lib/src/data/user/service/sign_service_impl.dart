@@ -1,7 +1,6 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
 import 'package:innovacad_api/src/data/user/dto/reset_password/request_reset_password_dto.dart';
-import 'package:innovacad_api/src/data/user/dto/reset_password/reset_password_dto.dart';
 import 'package:vaden/vaden.dart' as v;
 
 abstract class ISignService {
