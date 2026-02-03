@@ -33,7 +33,7 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       }
 
       return Result.success(daos);
-    } catch (e, s) {
+    } catch (e) {
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -196,7 +196,7 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       await db.commit();
 
       return await getById(traineeId);
-    } catch (e, s) {
+    } catch (e) {
       if (db != null) {
         try {
           await db.rollback();

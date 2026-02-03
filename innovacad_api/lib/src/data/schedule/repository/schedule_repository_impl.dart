@@ -416,6 +416,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
     MysqlUtils? db;
 
     try {
+      print(dto.toJson());
+
       final currentResult = await _getSingleScheduleById(id);
       if (currentResult.isFailure) return currentResult;
 
@@ -456,11 +458,13 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
           final oldSlots = await txn.query(
             "SELECT availability_id FROM schedule_slots WHERE schedule_id = ?",
             whereValues: [id],
+            isStmt: true,
           );
           for (var row in oldSlots.rows) {
             await txn.query(
               "UPDATE availabilities SET is_booked = 0 WHERE availability_id = ?",
               whereValues: [row['availability_id']],
+              isStmt: true,
             );
           }
           await txn.delete(
@@ -481,6 +485,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
           final availResult = await txn.query(
             availSql,
             whereValues: [targetTrainerId, targetStart],
+            isStmt: true,
           );
 
           List<String> newAvailabilityIds = [];
@@ -507,6 +512,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
             await txn.query(
               "UPDATE availabilities SET is_booked = 1 WHERE availability_id = ?",
               whereValues: [availId],
+              isStmt: true,
             );
             await txn.insert(
               table: schedulesSlotsTable,
@@ -606,6 +612,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         final slots = await txn.query(
           "SELECT availability_id FROM schedule_slots WHERE schedule_id = ?",
           whereValues: [id],
+          isStmt: true,
         );
 
         for (var row in slots.rows) {
@@ -613,6 +620,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
           await txn.query(
             "UPDATE availabilities SET is_booked = 0 WHERE availability_id = ?",
             whereValues: [availId],
+            isStmt: true,
           );
         }
 
@@ -621,6 +629,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         await txn.query(
           "UPDATE classes_modules SET current_duration = current_duration - ? WHERE classes_modules_id = ?",
           whereValues: [hoursToRemove, classModuleId],
+          isStmt: true,
         );
       });
 
@@ -727,9 +736,12 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
           final data = row.assoc();
           final String classModuleId = data['classes_modules_id'].toString();
           final String moduleId = data['module_id'].toString();
-          final String moduleName = data['name']?.toString() ?? moduleId;
           double hoursRemaining =
               double.tryParse(data['duration'].toString()) ?? 0.0;
+
+          String? lastScheduleId;
+          int lastSlotNumber = -999;
+          DateTime? lastDate;
 
           while (hoursRemaining > 0) {
             if (currentDateCursor.weekday != DateTime.sunday) {
@@ -740,21 +752,44 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
                 final onlineVal = dto.isOnline ? 1 : 0;
                 final classId = dto.classId.trim();
 
+                String paramExtendId = "NULL";
+                if (lastScheduleId != null &&
+                    _isSameDay(lastDate, currentDateCursor) &&
+                    slotNum == lastSlotNumber + 1) {
+                  paramExtendId = "'$lastScheduleId'";
+                } else {
+                  lastScheduleId = null;
+                  paramExtendId = "NULL";
+                }
+
                 final callQuery =
-                    "CALL sp_book_slot_if_available('$classId', '$moduleId', '$classModuleId', '$sqlDate', $slotNum, $onlineVal, @success)";
+                    "CALL sp_book_slot_if_available('$classId', '$moduleId', '$classModuleId', '$sqlDate', $slotNum, $onlineVal, $paramExtendId, @success, @new_schedule_id)";
 
                 await txn.query(callQuery);
 
-                final res = await txn.query("SELECT @success as success");
-                final val = res.rows.first['success'];
+                final res = await txn.query(
+                  "SELECT @success as success, @new_schedule_id as sched_id",
+                );
+                final rowRes = res.rows.first;
+
+                final val = rowRes['success'];
                 final bool booked = (val == 1 || val == '1' || val == true);
+                final String? returnedId = rowRes['sched_id']?.toString();
 
                 if (booked) {
                   hoursRemaining -= 1.0;
+
+                  lastScheduleId = returnedId;
+                  lastSlotNumber = slotNum;
+                  lastDate = currentDateCursor;
+
                   await txn.query(
                     "UPDATE classes_modules SET current_duration = current_duration + 1 WHERE classes_modules_id = ?",
                     whereValues: [classModuleId],
+                    isStmt: true,
                   );
+                } else {
+                  lastScheduleId = null;
                 }
               }
             }
@@ -762,6 +797,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
             if (hoursRemaining > 0)
               currentDateCursor = currentDateCursor.add(Duration(days: 1));
           }
+          lastScheduleId = null;
+          lastSlotNumber = -999;
         }
       });
 
@@ -771,5 +808,10 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         AppError(AppErrorType.internal, "Erro ao gerar horário: $e"),
       );
     }
+  }
+
+  bool _isSameDay(DateTime? a, DateTime b) {
+    if (a == null) return false;
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 }
