@@ -253,7 +253,6 @@ const Calendar = () => {
       return;
     }
     try {
-      // Inside handleSave
       if (modalMode() === "create") {
         await createSchedule({
           class_module_id: data.moduleId,

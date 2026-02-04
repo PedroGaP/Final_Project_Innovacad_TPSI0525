@@ -137,6 +137,7 @@ select * from user;
 
 insert into document_types values ('PROFILE_PIC', 'PROFILE PICTURE');
 
-select * from trainers where user_id = '6a3qQS4s44S1dRPa9qoPF4sCctpkwH49'
+select * from trainers where user_id = '6a3qQS4s44S1dRPa9qoPF4sCctpkwH49';
 select * from availabilities;
+
 

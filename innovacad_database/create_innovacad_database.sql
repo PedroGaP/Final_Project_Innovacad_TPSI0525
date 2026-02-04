@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS classes
     class_id             VARCHAR(36)                              DEFAULT (UUID()) PRIMARY KEY,
     course_id            VARCHAR(36)       NOT NULL,
     location             VARCHAR(6)        NOT NULL, -- PAL, CAS...
-    identifier           VARCHAR(4) UNIQUE NOT NULL, -- 0525...
+    identifier           VARCHAR(20) UNIQUE NOT NULL, -- 0525...
     status               ENUM ('ongoing', 'finished', 'starting') DEFAULT 'starting',
     start_date_timestamp TIMESTAMP         NOT NULL,
     end_date_timestamp   TIMESTAMP         NOT NULL,
@@ -145,18 +145,6 @@ CREATE TABLE IF NOT EXISTS schedules
     FOREIGN KEY (room_id) REFERENCES rooms (room_id) ON UPDATE CASCADE ON DELETE SET NULL
 );
 
-CREATE TABLE IF NOT EXISTS schedule_slots
-(
-    slot_id         VARCHAR(36) DEFAULT (UUID()) PRIMARY KEY,
-    schedule_id     VARCHAR(36) NOT NULL,
-    availability_id VARCHAR(36) NOT NULL,
-    slot_status     TINYINT(1)  DEFAULT 0,
-    created_at      TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (availability_id),
-    FOREIGN KEY (schedule_id) REFERENCES schedules (schedule_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    FOREIGN KEY (availability_id) REFERENCES availabilities (availability_id)
-);
-
 CREATE TABLE IF NOT EXISTS enrollments
 (
     enrollment_id VARCHAR(36)   DEFAULT (UUID()) PRIMARY KEY,
@@ -207,6 +195,18 @@ CREATE TABLE IF NOT EXISTS trainers_classes_coordinator
     UNIQUE (trainer_id, class_id),
     FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id) ON DELETE CASCADE,
     FOREIGN KEY (class_id) REFERENCES classes (class_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS schedule_slots
+(
+    slot_id         VARCHAR(36) DEFAULT (UUID()) PRIMARY KEY,
+    schedule_id     VARCHAR(36) NOT NULL,
+    availability_id VARCHAR(36) NOT NULL,
+    slot_status     TINYINT(1)  DEFAULT 0,
+    created_at      TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (availability_id),
+    FOREIGN KEY (schedule_id) REFERENCES schedules (schedule_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    FOREIGN KEY (availability_id) REFERENCES availabilities (availability_id)
 );
 
 CREATE INDEX idx_trainer_user ON trainers (user_id);

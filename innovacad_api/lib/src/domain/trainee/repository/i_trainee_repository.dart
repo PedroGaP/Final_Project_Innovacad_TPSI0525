@@ -10,4 +10,5 @@ abstract class ITraineeRepository
   Future<Result<OutputTraineeDao>> create(CreateTraineeDto dto);
   Future<Result<OutputTraineeDao>> update(String id, UpdateTraineeDto dto);
   Future<Result<OutputTraineeDao>> delete(String id);
+  Future<Result<List<int>>> generateTraineePdf(String id);
 }

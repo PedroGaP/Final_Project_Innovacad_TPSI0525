@@ -679,135 +679,177 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
 
     try {
       db = await MysqlConfiguration.connect();
+      print("🚀 [AutoSchedule] Iniciando...");
 
-      String timeCondition;
+      String timeCondition = dto.regimeType == 0
+          ? "start_time >= '08:00:00' AND start_time <= '14:00:00' AND start_time != '11:00:00'"
+          : "start_time >= '16:00:00' AND start_time < '23:00:00' AND start_time != '19:00:00'";
 
-      if (dto.regimeType == 0)
-        timeCondition =
-            "start_time >= '08:00:00' "
-            "AND start_time <= '14:00:00' "
-            "AND start_time != '11:00:00'";
-      else
-        timeCondition =
-            "start_time >= '16:00:00'"
-            "AND start_time < '23:00:00'"
-            "AND start_time != '19:00:00'";
+      final slotsResult = await db.query(
+        "SELECT slot_number FROM ref_slots WHERE $timeCondition ORDER BY start_time ASC",
+      );
 
-      final slotsQuery =
-          "SELECT slot_number FROM ref_slots WHERE $timeCondition ORDER BY start_time ASC";
-
-      final slotsResult = await db.query(slotsQuery);
-
-      if (slotsResult.numOfRows <= 0)
-        return Result.failure(
-          AppError(
-            AppErrorType.badRequest,
-            "Não existem slots configurados para este horário.",
-          ),
-        );
-
+      if (slotsResult.numOfRows == 0)
+        return Result.failure(AppError(AppErrorType.badRequest, "Sem slots."));
       final List<int> allowedSlots = slotsResult.rows
           .map((r) => int.parse(r['slot_number'].toString()))
           .toList();
 
       final modulesQuery = """
-        SELECT cm.classes_modules_id, m.module_id, m.duration
+        SELECT 
+            cm.classes_modules_id, 
+            cm.current_duration,
+            m.module_id, 
+            m.name, 
+            m.duration,
+            crm.sequence_course_module_id,
+            (SELECT cm_prev.classes_modules_id 
+             FROM classes_modules cm_prev 
+             WHERE cm_prev.class_id = cm.class_id 
+             AND cm_prev.courses_modules_id = crm.sequence_course_module_id) as dependency_id
         FROM classes_modules cm
         JOIN courses_modules crm ON cm.courses_modules_id = crm.courses_modules_id
         JOIN modules m ON crm.module_id = m.module_id
         WHERE cm.class_id = ?
+        ORDER BY crm.sequence_course_module_id ASC -- Tenta ordenar por dependência
       """;
 
-      final modulesResult = await db.query(
+      final allModulesResult = await db.query(
         modulesQuery,
         whereValues: [dto.classId],
         isStmt: true,
       );
+      List<Map<String, dynamic>> modulesList = [];
+      for (var row in allModulesResult.rowsAssoc) {
+        modulesList.add(Map<String, dynamic>.from(row.assoc()));
+      }
 
-      if (modulesResult.numOfRows <= 0)
-        return Result.failure(
-          AppError(AppErrorType.notFound, "Turma sem módulos associados."),
-        );
+      Map<String, DateTime> completionDates = {};
+      DateTime globalStartDate = dto.startDate;
 
-      DateTime currentDateCursor = dto.startDate;
+      bool madeProgress = true;
 
-      await db.transaction((txn) async {
-        for (var row in modulesResult.rowsAssoc) {
-          final data = row.assoc();
-          final String classModuleId = data['classes_modules_id'].toString();
-          final String moduleId = data['module_id'].toString();
-          double hoursRemaining =
-              double.tryParse(data['duration'].toString()) ?? 0.0;
+      while (modulesList.any((m) => _getHoursRemaining(m) > 0) &&
+          madeProgress) {
+        madeProgress = false;
 
-          String? lastScheduleId;
-          int lastSlotNumber = -999;
-          DateTime? lastDate;
+        for (var mod in modulesList) {
+          double hoursRemaining = _getHoursRemaining(mod);
+          String classModId = mod['classes_modules_id'].toString();
 
-          while (hoursRemaining > 0) {
-            if (currentDateCursor.weekday != DateTime.sunday) {
-              for (int slotNum in allowedSlots) {
-                if (hoursRemaining <= 0) break;
+          if (hoursRemaining <= 0) {
+            if (!completionDates.containsKey(classModId)) {
+              completionDates[classModId] = globalStartDate;
+            }
+            continue;
+          }
 
-                final sqlDate = _toSqlDate(currentDateCursor);
-                final onlineVal = dto.isOnline ? 1 : 0;
-                final classId = dto.classId.trim();
+          String? depId = mod['dependency_id']?.toString();
+          DateTime startDateForThisModule = globalStartDate;
 
-                String paramExtendId = "NULL";
-                if (lastScheduleId != null &&
-                    _isSameDay(lastDate, currentDateCursor) &&
-                    slotNum == lastSlotNumber + 1) {
-                  paramExtendId = "'$lastScheduleId'";
-                } else {
-                  lastScheduleId = null;
-                  paramExtendId = "NULL";
-                }
+          if (depId != null && depId != 'null' && depId.isNotEmpty) {
+            if (!completionDates.containsKey(depId)) {
+              continue;
+            }
+            startDateForThisModule = completionDates[depId]!.add(
+              Duration(days: 1),
+            );
+          }
 
-                final callQuery =
-                    "CALL sp_book_slot_if_available('$classId', '$moduleId', '$classModuleId', '$sqlDate', $slotNum, $onlineVal, $paramExtendId, @success, @new_schedule_id)";
+          print(
+            "📅 Agendando '${mod['name']}' a partir de ${_toSqlDate(startDateForThisModule)}",
+          );
+          await db.startTrans();
 
-                await txn.query(callQuery);
+          try {
+            String? lastScheduleId;
+            int lastSlotNumber = -999;
+            DateTime? lastDate;
 
-                final res = await txn.query(
-                  "SELECT @success as success, @new_schedule_id as sched_id",
-                );
-                final rowRes = res.rows.first;
+            DateTime moduleDateCursor = startDateForThisModule;
+            final DateTime safetyLimit = moduleDateCursor.add(
+              Duration(days: 120),
+            );
 
-                final val = rowRes['success'];
-                final bool booked = (val == 1 || val == '1' || val == true);
-                final String? returnedId = rowRes['sched_id']?.toString();
+            while (hoursRemaining > 0) {
+              if (moduleDateCursor.isAfter(safetyLimit)) break;
 
-                if (booked) {
-                  hoursRemaining -= 1.0;
+              if (moduleDateCursor.weekday != DateTime.sunday) {
+                for (int slotNum in allowedSlots) {
+                  if (hoursRemaining <= 0) break;
 
-                  lastScheduleId = returnedId;
-                  lastSlotNumber = slotNum;
-                  lastDate = currentDateCursor;
+                  final sqlDate = _toSqlDate(moduleDateCursor);
 
-                  await txn.query(
-                    "UPDATE classes_modules SET current_duration = current_duration + 1 WHERE classes_modules_id = ?",
-                    whereValues: [classModuleId],
-                    isStmt: true,
+                  String paramExtendId = "NULL";
+                  if (lastScheduleId != null &&
+                      _isSameDay(lastDate, moduleDateCursor) &&
+                      slotNum == lastSlotNumber + 1) {
+                    paramExtendId = "'$lastScheduleId'";
+                  } else {
+                    lastScheduleId = null;
+                    paramExtendId = "NULL";
+                  }
+
+                  final callQuery =
+                      "CALL sp_book_slot_if_available('${dto.classId}', '${mod['module_id']}', '$classModId', '$sqlDate', $slotNum, ${dto.isOnline ? 1 : 0}, $paramExtendId, @success, @new_schedule_id)";
+
+                  await db.query(callQuery);
+                  final res = await db.query(
+                    "SELECT @success as success, @new_schedule_id as sched_id",
                   );
-                } else {
-                  lastScheduleId = null;
+
+                  final bool booked = (res.rows.first['success'] == 1);
+                  final String? returnedId = res.rows.first['sched_id']
+                      ?.toString();
+
+                  if (booked) {
+                    hoursRemaining -= 1.0;
+                    lastScheduleId = returnedId;
+                    lastSlotNumber = slotNum;
+                    lastDate = moduleDateCursor;
+
+                    await db.query(
+                      "UPDATE classes_modules SET current_duration = current_duration + 1 WHERE classes_modules_id = ?",
+                      whereValues: [classModId],
+                      isStmt: true,
+                    );
+                  } else {
+                    lastScheduleId = null;
+                  }
                 }
+              }
+
+              if (hoursRemaining > 0) {
+                moduleDateCursor = moduleDateCursor.add(Duration(days: 1));
+                lastScheduleId = null;
+                lastSlotNumber = -999;
               }
             }
 
-            if (hoursRemaining > 0)
-              currentDateCursor = currentDateCursor.add(Duration(days: 1));
-          }
-          lastScheduleId = null;
-          lastSlotNumber = -999;
-        }
-      });
+            await db.commit();
 
+            mod['current_duration'] = double.parse(mod['duration'].toString());
+            completionDates[classModId] =
+                moduleDateCursor;
+            madeProgress = true;
+          } catch (e) {
+            print("Erro no módulo ${mod['name']}: $e");
+            await db.rollback();
+          }
+        }
+      }
+
+      print("✅ Geração concluída.");
       return Result.success(true);
     } catch (e) {
-      return Result.failure(
-        AppError(AppErrorType.internal, "Erro ao gerar horário: $e"),
-      );
+      return Result.failure(AppError(AppErrorType.internal, "Erro: $e"));
     }
+  }
+
+  double _getHoursRemaining(Map<String, dynamic> mod) {
+    double total = double.tryParse(mod['duration'].toString()) ?? 0.0;
+    double current = double.tryParse(mod['current_duration'].toString()) ?? 0.0;
+    return total - current;
   }
 
   bool _isSameDay(DateTime? a, DateTime b) {

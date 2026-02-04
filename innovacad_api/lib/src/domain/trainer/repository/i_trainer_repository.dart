@@ -22,4 +22,6 @@ abstract class ITrainerRepository
 
   @override
   Future<Result<OutputTrainerDao>> getById(String id);
+
+  Future<Result<List<int>>> generateTrainerPdf(String id);
 }

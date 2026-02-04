@@ -65,4 +65,23 @@ class TrainerController {
     final result = await _service.delete(id);
     return resultToResponse(result);
   }
+
+  @Get('/<id>/export')
+Future<Response> exportTrainerSheet(@Param() String id) async {
+  if (id.isEmpty) return Response.badRequest(body: 'Invalid ID');
+
+  final result = await _service.generateTrainerPdf(id);
+
+  if (result.isFailure) {
+    return Response.internalServerError(body: result.error?.message);
+  }
+
+  return Response.ok(
+    result.data,
+    headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename="ficha_formador.pdf"',
+    },
+  );
+}
 }

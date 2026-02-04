@@ -15,8 +15,6 @@ class ClassRepositoryImpl implements IClassRepository {
     try {
       db = await MysqlConfiguration.connect();
 
-      // CHANGED: Replaced db.getAll with a specific query including JOIN
-      // We alias courses.identifier as 'course_identifier'
       final query = """
         SELECT c.*, co.identifier AS course_identifier
         FROM classes c
@@ -29,7 +27,6 @@ class ClassRepositoryImpl implements IClassRepository {
         return Result.success([]);
       }
 
-      // Convert rows to a list of Maps to be mutable
       final classesList = classesResults.rowsAssoc
           .map((r) => r.assoc())
           .toList();
@@ -102,7 +99,6 @@ class ClassRepositoryImpl implements IClassRepository {
     try {
       db = await MysqlConfiguration.connect();
 
-      // CHANGED: Replaced db.getOne with a specific query including JOIN
       final query = """
         SELECT c.*, co.identifier AS course_identifier
         FROM classes c

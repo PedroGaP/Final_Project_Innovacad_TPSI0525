@@ -50,7 +50,6 @@ const AccountSettingsPage = () => {
   const getUserBirthday = () => {
     const currentUser = user();
     if (!currentUser) return "";
-    // Ajustado para bater com as propriedades do objeto carregado
     const bday =
       (currentUser as any).birthday_date || (currentUser as any).birthdayDate;
     if (bday) return formatDateForInput(Number(bday) / 1000);
@@ -92,11 +91,10 @@ const AccountSettingsPage = () => {
     }
   };
 
-  // Handler para Foto de Perfil com atualização de Entidade
   const handleAvatarChange = async (e: Event) => {
     const target = e.target as HTMLInputElement;
     const file = target.files?.[0];
-    const u = user(); // Obtemos a instância atual
+    const u = user();
 
     if (!file || !u) return;
 
@@ -111,11 +109,8 @@ const AccountSettingsPage = () => {
     formData.append("type", "PROFILE_PIC");
 
     try {
-      // 1. Upload do ficheiro para o storage
       await uploadDocument(u.id!, formData);
 
-      // 2. Buscar a lista atualizada
-      // DICA: Adicionamos um pequeno delay para garantir que o backend processou a transação DB
       await new Promise((r) => setTimeout(r, 500));
       const updatedDocs = await fetchDocuments(u.id!);
       const newPic = updatedDocs.find((d) => d.type_code === "PROFILE_PIC");
@@ -128,9 +123,7 @@ const AccountSettingsPage = () => {
 
       const imagePath = `${newPic.file_path.replace(/^public[\\/]/, "")}`;
 
-      // 3. Chamar endpoint de update de perfil conforme a role
       if (u.role === "trainer" || u.role === "coordinator") {
-        // Type assertion segura
         const trainerUser = u as Trainer;
         const trainerId = trainerUser.trainerId;
         console.log("trainerId", trainerId);
@@ -144,8 +137,6 @@ const AccountSettingsPage = () => {
         await updateTrainee(traineeId!, { image: imagePath } as any);
       }
 
-      // 4. Atualizar estado local corretamente (Solução TypeScript)
-      // Clonamos o objeto mantendo a herança da classe (Trainer/Trainee)
       const updatedUser = Object.assign(
         Object.create(Object.getPrototypeOf(u)),
         u,
@@ -154,12 +145,10 @@ const AccountSettingsPage = () => {
 
       setUser(updatedUser);
 
-      // Atualiza o toast de loading para sucesso
       toast.success("Profile picture updated!", { id: toastId });
       refetchDocs();
     } catch (error: any) {
       console.error(error);
-      // Atualiza o toast de loading para erro, garantindo que ele fecha
       toast.error(error.message || "Failed to update profile picture", {
         id: toastId,
       });
