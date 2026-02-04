@@ -41,4 +41,9 @@ class TrainerServiceImpl implements ITrainerService {
   Future<Result<OutputTrainerDao>> linkAccount(UserLinkAccountDto dto) {
     throw UnimplementedError();
   }
+
+  @override
+  Future<Result<List<int>>> generateTrainerPdf(String id) async {
+    return _repository.generateTrainerPdf(id);
+  }
 }

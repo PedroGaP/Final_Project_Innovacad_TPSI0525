@@ -43,6 +43,8 @@ class RemoteUserService {
         userData['trainer_id'] = trainerId;
         userData['birthday_date'] = trainerRow['birthday_date'];
 
+        if (userData['role'] == 'user') userData['role'] = 'trainer';
+
         final classesResult = await db.query(
           "SELECT class_id FROM trainers_classes_coordinator WHERE trainer_id = ?",
           whereValues: [trainerId],
@@ -66,9 +68,25 @@ class RemoteUserService {
         userData['skills'] = skillsResult.rowsAssoc
             .map((row) => row.assoc())
             .toList();
-      } else if (userData['role'] == 'coordinator') {
+      }else {
+
+        final traineeRow = await db.getOne(
+          table: 'trainees',
+          where: {'user_id': userId},
+        );
+
+        if (traineeRow.isNotEmpty) {
+          userData['trainee_id'] = traineeRow['trainee_id'].toString();
+          userData['birthday_date'] = traineeRow['birthday_date'];
+
+          if (userData['role'] == 'user') userData['role'] = 'trainee';
+        }
+      }
+
+      if (userData['role'] == 'coordinator') {
         userData['is_coordinator'] = true;
-        userData['coordinated_class_ids'] = [];
+        userData['coordinated_class_ids'] =
+            userData['coordinated_class_ids'] ?? [];
       }
 
       return userData;
@@ -76,7 +94,7 @@ class RemoteUserService {
       print("[Enrichment Error] Failed to fetch local data: $e");
       return userData;
     } finally {
-      //await db?.close();
+      // await db?.close();
     }
   }
 

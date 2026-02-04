@@ -30,4 +30,9 @@ class TraineeServiceImpl implements ITraineeService {
   @override
   Future<Result<OutputTraineeDao>> delete(String id) async =>
       _repository.delete(id);
+
+      @override
+      Future<Result<List<int>>> generateTraineePdf(String id) async {
+        return await _repository.generateTraineePdf(id);
+      }
 }

@@ -18,4 +18,6 @@ abstract class ITrainerService
 
   @override
   Future<Result<OutputTrainerDao>> getById(String id);
+
+  Future<Result<List<int>>> generateTrainerPdf(String id);
 }

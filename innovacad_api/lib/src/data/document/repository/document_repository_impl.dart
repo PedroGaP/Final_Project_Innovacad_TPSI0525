@@ -32,6 +32,7 @@ class DocumentRepositoryImpl {
           'type_code': typeCode,
           'user_id': userId,
         },
+        debug: true,
       );
 
       return Result.success(uuid);

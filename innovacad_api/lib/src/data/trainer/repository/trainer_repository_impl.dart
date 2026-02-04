@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
@@ -6,13 +7,16 @@ import 'package:innovacad_api/src/domain/trainer/repository/i_trainer_repository
 import 'package:mysql_utils/mysql_utils.dart';
 import 'package:uuid/uuid.dart';
 import 'package:vaden/vaden.dart' as v;
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 
 @v.Repository()
 class TrainerRepositoryImpl implements ITrainerRepository {
   final RemoteUserService _remoteUserService;
+  final Dio dio;
   final String table = "trainers";
 
-  TrainerRepositoryImpl(this._remoteUserService);
+  TrainerRepositoryImpl(this._remoteUserService, this.dio);
 
   bool _parseBool(dynamic value) {
     if (value == null) return false;
@@ -48,8 +52,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
 
         final isCoordinator = _parseBool(row['is_coordinator']);
         print("COORDENAODR? $isCoordinator");
-        row['is_coordinator'] =
-            isCoordinator;
+        row['is_coordinator'] = isCoordinator;
 
         if (isCoordinator) {
           final classResults = await db.query(
@@ -232,8 +235,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
 
         if (!isNowCoordinator) {
           await db.delete(
-            table:
-                "trainers_classes_coordinator",
+            table: "trainers_classes_coordinator",
             where: {"trainer_id": trainerId},
           );
         }
@@ -325,6 +327,281 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       return existingRes;
     } catch (e) {
       if (db != null) await db.rollback();
+      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    }
+  }
+
+  Future<Result<List<int>>> generateTrainerPdf(String trainerId) async {
+    try {
+      final db = await MysqlConfiguration.connect();
+
+      final trainerData = await db.query(
+        """
+      SELECT u.name, u.email, u.username, u.image, t.birthday_date, t.trainer_id, t.is_coordinator
+      FROM trainers t 
+      JOIN user u ON t.user_id = u.id 
+      WHERE t.trainer_id = ?
+      """,
+        whereValues: [trainerId],
+        isStmt: true,
+      );
+
+      if (trainerData.numOfRows == 0) {
+        return Result.failure(
+          AppError(AppErrorType.notFound, "Formador não encontrado"),
+        );
+      }
+
+      final teachingHistory = await db.query(
+        """
+      SELECT 
+        c.name as course_name,
+        cls.identifier as class_ref,
+        m.name as module_name,
+        SUM(s.total_hours) as total_hours_taught,
+        MIN(s.start_date_timestamp) as first_class,
+        MAX(s.end_date_timestamp) as last_class
+      FROM schedules s
+      JOIN classes_modules cm ON s.class_module_id = cm.classes_modules_id
+      JOIN classes cls ON cm.class_id = cls.class_id
+      JOIN courses c ON cls.course_id = c.course_id
+      JOIN courses_modules crm ON cm.courses_modules_id = crm.courses_modules_id
+      JOIN modules m ON crm.module_id = m.module_id
+      WHERE s.trainer_id = ?
+      GROUP BY cls.class_id, m.module_id
+      ORDER BY last_class DESC
+      """,
+        whereValues: [trainerId],
+        isStmt: true,
+      );
+
+      final user = trainerData.rows.first;
+      final now = DateTime.now();
+      final dateFormatted = "${now.day}/${now.month}/${now.year}";
+
+      double grandTotalHours = 0;
+
+      final List<List<String>> tableData = [];
+
+      for (var row in teachingHistory.rows) {
+        final hours =
+            double.tryParse(row['total_hours_taught'].toString()) ?? 0.0;
+        grandTotalHours += hours;
+
+        String startStr = row['first_class'].toString().split(' ')[0];
+        String endStr = row['last_class'].toString().split(' ')[0];
+
+        tableData.add([
+          row['class_ref'].toString(),
+          row['course_name'].toString(),
+          row['module_name'].toString(),
+          "$startStr a $endStr",
+          "${hours.toStringAsFixed(1)} h",
+        ]);
+      }
+
+      pw.ImageProvider? profileImage;
+      final imagePath = user['image']?.toString();
+
+      if (imagePath != null && imagePath.isNotEmpty) {
+        try {
+          final cleanPath = imagePath.startsWith('/')
+              ? imagePath.substring(1)
+              : imagePath;
+          final imageUrl = "http://localhost:8080/$cleanPath";
+
+          final response = await dio.get(
+            imageUrl,
+            options: Options(responseType: ResponseType.bytes),
+          );
+
+          if (response.statusCode == 200) {
+            profileImage = pw.MemoryImage(response.data);
+          }
+        } catch (e) {
+          print("Erro ao processar imagem com Dio: $e");
+        }
+      }
+
+      final pdf = pw.Document();
+      final baseColor = PdfColors.blue900;
+      final lightColor = PdfColors.grey200;
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(40),
+
+          header: (context) => pw.Column(
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    "INNOVACAD",
+                    style: pw.TextStyle(
+                      color: baseColor,
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
+                  pw.Text(
+                    "Ficha de Formador",
+                    style: const pw.TextStyle(
+                      fontSize: 12,
+                      color: PdfColors.grey700,
+                    ),
+                  ),
+                ],
+              ),
+              pw.Divider(color: baseColor, thickness: 2),
+              pw.SizedBox(height: 20),
+            ],
+          ),
+
+          footer: (context) => pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                "Gerado a $dateFormatted",
+                style: const pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey600,
+                ),
+              ),
+              pw.Text(
+                "Página ${context.pageNumber} de ${context.pagesCount}",
+                style: const pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey600,
+                ),
+              ),
+            ],
+          ),
+
+          build: (context) => [
+            pw.Container(
+              padding: const pw.EdgeInsets.all(15),
+              decoration: pw.BoxDecoration(
+                color: lightColor,
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(5)),
+              ),
+              child: pw.Row(
+                children: [
+                  pw.Container(
+                    width: 60,
+                    height: 60,
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.white,
+                      shape: pw.BoxShape.circle,
+                      border: pw.Border.all(color: baseColor, width: 2),
+                    ),
+                    child: profileImage != null
+                        ? pw.ClipOval(
+                            child: pw.Image(profileImage, fit: pw.BoxFit.cover),
+                          )
+                        : pw.Center(
+                            child: pw.Text(
+                              user['name']
+                                  .toString()
+                                  .substring(0, 1)
+                                  .toUpperCase(),
+                              style: pw.TextStyle(
+                                fontSize: 20,
+                                fontWeight: pw.FontWeight.bold,
+                                color: baseColor,
+                              ),
+                            ),
+                          ),
+                  ),
+                  pw.SizedBox(width: 20),
+                  pw.Expanded(
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          user['name'].toString(),
+                          style: pw.TextStyle(
+                            fontSize: 16,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.SizedBox(height: 4),
+                        pw.Text(user['email'].toString()),
+                        pw.SizedBox(height: 4),
+                        pw.Row(
+                          children: [
+                            pw.Text(
+                              "Username: ",
+                              style: pw.TextStyle(
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
+                            pw.Text(user['username'].toString()),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 20),
+
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.end,
+              children: [
+                pw.Text(
+                  "Total Horas Lecionadas: ",
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                ),
+                pw.Text(
+                  "${grandTotalHours.toStringAsFixed(1)} h",
+                  style: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    color: baseColor,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 10),
+
+            pw.TableHelper.fromTextArray(
+              context: context,
+              border: null,
+              headerDecoration: pw.BoxDecoration(color: baseColor),
+              headerStyle: pw.TextStyle(
+                color: PdfColors.white,
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 10,
+              ),
+              rowDecoration: const pw.BoxDecoration(
+                border: pw.Border(
+                  bottom: pw.BorderSide(color: PdfColors.grey300),
+                ),
+              ),
+              cellPadding: const pw.EdgeInsets.symmetric(
+                vertical: 8,
+                horizontal: 5,
+              ),
+              headers: ['Turma', 'Curso', 'Módulo', 'Período', 'Horas'],
+              data: tableData,
+              columnWidths: {
+                0: const pw.FixedColumnWidth(60),
+                1: const pw.FlexColumnWidth(2),
+                2: const pw.FlexColumnWidth(2),
+                3: const pw.FixedColumnWidth(110),
+                4: const pw.FixedColumnWidth(50),
+              },
+              cellAlignments: {4: pw.Alignment.centerRight},
+            ),
+          ],
+        ),
+      );
+
+      return Result.success(await pdf.save());
+    } catch (e) {
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }

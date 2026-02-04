@@ -1,20 +1,24 @@
+import 'package:dio/dio.dart';
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
 import 'package:innovacad_api/src/domain/trainee/repository/i_trainee_repository.dart';
 import 'package:mysql_utils/mysql_utils.dart';
 import 'package:uuid/uuid.dart';
-import 'package:vaden/vaden.dart';
+import 'package:vaden/vaden.dart' as v;
+import 'package:pdf/widgets.dart' as pw;
+import 'package:pdf/pdf.dart';
 
-@Repository()
+@v.Repository()
 class TraineeRepositoryImpl implements ITraineeRepository {
   final RemoteUserService _remoteUserService;
+  final Dio dio;
   final String table = "trainees";
   final String userTable = "user";
   final String relationFields =
       "t.trainee_id, t.user_id, t.birthday_date, u.emailVerified, u.twoFactorEnabled, u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt";
 
-  TraineeRepositoryImpl(this._remoteUserService);
+  TraineeRepositoryImpl(this._remoteUserService, this.dio);
 
   @override
   Future<Result<List<OutputTraineeDao>>> getAll() async {
@@ -236,5 +240,348 @@ class TraineeRepositoryImpl implements ITraineeRepository {
 
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
+  }
+
+  Future<Result<List<int>>> generateTraineePdf(String traineeId) async {
+    try {
+      final db = await MysqlConfiguration.connect();
+
+      final traineeData = await db.query(
+        """
+      SELECT u.name, u.email, u.username, u.image, t.birthday_date, t.trainee_id 
+      FROM trainees t 
+      JOIN user u ON t.user_id = u.id 
+      WHERE t.trainee_id = ?
+      """,
+        whereValues: [traineeId],
+        isStmt: true,
+      );
+
+      if (traineeData.numOfRows == 0) {
+        return Result.failure(
+          AppError(AppErrorType.notFound, "Formando não encontrado"),
+        );
+      }
+
+      final gradesData = await db.query(
+        """
+      SELECT c.name as course, m.name as module, g.grade, g.created_at
+      FROM grades g
+      JOIN classes_modules cm ON g.class_module_id = cm.classes_modules_id
+      JOIN courses_modules crm ON cm.courses_modules_id = crm.courses_modules_id
+      JOIN modules m ON crm.module_id = m.module_id
+      JOIN classes cls ON cm.class_id = cls.class_id
+      JOIN courses c ON cls.course_id = c.course_id
+      WHERE g.trainee_id = ?
+      ORDER BY g.created_at DESC
+      """,
+        whereValues: [traineeId],
+        isStmt: true,
+      );
+
+      double sumGrades = 0;
+      int totalModules = 0;
+
+      final List<List<String>> tableData = [];
+
+      for (var row in gradesData.rows) {
+        final gradeVal = double.tryParse(row['grade'].toString()) ?? 0.0;
+        sumGrades += gradeVal;
+        totalModules++;
+
+        tableData.add([
+          row['course'].toString(),
+          row['module'].toString(),
+          row['created_at'].toString().split(' ')[0],
+          gradeVal.toStringAsFixed(2),
+        ]);
+      }
+
+      final double average = totalModules > 0 ? sumGrades / totalModules : 0.0;
+      final user = traineeData.rows.first;
+      final now = DateTime.now();
+      final dateFormatted =
+          "${now.day}/${now.month}/${now.year} às ${now.hour}:${now.minute}";
+
+      pw.ImageProvider? profileImage;
+      final imagePath = user['image']?.toString();
+
+      if (imagePath != null && imagePath.isNotEmpty) {
+        try {
+          final cleanPath = imagePath.startsWith('/')
+              ? imagePath.substring(1)
+              : imagePath;
+          final imageUrl = "http://localhost:8080/$cleanPath";
+
+          final response = await dio.get(
+            imageUrl,
+            options: Options(responseType: ResponseType.bytes),
+          );
+
+          if (response.statusCode == 200) {
+            profileImage = pw.MemoryImage(response.data);
+            print(response.data);
+          }
+        } catch (e) {
+          print("Erro ao processar imagem do formando com Dio: $e");
+        }
+      }
+
+      final pdf = pw.Document();
+      final baseColor = PdfColors.blue900;
+      final lightColor = PdfColors.grey200;
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(40),
+
+          header: (context) => pw.Column(
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    "INNOVACAD",
+                    style: pw.TextStyle(
+                      color: baseColor,
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
+                  pw.Text(
+                    "Exportado em: $dateFormatted",
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.grey700,
+                    ),
+                  ),
+                ],
+              ),
+              pw.Divider(color: baseColor, thickness: 2),
+              pw.SizedBox(height: 20),
+            ],
+          ),
+
+          footer: (context) => pw.Column(
+            children: [
+              pw.Divider(color: PdfColors.grey400),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    "Innovacad Training Center",
+                    style: const pw.TextStyle(fontSize: 10),
+                  ),
+                  pw.Text(
+                    "Página ${context.pageNumber} de ${context.pagesCount}",
+                    style: const pw.TextStyle(fontSize: 10),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          build: (pw.Context context) => [
+            pw.Center(
+              child: pw.Text(
+                "FICHA TÉCNICA DO FORMANDO",
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ),
+            pw.SizedBox(height: 30),
+
+            pw.Container(
+              padding: const pw.EdgeInsets.all(15),
+              decoration: pw.BoxDecoration(
+                color: lightColor,
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(5)),
+              ),
+              child: pw.Row(
+                children: [
+                  pw.Container(
+                    width: 60,
+                    height: 60,
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.white,
+                      shape: pw.BoxShape.circle,
+                      border: pw.Border.all(color: baseColor, width: 2),
+                    ),
+                    child: profileImage != null
+                        ? pw.ClipOval(
+                            child: pw.Image(profileImage, fit: pw.BoxFit.cover),
+                          )
+                        : pw.Center(
+                            child: pw.Text(
+                              user['name']
+                                  .toString()
+                                  .substring(0, 1)
+                                  .toUpperCase(),
+                              style: pw.TextStyle(
+                                fontSize: 20,
+                                fontWeight: pw.FontWeight.bold,
+                                color: baseColor,
+                              ),
+                            ),
+                          ),
+                  ),
+                  pw.SizedBox(width: 20),
+
+                  pw.Expanded(
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          user['name'].toString(),
+                          style: pw.TextStyle(
+                            fontSize: 16,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.SizedBox(height: 4),
+                        _buildInfoRow("Email:", user['email'].toString()),
+                        pw.SizedBox(height: 4),
+                        pw.Row(
+                          children: [
+                            _buildInfoRow("ID:", user['trainee_id'].toString()),
+                            pw.SizedBox(width: 15),
+                            _buildInfoRow(
+                              "Data Nasc.:",
+                              user['birthday_date'].toString().split(' ')[0],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            pw.SizedBox(height: 30),
+
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.end,
+              children: [
+                pw.Container(
+                  padding: const pw.EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 20,
+                  ),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: baseColor),
+                    borderRadius: const pw.BorderRadius.all(
+                      pw.Radius.circular(5),
+                    ),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text("Módulos Concluídos: $totalModules"),
+                      pw.SizedBox(height: 5),
+                      pw.Row(
+                        children: [
+                          pw.Text(
+                            "Média Global: ",
+                            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                          ),
+                          pw.Text(
+                            average.toStringAsFixed(2),
+                            style: pw.TextStyle(
+                              fontWeight: pw.FontWeight.bold,
+                              fontSize: 16,
+                              color: average >= 10
+                                  ? PdfColors.green700
+                                  : PdfColors.red700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            pw.SizedBox(height: 20),
+
+            pw.Text(
+              "Histórico Académico e Avaliações",
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 10),
+
+            pw.TableHelper.fromTextArray(
+              context: context,
+              border: null,
+              headerDecoration: pw.BoxDecoration(color: baseColor),
+              headerStyle: pw.TextStyle(
+                color: PdfColors.white,
+                fontWeight: pw.FontWeight.bold,
+              ),
+              rowDecoration: const pw.BoxDecoration(
+                border: pw.Border(
+                  bottom: pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+                ),
+              ),
+              cellPadding: const pw.EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 8,
+              ),
+              headers: ['Curso', 'Módulo', 'Data Avaliação', 'Nota Final'],
+              data: tableData,
+              columnWidths: {
+                0: const pw.FlexColumnWidth(2),
+                1: const pw.FlexColumnWidth(3),
+                2: const pw.FixedColumnWidth(80),
+                3: const pw.FixedColumnWidth(60),
+              },
+              cellAlignments: {
+                0: pw.Alignment.centerLeft,
+                1: pw.Alignment.centerLeft,
+                2: pw.Alignment.center,
+                3: pw.Alignment.centerRight,
+              },
+            ),
+
+            if (tableData.isEmpty)
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(top: 20),
+                child: pw.Center(
+                  child: pw.Text(
+                    "Sem registos académicos disponíveis.",
+                    style: pw.TextStyle(
+                      color: PdfColors.grey600,
+                      fontStyle: pw.FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+
+      return Result.success(await pdf.save());
+    } catch (e) {
+      print("Erro ao gerar PDF Formando: $e");
+      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    }
+  }
+
+  pw.Widget _buildInfoRow(String label, String value) {
+    return pw.RichText(
+      text: pw.TextSpan(
+        children: [
+          pw.TextSpan(
+            text: "$label ",
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+          ),
+          pw.TextSpan(text: value),
+        ],
+      ),
+    );
   }
 }
