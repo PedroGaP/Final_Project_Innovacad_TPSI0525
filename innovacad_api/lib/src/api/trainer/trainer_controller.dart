@@ -67,21 +67,33 @@ class TrainerController {
   }
 
   @Get('/<id>/export')
-Future<Response> exportTrainerSheet(@Param() String id) async {
-  if (id.isEmpty) return Response.badRequest(body: 'Invalid ID');
+  Future<Response> exportTrainerSheet(@Param() String id) async {
+    if (id.isEmpty) return Response.badRequest(body: 'Invalid ID');
 
-  final result = await _service.generateTrainerPdf(id);
+    final result = await _service.generateTrainerPdf(id);
 
-  if (result.isFailure) {
-    return Response.internalServerError(body: result.error?.message);
+    if (result.isFailure) {
+      return Response.internalServerError(body: result.error?.message);
+    }
+
+    return Response.ok(
+      result.data,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'attachment; filename="ficha_formador.pdf"',
+      },
+    );
   }
 
-  return Response.ok(
-    result.data,
-    headers: {
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': 'attachment; filename="ficha_formador.pdf"',
-    },
-  );
-}
+  @ApiOperation(
+    summary: 'Get trainer skills by trainer ID',
+    description:
+        'Retrieves the skills from a trainer by their unique identifier',
+  )
+  @ApiParam(name: 'trainerId', description: 'The trainer ID', required: true)
+  @Get('/skills/<trainerId>')
+  Future<Response> getSkills(@Param("trainerId") String id) async {
+    final result = await _service.getSkills(id);
+    return resultToResponse(result);
+  }
 }
