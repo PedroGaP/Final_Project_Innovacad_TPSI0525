@@ -10,7 +10,7 @@ import {
 } from "better-auth/plugins";
 import { createPool, RowDataPacket } from "mysql2/promise";
 import { API } from "@/src/utils/env";
-import { sendTwoFactorEmail } from "../email";
+import { sendTwoFactorEmail, sendVerificationEmail } from "../email";
 import nodemailer from "nodemailer";
 
 const pool = createPool({
@@ -161,12 +161,49 @@ export const auth = betterAuth({
     enabled: true,
     disableSignUp: false,
     sendResetPassword: async ({ user, url }) => {
-      /* ... logica mantida ... */
+      try {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: "peterdroidyt@gmail.com",
+            pass: API.GOOGLE.GMAIL_SECRET,
+          },
+        });
+
+        await sendTwoFactorEmail({
+          user: user as UserWithTwoFactor,
+          otp: url,
+          toEmail: user.email,
+          subject: "Password reset request",
+          transporter: transporter,
+        });
+      } catch (e) {
+        console.log(e);
+      }
     },
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url, token }) => {
-      /* ... logica mantida ... */
+      try {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: "peterdroidyt@gmail.com",
+            pass: API.GOOGLE.GMAIL_SECRET,
+          },
+        });
+
+        await sendVerificationEmail({
+          user: user,
+          toEmail: user.email,
+          url: "http://localhost:5000/dashboard",
+          token: token,
+          subject: "Hello from TypeScript !",
+          transporter: transporter,
+        });
+      } catch (error) {
+        console.error("Error sending email:", error);
+      }
     },
     sendOnSignIn: true,
   },

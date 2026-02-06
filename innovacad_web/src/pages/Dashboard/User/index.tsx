@@ -26,12 +26,12 @@ const UsersPage = () => {
       (u) =>
         u.name.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q) ||
-        u.role.toLowerCase().includes(q)
+        u.role.toLowerCase().includes(q),
     );
   });
 
   const totalPages = createMemo(() =>
-    Math.ceil(filteredUsers().length / PAGE_SIZE)
+    Math.ceil(filteredUsers().length / PAGE_SIZE),
   );
 
   const paginatedUsers = createMemo(() => {

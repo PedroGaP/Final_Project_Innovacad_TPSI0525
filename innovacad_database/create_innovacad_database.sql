@@ -31,12 +31,12 @@ CREATE TABLE IF NOT EXISTS courses
 CREATE TABLE IF NOT EXISTS classes
 (
     class_id             VARCHAR(36)                              DEFAULT (UUID()) PRIMARY KEY,
-    course_id            VARCHAR(36)       NOT NULL,
-    location             VARCHAR(6)        NOT NULL, -- PAL, CAS...
+    course_id            VARCHAR(36)        NOT NULL,
+    location             VARCHAR(6)         NOT NULL, -- PAL, CAS...
     identifier           VARCHAR(20) UNIQUE NOT NULL, -- 0525...
     status               ENUM ('ongoing', 'finished', 'starting') DEFAULT 'starting',
-    start_date_timestamp TIMESTAMP         NOT NULL,
-    end_date_timestamp   TIMESTAMP         NOT NULL,
+    start_date_timestamp TIMESTAMP          NOT NULL,
+    end_date_timestamp   TIMESTAMP          NOT NULL,
     FOREIGN KEY (course_id) REFERENCES courses (course_id) ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
@@ -90,9 +90,11 @@ CREATE TABLE IF NOT EXISTS classes_modules
     class_id           VARCHAR(36) NOT NULL,
     courses_modules_id VARCHAR(36) NOT NULL,
     current_duration   INT(3)      DEFAULT 0,
+    trainer_id         CHAR(36)    NULL,
     UNIQUE (class_id, courses_modules_id),
     FOREIGN KEY (class_id) REFERENCES classes (class_id) ON UPDATE CASCADE ON DELETE CASCADE,
-    FOREIGN KEY (courses_modules_id) REFERENCES courses_modules (courses_modules_id) ON UPDATE CASCADE ON DELETE CASCADE
+    FOREIGN KEY (courses_modules_id) REFERENCES courses_modules (courses_modules_id) ON UPDATE CASCADE ON DELETE CASCADE,
+    FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS grades

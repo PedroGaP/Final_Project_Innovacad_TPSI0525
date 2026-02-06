@@ -1,55 +1,107 @@
-import { createResource, For, Show } from "solid-js";
+import { createResource, Show } from "solid-js";
 import type { Trainer } from "@/types/user";
-import { Module } from "@/types/module";
-import { Class } from "@/types/class";
 import { useApi } from "@/hooks/useApi";
 import toast from "solid-toast";
+import { newPasswordEmail } from "@/components/NewPasswordEmail";
 import EntityTable from "@/components/EntityTable";
+import UserDocumentsManager from "@/components/DocumentManager";
+
+// --- Funções Auxiliares ---
 
 const createEmptyTrainer = (): Trainer =>
   ({
     id: "",
-    name: "",
+    username: "",
     email: "",
+    name: "",
     role: "trainer",
     trainerId: "",
-    username: "",
     token: "",
-    skills: [],
-    class_ids: [],
-    coordinated_class_ids: [],
-    is_coordinator: false,
-    birthdayDate: "" as unknown as number,
+    birthdayDate: "",
     image: null,
     verified: false,
     session_token: "",
-    toJson: () => "",
+    skills: [],
   }) as unknown as Trainer;
 
 const epochToDateTime = (epoch: number | string): string => {
   if (!epoch || isNaN(Number(epoch)) || Number(epoch) <= 0) return "";
+
   const date = new Date(Number(epoch));
   if (isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0, 16);
+
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const yyyy = date.getFullYear();
+  const mm = pad(date.getMonth() + 1);
+  const dd = pad(date.getDate());
+
+  return `${yyyy}-${mm}-${dd}`;
 };
 
 const validateTrainer = (
   trainer: Trainer,
 ): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
-  if (!trainer.name?.trim()) errors.push("Name is required");
-  if (!trainer.email?.trim()) errors.push("Email is required");
-  if (!trainer.username?.trim()) errors.push("Username is required");
+
+  const name = String(trainer.name || "").trim();
+  if (!name) errors.push("Name is required");
+
+  const email = String(trainer.email || "").trim();
+  if (!email) {
+    errors.push("Email is required");
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.push("Email is invalid");
+  }
+
+  const username = String(trainer.username || "").trim();
+  if (!username) {
+    errors.push("Username is required");
+  } else if (username.length < 3) {
+    errors.push("Username must be at least 3 characters");
+  }
+
   if (!trainer.birthdayDate) errors.push("Birthday date is required");
-  return { valid: errors.length === 0, errors };
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
 };
+
+const getChangedFields = (
+  oldTrainer: Trainer,
+  newTrainer: Trainer,
+): {
+  name?: string;
+  email?: string;
+  username?: string;
+  birthday_date?: string;
+} => {
+  const changes: any = {};
+
+  if (String(oldTrainer.name) !== String(newTrainer.name)) {
+    changes.name = String(newTrainer.name);
+  }
+
+  if (String(oldTrainer.email) !== String(newTrainer.email)) {
+    changes.email = String(newTrainer.email);
+  }
+
+  if (String(oldTrainer.birthdayDate) !== String(newTrainer.birthdayDate)) {
+    changes.birthday_date = epochToDateTime(newTrainer.birthdayDate!);
+  }
+
+  return changes;
+};
+
+// --- Componente Principal ---
 
 const TrainerPage = () => {
   const api = useApi();
 
-  const [usersData, { mutate }] = createResource<Trainer[]>(api.fetchTrainers);
-  const [modulesData] = createResource<Module[]>(api.fetchModules);
-  const [classesData] = createResource<Class[]>(api.fetchClasses);
+  const [trainersData, { mutate }] = createResource<Trainer[]>(
+    api.fetchTrainers,
+  );
 
   const handleSaveTrainer = async (
     trainer: Trainer,
@@ -63,314 +115,96 @@ const TrainerPage = () => {
       }
 
       if (original) {
-        const changedFields: any = {};
-
-        if (trainer.name !== original.name) changedFields.name = trainer.name;
-        if (trainer.email !== original.email)
-          changedFields.email = trainer.email;
-        if (trainer.username !== original.username)
-          changedFields.username = trainer.username;
-
-        if (trainer.is_coordinator !== original.is_coordinator) {
-          changedFields.is_coordinator = trainer.is_coordinator;
-        }
-
-        const newDate = epochToDateTime(trainer.birthdayDate!);
-        const oldDate = epochToDateTime(original.birthdayDate!);
-        if (newDate !== oldDate) changedFields.birthday_date = newDate;
-
-        const originalSkills = original.skills || [];
-        const currentSkills = trainer.skills || [];
-
-        const skillsToAdd = currentSkills.filter((curr) => {
-          const orig = originalSkills.find(
-            (o) => o.module_id === curr.module_id,
-          );
-          return (
-            !orig ||
-            Number(orig.competence_level) !== Number(curr.competence_level)
-          );
-        });
-
-        const skillsToRemoveIds = originalSkills
-          .filter(
-            (orig) =>
-              !currentSkills.some((curr) => curr.module_id === orig.module_id),
-          )
-          .map((s) => s.module_id);
-
-        if (skillsToAdd.length > 0) changedFields.skills_to_add = skillsToAdd;
-        if (skillsToRemoveIds.length > 0)
-          changedFields.skills_to_remove = skillsToRemoveIds.join(",");
-
-        const originalClasses = original.coordinated_class_ids || [];
-        const currentClasses = trainer.coordinated_class_ids || [];
-
-        const classesToAdd = currentClasses.filter(
-          (id) => !originalClasses.includes(id),
-        );
-        const classesToRemove = originalClasses.filter(
-          (id) => !currentClasses.includes(id),
-        );
-
-        if (classesToAdd.length > 0)
-          changedFields.class_ids_to_add = classesToAdd;
-        if (classesToRemove.length > 0)
-          changedFields.class_ids_to_remove = classesToRemove;
+        // --- UPDATE ---
+        const changedFields = getChangedFields(original, trainer);
 
         if (Object.keys(changedFields).length === 0) return;
 
-        const updatedTrainerFromApi = await api.updateTrainer(
-          String(trainer.trainerId),
-          changedFields,
-        );
+        const idToUpdate = String(trainer.trainerId || trainer.id);
 
-        updatedTrainerFromApi.skills = [...trainer.skills];
-        updatedTrainerFromApi.coordinated_class_ids = [
-          ...(trainer.coordinated_class_ids || []),
-        ];
-        updatedTrainerFromApi.is_coordinator = trainer.is_coordinator;
+        await api.updateTrainer(idToUpdate, changedFields);
 
         mutate(
           (prev) =>
             prev?.map((u) =>
-              u.trainerId === updatedTrainerFromApi.trainerId
-                ? updatedTrainerFromApi
+              u.trainerId === trainer.trainerId || u.id === trainer.id
+                ? trainer
                 : u,
             ) || [],
         );
-        toast.success("Trainer updated successfully");
+
+        toast.success(`Trainer updated successfully`);
       } else {
-        const generatedPassword =
-          "T" + Math.random().toString(36).slice(-8) + "1@";
+        // --- CREATE ---
+        const tempPassword = "T" + Math.random().toString(36).slice(-10) + "1@";
 
         const trainerObj = {
-          name: trainer.name || "",
-          email: trainer.email || "",
-          username: trainer.username || "",
+          name: String(trainer.name),
+          email: String(trainer.email),
+          username: String(trainer.username),
           birthdayDate: epochToDateTime(trainer.birthdayDate!),
-          skills_to_add: trainer.skills || [],
-          password: generatedPassword,
-          is_coordinator: trainer.is_coordinator,
-          class_ids: trainer.coordinated_class_ids,
+          password: tempPassword,
         };
 
-        const newTrainerFromApi = await api.createTrainer(trainerObj);
-
-        newTrainerFromApi.skills = [...(trainer.skills || [])];
-        newTrainerFromApi.coordinated_class_ids = [
-          ...(trainer.coordinated_class_ids || []),
-        ];
-        newTrainerFromApi.is_coordinator = trainer.is_coordinator;
-
-        mutate((prev) => [...(prev || []), newTrainerFromApi]);
+        const newTrainer = await api.createTrainer(trainerObj);
 
         try {
           await api.sendEmail({
-            to: trainerObj.email,
-            subject: "Welcome to InnovAcad - Your Credentials",
-            body: `Hello ${trainerObj.name},\n\nYour Trainer account has been created.\n\nUsername: ${trainerObj.username}\nPassword: ${generatedPassword}\n\nPlease login and change your password.`,
+            to: trainer.email!,
+            subject: "Welcome to Innovacad - Trainer Credentials",
+            body: newPasswordEmail(tempPassword),
           });
-          toast.success("Trainer created and email sent.");
-        } catch (e) {
-          console.error("Failed to send email", e);
-          toast.success("Trainer created (Email failed to send).");
+        } catch (error) {
+          console.error(`Email fail for ${trainer.email}`, error);
+          toast.error("Trainer created but failed to send email.");
         }
+
+        mutate((prev) => [...(prev || []), newTrainer]);
+        toast.success("Trainer created successfully. Credentials sent.");
       }
-    } catch (error: any) {
-      if (error.message !== "Validation failed") {
-        console.error(error);
+    } catch (error) {
+      if (error instanceof Error && error.message !== "Validation failed") {
         toast.error(error.message || "Failed to save trainer");
       }
       throw error;
     }
   };
 
-  const confirmDelete = async (userToDelete: Trainer) => {
-    await api.deleteTrainer(String(userToDelete.trainerId));
+  const confirmDelete = async (trainerToDelete: Trainer) => {
+    const idToDelete = String(trainerToDelete.trainerId || trainerToDelete.id);
+    await api.deleteTrainer(idToDelete);
+
     mutate(
-      (prev) =>
-        prev?.filter((u) => u.trainerId !== userToDelete.trainerId) || [],
+      (prev) => prev?.filter((u) => (u.trainerId || u.id) !== idToDelete) || [],
     );
+    toast.success("Trainer deleted");
   };
 
-  const renderCustomFields = (formData: Trainer, setFormData: any) => {
-    const toggleSkill = (moduleId: string) => {
-      const current = formData.skills || [];
-      const exists = current.find((s) => s.module_id === moduleId);
+  const handleExport = async (trainer: Trainer) => {
+    try {
+      toast.loading("Generating Trainer Sheet...", { id: "exp-trainer" });
 
-      if (exists) {
-        setFormData((prev: Trainer) => ({
-          ...prev,
-          skills: prev.skills.filter((s) => s.module_id !== moduleId),
-        }));
-      } else {
-        setFormData((prev: Trainer) => ({
-          ...prev,
-          skills: [
-            ...(prev.skills || []),
-            { module_id: moduleId, competence_level: 1 },
-          ],
-        }));
-      }
-    };
+      const idToExport = String(trainer.trainerId || trainer.id);
 
-    const updateLevel = (moduleId: string, level: number) => {
-      setFormData((prev: Trainer) => ({
-        ...prev,
-        skills: prev.skills.map((s) =>
-          s.module_id === moduleId ? { ...s, competence_level: level } : s,
-        ),
-      }));
-    };
+      await api.exportTrainerSheet(
+        idToExport,
+        String(trainer.name || "Trainer"),
+      );
 
-    const toggleCoordinator = (e: any) => {
-      setFormData((prev: Trainer) => ({
-        ...prev,
-        is_coordinator: e.target.checked,
-      }));
-    };
-
-    const toggleClass = (classId: string) => {
-      const currentClasses = formData.coordinated_class_ids || [];
-
-      if (currentClasses.includes(classId)) {
-        setFormData((prev: Trainer) => ({
-          ...prev,
-          coordinated_class_ids: prev.coordinated_class_ids?.filter(
-            (id) => id !== classId,
-          ),
-        }));
-      } else {
-        setFormData((prev: Trainer) => ({
-          ...prev,
-          coordinated_class_ids: [
-            ...(prev.coordinated_class_ids || []),
-            classId,
-          ],
-        }));
-      }
-    };
-
-    return (
-      <div class="space-y-6 mt-6">
-        {/* SKILLS SECTION */}
-        <div class="form-control w-full border p-4 rounded-xl bg-base-100 shadow-sm">
-          <header class="mb-4 flex justify-between items-center">
-            <div>
-              <h3 class="text-lg font-bold">Trainer Skills</h3>
-              <p class="text-xs opacity-60">
-                Select modules and assign competence.
-              </p>
-            </div>
-            <span class="badge badge-neutral">
-              {formData.skills?.length || 0} Selected
-            </span>
-          </header>
-
-          <div class="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-            <For
-              each={modulesData()}
-              fallback={<span class="loading loading-dots loading-xs"></span>}
-            >
-              {(mod) => {
-                const skill = () =>
-                  formData.skills?.find((s) => s.module_id === mod.module_id);
-                return (
-                  <label
-                    class={`flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer ${skill() ? "border-primary bg-primary/5" : "border-base-200 hover:bg-base-200"}`}
-                  >
-                    <div class="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        class="checkbox checkbox-primary checkbox-sm"
-                        checked={!!skill()}
-                        onChange={() => toggleSkill(mod.module_id!)}
-                      />
-                      <span class="text-sm font-medium">{mod.name}</span>
-                    </div>
-
-                    <Show when={skill()}>
-                      <select
-                        class="select select-bordered select-xs"
-                        value={skill()?.competence_level}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) =>
-                          updateLevel(
-                            mod.module_id!,
-                            parseInt(e.currentTarget.value),
-                          )
-                        }
-                      >
-                        <option value={1}>Básico</option>
-                        <option value={2}>Expert</option>
-                      </select>
-                    </Show>
-                  </label>
-                );
-              }}
-            </For>
-          </div>
-        </div>
-
-        {/* COORDINATOR SECTION */}
-        <div class="form-control w-full border p-4 rounded-xl bg-base-100 shadow-sm">
-          <header class="mb-4 flex justify-between items-center">
-            <div>
-              <h3 class="text-lg font-bold">Coordinator Role</h3>
-              <p class="text-xs opacity-60">Is this trainer a coordinator?</p>
-            </div>
-            <input
-              type="checkbox"
-              class="toggle toggle-primary"
-              checked={!!formData.is_coordinator}
-              onChange={toggleCoordinator}
-            />
-          </header>
-
-          <Show when={formData.is_coordinator}>
-            <div class="divider text-xs opacity-50 my-2">
-              Coordinated Classes
-            </div>
-            <div class="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-              <For
-                each={classesData()}
-                fallback={
-                  <span class="text-xs opacity-50">No classes available</span>
-                }
-              >
-                {(cls) => (
-                  <label
-                    class={`flex items-center gap-3 p-2 rounded-lg border transition-all cursor-pointer ${formData.coordinated_class_ids?.includes(cls.class_id!) ? "border-primary bg-primary/5" : "border-base-200 hover:bg-base-200"}`}
-                  >
-                    <input
-                      type="checkbox"
-                      class="checkbox checkbox-xs checkbox-primary"
-                      checked={formData.coordinated_class_ids?.includes(
-                        cls.class_id!,
-                      )}
-                      onChange={() => toggleClass(cls.class_id!)}
-                    />
-                    <span class="text-sm font-medium">
-                      {cls.identifier || cls.class_id?.substring(0, 8)}
-                    </span>
-                    <span class="text-xs opacity-50 ml-auto">
-                      {cls.course_id || "No Course"}
-                    </span>
-                  </label>
-                )}
-              </For>
-            </div>
-          </Show>
-        </div>
-      </div>
-    );
+      toast.dismiss("exp-trainer");
+      toast.success("Download started!");
+    } catch (error: any) {
+      toast.dismiss("exp-trainer");
+      console.error(error);
+      toast.error(error.message || "Failed to export document.");
+    }
   };
 
   return (
     <EntityTable<Trainer>
       title="Manage Trainers"
-      data={usersData}
+      data={trainersData}
+      handleExportClick={handleExport}
       handleEditClick={(user) => ({
         ...user,
         birthdayDate: epochToDateTime(user.birthdayDate!),
@@ -378,17 +212,12 @@ const TrainerPage = () => {
       handleAddClick={() => createEmptyTrainer()}
       confirmDelete={confirmDelete}
       handleSave={handleSaveTrainer}
-      renderCustomFields={renderCustomFields}
-      filter={(e, search) => {
+      filter={(e: Trainer, search: string) => {
         const s = search.toLowerCase();
-        const matchesSkills = e.skills?.some((sk) =>
-          sk.module_id.toLowerCase().includes(s),
-        );
         return (
-          e.name?.toLowerCase().includes(s) ||
-          e.email?.toLowerCase().includes(s) ||
-          e.username?.toLowerCase().includes(s) ||
-          matchesSkills ||
+          (e.name?.toLowerCase().includes(s) ||
+            e.email?.toLowerCase().includes(s) ||
+            e.username?.toLowerCase().includes(s)) ??
           false
         );
       }}
@@ -399,49 +228,73 @@ const TrainerPage = () => {
           canCopy: true,
           smaller: true,
         },
-        { formattedName: "Name", fieldName: "name", bigger: true },
-        { formattedName: "Email", fieldName: "email", canCopy: true },
-        { formattedName: "Username", fieldName: "username" },
         {
-          formattedName: "Role",
-          fieldName: "role",
-          capitalizeValue: true,
+          formattedName: "Name",
+          fieldName: "name",
+        },
+        {
+          formattedName: "Email",
+          fieldName: "email",
+          canCopy: true,
+        },
+        {
+          formattedName: "Username",
+          fieldName: "username",
+        },
+        {
+          formattedName: "Birth Date",
+          fieldName: "birthdayDate",
+          customGeneration: (e: Trainer) => {
+            const d = epochToDateTime(e.birthdayDate!);
+            return <span class="text-sm">{d}</span>;
+          },
           smaller: true,
         },
         {
-          formattedName: "Coordinator",
-          fieldName: "is_coordinator",
-          customGeneration: (e) =>
-            e.is_coordinator ? (
-              <span class="badge badge-primary badge-sm gap-1">
-                Yes{" "}
-                <span class="opacity-50 text-[10px]">
-                  ({e.coordinated_class_ids?.length || 0})
-                </span>
-              </span>
-            ) : (
-              <span class="badge badge-ghost badge-sm opacity-50">No</span>
-            ),
-        },
-        {
-          formattedName: "Skills",
-          fieldName: "skills",
-          customGeneration: (e) => (
-            <span class="badge badge-ghost">{e.skills?.length || 0}</span>
-          ),
+          formattedName: "Verified",
+          fieldName: "verified",
+          smaller: true,
         },
       ]}
       formFields={[
-        { label: "Name", name: "name", required: true, type: "text" },
-        { label: "Email", name: "email", required: true, type: "email" },
-        { label: "Username", name: "username", required: true, type: "text" },
         {
-          label: "Birthday",
+          label: "Name",
+          name: "name",
+          required: true,
+          type: "text",
+        },
+        {
+          label: "Email",
+          name: "email",
+          required: true,
+          type: "email",
+        },
+        {
+          label: "Username",
+          name: "username",
+          required: true,
+          type: "text",
+        },
+        {
+          label: "Birthday Date",
           name: "birthdayDate",
           required: true,
-          type: "datetime-local",
+          type: "date",
         },
       ]}
+      // --- GESTÃO DE DOCUMENTOS ---
+      renderCustomFields={(formData) => (
+        <Show
+          when={formData.id}
+          fallback={
+            <div class="alert alert-info text-xs mt-4">
+              <span>Save the trainer first to upload documents.</span>
+            </div>
+          }
+        >
+          <UserDocumentsManager userId={String(formData.id)} />
+        </Show>
+      )}
     />
   );
 };

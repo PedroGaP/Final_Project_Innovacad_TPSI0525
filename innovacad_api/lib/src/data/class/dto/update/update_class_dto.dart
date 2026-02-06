@@ -1,4 +1,5 @@
 import 'package:innovacad_api/src/core/core.dart';
+import 'package:innovacad_api/src/data/class_module/dto/link/link_class_module_dto.dart';
 import 'package:innovacad_api/src/data/data.dart';
 import 'package:vaden/vaden.dart' as v;
 import 'package:json_annotation/json_annotation.dart';
@@ -34,9 +35,9 @@ class UpdateClassDto {
   @DateTimeConverter()
   final DateTime? endDateTimestamp;
 
-  @JsonKey(name: 'add_modules_ids')
-  @v.JsonKey('add_modules_ids')
-  final List<String>? addModulesIds;
+  @JsonKey(name: 'add_modules')
+  @v.JsonKey('add_modules')
+  final List<LinkClassModuleDto>? addModules;
 
   @JsonKey(name: 'remove_modules_ids')
   @v.JsonKey('remove_modules_ids')
@@ -49,7 +50,7 @@ class UpdateClassDto {
     this.status,
     this.startDateTimestamp,
     this.endDateTimestamp,
-    this.addModulesIds,
+    this.addModules,
     this.removeClassesModulesIds,
   });
 

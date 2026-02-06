@@ -1,4 +1,11 @@
-import { createMemo, createSignal, For, Show, type JSXElement } from "solid-js";
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  Show,
+  type JSXElement,
+} from "solid-js";
 import CopyToClipboard from "../CopyToClipboard";
 import capitalize from "@/utils/capitalize";
 import { Icon } from "../Icon";
@@ -26,8 +33,8 @@ interface Props<T> {
   handleEditClick: (entity: T) => any;
   handleSave: (entity: T, original: T | null) => any;
   confirmDelete: (entity: T) => any;
+  handleExportClick?: (entity: T) => any;
   filter?: (entity: T, search: string) => boolean;
-
   renderCustomFields?: (
     formData: T,
     setFormData: (prev: (prev: T) => T) => void,
@@ -36,7 +43,8 @@ interface Props<T> {
 }
 
 export default function EntityTable<T>(props: Props<T>) {
-  const [page, setPage] = createSignal(!props.data() ? 1 : 0);
+  // --- CORREÇÃO AQUI: Página começa sempre em 1 ---
+  const [page, setPage] = createSignal(1);
   const [search, setSearch] = createSignal("");
   const [editingEntity, setEditingEntity] = createSignal<T | null>(null);
   const [deletingEntity, setDeletingEntity] = createSignal<T | null>(null);
@@ -49,11 +57,24 @@ export default function EntityTable<T>(props: Props<T>) {
     );
   });
 
-  const totalPages = createMemo(() =>
-    Math.ceil(filteredEntity().length / PAGE_SIZE),
-  );
+  const totalPages = createMemo(() => {
+    const total = Math.ceil(filteredEntity().length / PAGE_SIZE);
+    return total === 0 ? 1 : total; // Garante que há sempre pelo menos "Página 1"
+  });
+
+  // --- NOVO: Reseta a página quando a pesquisa muda ---
+  createEffect(() => {
+    // Apenas acede ao search() para criar dependência
+    search();
+    setPage(1);
+  });
+  // ----------------------------------------------------
 
   const paginatedEntity = createMemo(() => {
+    // Se a página atual for maior que o total (ex: apagaste itens), volta à última
+    if (page() > totalPages()) {
+      setPage(totalPages());
+    }
     const start = (page() - 1) * PAGE_SIZE;
     return filteredEntity().slice(start, start + PAGE_SIZE);
   });
@@ -93,7 +114,6 @@ export default function EntityTable<T>(props: Props<T>) {
           </div>
         </CopyToClipboard>
       );
-    console.log(tableData);
 
     return (
       <td
@@ -117,6 +137,7 @@ export default function EntityTable<T>(props: Props<T>) {
             <button
               class="btn btn-primary btn-sm"
               onClick={() => {
+                // Passa função para garantir valor atualizado
                 const newItem = props.handleAddClick(null as any);
                 setEditingEntity(() => newItem);
                 setOriginalEntity(null);
@@ -133,7 +154,6 @@ export default function EntityTable<T>(props: Props<T>) {
               class="input input-bordered input-sm w-full max-w-xs"
               onInput={(e) => {
                 setSearch(e.currentTarget.value);
-                setPage(1);
               }}
             />
           </div>
@@ -141,7 +161,6 @@ export default function EntityTable<T>(props: Props<T>) {
             <table class="table table-zebra table-pin-rows table-auto w-full ">
               <thead>
                 <tr class="z-10">
-                  {" "}
                   <For each={props.fields}>
                     {(field) => (
                       <th
@@ -155,44 +174,70 @@ export default function EntityTable<T>(props: Props<T>) {
                       </th>
                     )}
                   </For>
-                  <th class="w-28 text-right bg-base-100">Actions</th>
+                  <th class="w-48 text-right bg-base-100">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <For each={paginatedEntity()}>
-                  {(entity) => (
+                <Show
+                  when={paginatedEntity().length > 0}
+                  fallback={
                     <tr>
-                      <For each={props.fields}>
-                        {(field) => generateTableData(field, entity)}
-                      </For>
-                      <td class="text-right space-x-2">
-                        <button
-                          class="btn btn-ghost btn-sm"
-                          onClick={() => {
-                            const prepared = props.handleEditClick(entity);
-                            setEditingEntity(() => prepared);
-                            setOriginalEntity(() => prepared);
-                          }}
-                        >
-                          <Icon name="Pencil" size={16} />
-                        </button>
-                        <button
-                          class="btn btn-ghost btn-sm text-error"
-                          onClick={() => setDeletingEntity(() => entity)}
-                        >
-                          <Icon name="Trash" size={16} />
-                        </button>
+                      <td
+                        colspan={props.fields.length + 1}
+                        class="text-center py-10 opacity-50"
+                      >
+                        No data found
                       </td>
                     </tr>
-                  )}
-                </For>
+                  }
+                >
+                  <For each={paginatedEntity()}>
+                    {(entity) => (
+                      <tr>
+                        <For each={props.fields}>
+                          {(field) => generateTableData(field, entity)}
+                        </For>
+                        <td class="text-right">
+                          <div class="flex justify-end gap-1">
+                            <Show when={props.handleExportClick}>
+                              <button
+                                class="btn btn-ghost btn-sm text-info"
+                                onClick={() => props.handleExportClick!(entity)}
+                                title="Export PDF"
+                              >
+                                <Icon name="Download" size={16} />
+                              </button>
+                            </Show>
+
+                            <button
+                              class="btn btn-ghost btn-sm"
+                              onClick={() => {
+                                const prepared = props.handleEditClick(entity);
+                                setEditingEntity(() => prepared);
+                                setOriginalEntity(() => prepared);
+                              }}
+                            >
+                              <Icon name="Pencil" size={16} />
+                            </button>
+                            <button
+                              class="btn btn-ghost btn-sm text-error"
+                              onClick={() => setDeletingEntity(() => entity)}
+                            >
+                              <Icon name="Trash" size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </For>
+                </Show>
               </tbody>
             </table>
           </div>
 
           <div class="flex justify-between items-center shrink-0 pt-2">
             <span class="text-sm opacity-60">
-              Page {page()} of {totalPages()}
+              Page {page()} of {totalPages()} ({filteredEntity().length} items)
             </span>
             <div class="join">
               <button
@@ -202,20 +247,13 @@ export default function EntityTable<T>(props: Props<T>) {
               >
                 «
               </button>
-              <For each={Array.from({ length: totalPages() })}>
-                {(_, i) => (
-                  <button
-                    class="join-item btn btn-sm"
-                    classList={{ "btn-active": page() === i() + 1 }}
-                    onClick={() => setPage(i() + 1)}
-                  >
-                    {i() + 1}
-                  </button>
-                )}
-              </For>
+
+              {/* Paginação Simplificada para evitar excesso de botões */}
+              <button class="join-item btn btn-sm btn-active">{page()}</button>
+
               <button
                 class="join-item btn btn-sm"
-                disabled={page() === totalPages()}
+                disabled={page() >= totalPages()}
                 onClick={() => setPage(page() + 1)}
               >
                 »

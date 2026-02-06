@@ -187,6 +187,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
     MysqlUtils? db;
     try {
       db = await MysqlConfiguration.connect();
+
+      // 1. Basic Validation (In-memory)
       if (dto.startTime.isAfter(dto.endTime) ||
           dto.startTime.isAtSameMomentAs(dto.endTime)) {
         return Result.failure(
@@ -197,6 +199,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         );
       }
 
+      // 2. Check existing trainer conflict for this module (Single Query)
       final trainerCheckSql =
           "SELECT DISTINCT trainer_id FROM schedules WHERE class_module_id = ? LIMIT 1";
       final trainerResult = await db.query(
@@ -218,6 +221,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         }
       }
 
+      // 3. Fetch Availability Slots (Single Query)
       final availabilitySql = """
         SELECT rs.start_time, rs.end_time, a.availability_id, a.is_booked
         FROM availabilities a
@@ -242,9 +246,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         );
       }
 
-      List<Map<String, dynamic>> matchingAvailabilities = [];
-
-      List<Map<String, dynamic>> slotRanges = [];
+      // 4. Process Slots In-Memory
+      List<String> availabilitiesToBook = [];
 
       for (var row in availResults.rowsAssoc) {
         final data = row.assoc();
@@ -253,17 +256,14 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         final sStart = _combineDateAndTime(dto.startTime, data['start_time']);
         final sEnd = _combineDateAndTime(dto.startTime, data['end_time']);
 
+        // Check intersection: Slot Start < Request End AND Slot End > Request Start
         if (sStart.isBefore(dto.endTime) && sEnd.isAfter(dto.startTime)) {
-          if (isBooked) continue;
-
-          slotRanges.add({
-            'start': sStart,
-            'end': sEnd,
-            'id': data['availability_id'],
-          });
+          if (isBooked) continue; // Skip booked slots
+          availabilitiesToBook.add(data['availability_id'].toString());
         }
       }
 
+      // 5. Check Availability Logic (Likely heavy logic, keep as is or optimize separately)
       final isAvailable = await checkTrainerAvailability(
         db,
         dto.trainerId,
@@ -280,10 +280,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         );
       }
 
-      matchingAvailabilities = slotRanges
-          .map((e) => {'availability_id': e['id']})
-          .toList();
-
+      // 6. Check Conflicts (Optimized queries already)
       final conflictTrainer = await db.query(
         """
         SELECT schedule_id FROM schedules 
@@ -293,6 +290,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
             (start_date_timestamp < ? AND end_date_timestamp > ?) OR 
             (start_date_timestamp >= ? AND end_date_timestamp <= ?)
         )
+        LIMIT 1
       """,
         whereValues: [
           dto.trainerId,
@@ -315,6 +313,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         );
       }
 
+      // Get class_id first
       final classInfo = await db.getOne(
         table: 'classes_modules',
         where: {'classes_modules_id': dto.classModuleId},
@@ -331,6 +330,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
             (s.start_date_timestamp < ? AND s.end_date_timestamp > ?) OR
             (s.start_date_timestamp >= ? AND s.end_date_timestamp <= ?)
         )
+        LIMIT 1
       """,
         whereValues: [
           classId,
@@ -353,9 +353,12 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         );
       }
 
+      // 7. Perform Writes in Transaction (OPTIMIZED)
       final scheduleId = Uuid().v4();
+      final duration = dto.endTime.difference(dto.startTime).inMinutes / 60.0;
 
       await db.transaction((txn) async {
+        // A. Insert Schedule
         await txn.insert(
           table: 'schedules',
           insertData: {
@@ -365,34 +368,37 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
             'room_id': dto.roomId,
             'start_date_timestamp': _toSqlDate(dto.startTime),
             'end_date_timestamp': _toSqlDate(dto.endTime),
-            'total_hours':
-                dto.endTime.difference(dto.startTime).inMinutes / 60.0,
+            'total_hours': duration,
             'regime_type': 0,
             'is_online': 0,
           },
         );
 
-        for (final avail in matchingAvailabilities) {
-          final availId = avail['availability_id'];
+        if (availabilitiesToBook.isNotEmpty) {
+          // B. Batch Insert Slots
+          // Construct multi-value insert: INSERT INTO x VALUES (...), (...), (...)
+          final slotsValues = <String>[];
+          for (final availId in availabilitiesToBook) {
+            final slotId = Uuid().v4();
+            slotsValues.add("('$slotId', '$scheduleId', '$availId', 1)");
+            // Assuming slot_status is int, wrap strings in quotes
+          }
 
-          await txn.insert(
-            table: 'schedule_slots',
-            insertData: {
-              'slot_id': Uuid().v4(),
-              'schedule_id': scheduleId,
-              'availability_id': availId,
-              'slot_status': 1,
-            },
-          );
+          if (slotsValues.isNotEmpty) {
+            await txn.query(
+              "INSERT INTO schedule_slots (slot_id, schedule_id, availability_id, slot_status) VALUES ${slotsValues.join(',')}",
+            );
+          }
 
+          // C. Batch Update Availabilities
+          // UPDATE availabilities SET is_booked = 1 WHERE availability_id IN ('id1', 'id2', ...)
+          final idsList = availabilitiesToBook.map((id) => "'$id'").join(',');
           await txn.query(
-            "UPDATE availabilities SET is_booked = 1 WHERE availability_id = ?",
-            whereValues: [availId],
-            isStmt: true,
+            "UPDATE availabilities SET is_booked = 1 WHERE availability_id IN ($idsList)",
           );
         }
 
-        final duration = dto.endTime.difference(dto.startTime).inMinutes / 60.0;
+        // D. Update Module Duration
         await txn.query(
           "UPDATE classes_modules SET current_duration = current_duration + ? WHERE classes_modules_id = ?",
           whereValues: [duration, dto.classModuleId],
@@ -829,8 +835,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
             await db.commit();
 
             mod['current_duration'] = double.parse(mod['duration'].toString());
-            completionDates[classModId] =
-                moduleDateCursor;
+            completionDates[classModId] = moduleDateCursor;
             madeProgress = true;
           } catch (e) {
             print("Erro no módulo ${mod['name']}: $e");

@@ -7,13 +7,15 @@ import toast from "solid-toast";
 const TwoFactorCard = () => {
   const { user } = useUserDetails();
   const { enable2FA, disable2FA, is2FAEnabled } = useApi();
-  
+
   const [is2FA, setIs2FA] = createSignal<boolean>(false);
   const [password, setPassword] = createSignal<string>("");
   const [isLoading, setIsLoading] = createSignal<boolean>(false);
 
   createEffect(async () => {
     const userId = user()?.id;
+    console.log(userId);
+    console.log(user());
     if (!userId) return;
 
     try {
@@ -42,9 +44,9 @@ const TwoFactorCard = () => {
         setIs2FA(true);
         toast.success("2FA Enabled!");
       }
-      setPassword(""); 
+      setPassword("");
     } catch (error) {
-      console.log(password())
+      console.log(password());
       toast.error("Operation failed. Check your password.");
     } finally {
       setIsLoading(false);
@@ -55,14 +57,18 @@ const TwoFactorCard = () => {
     <div class="flex flex-col rounded-lg border border-base-300 bg-base-200 transition-all duration-200">
       <div class="flex items-center justify-between p-4">
         <div class="flex items-center gap-4">
-          <div class={`w-10 h-10 rounded-lg flex items-center justify-center shadow-sm ${is2FA() ? 'bg-primary text-primary-content' : 'bg-white text-primary'}`}>
+          <div
+            class={`w-10 h-10 rounded-lg flex items-center justify-center shadow-sm ${is2FA() ? "bg-primary text-primary-content" : "bg-white text-primary"}`}
+          >
             <Icon name="Shield" size={30} />
           </div>
 
           <div class="flex flex-col">
             <span class="font-bold text-sm">Two-Factor Authentication</span>
             <span class="text-xs opacity-60">
-              {is2FA() ? "Your account is secure." : "Secure your account with 2FA."}
+              {is2FA()
+                ? "Your account is secure."
+                : "Secure your account with 2FA."}
             </span>
           </div>
         </div>
@@ -79,8 +85,10 @@ const TwoFactorCard = () => {
         <div class="flex flex-col gap-3">
           <div class="text-sm">
             <span class="opacity-70">Please enter your password to </span>
-            <span class={`font-bold ${is2FA() ? 'text-error' : 'text-primary'}`}>
-              {is2FA() ? 'disable' : 'enable'}
+            <span
+              class={`font-bold ${is2FA() ? "text-error" : "text-primary"}`}
+            >
+              {is2FA() ? "disable" : "enable"}
             </span>
             <span class="opacity-70"> 2FA.</span>
           </div>
@@ -94,21 +102,23 @@ const TwoFactorCard = () => {
                 type="password"
                 placeholder="Current Password"
                 class="input input-bordered join-item w-full pl-10 focus:outline-offset-0"
-                value={password()} 
+                value={password()}
                 disabled={isLoading()}
                 onInput={(e) => setPassword(e.target.value)}
               />
             </div>
 
             <button
-              class={`btn join-item border-none w-24 ${is2FA() ? 'btn-error text-white' : 'btn-primary'}`}
+              class={`btn join-item border-none w-24 ${is2FA() ? "btn-error text-white" : "btn-primary"}`}
               onClick={handle2FA}
               disabled={isLoading()}
             >
               {isLoading() ? (
                 <span class="loading loading-spinner loading-xs"></span>
+              ) : is2FA() ? (
+                "Disable"
               ) : (
-                is2FA() ? 'Disable' : 'Enable'
+                "Enable"
               )}
             </button>
           </div>

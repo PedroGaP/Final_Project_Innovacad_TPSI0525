@@ -101,43 +101,46 @@ from trainers_classes_coordinator;
 
 -- Queries estatisticas
 
-SELECT
-    status,
-    COUNT(*) AS total
+SELECT status,
+       COUNT(*) AS total
 FROM classes
 WHERE status IN ('finished', 'ongoing')
 GROUP BY status;
 
 SELECT COUNT(DISTINCT e.trainee_id) AS trainees_currently_active
 FROM enrollments e
-JOIN classes c ON e.class_id = c.class_id
+         JOIN classes c ON e.class_id = c.class_id
 WHERE c.status = 'ongoing';
 
-SELECT
-    area,
-    COUNT(course_id) AS courses_count
+SELECT area,
+       COUNT(course_id) AS courses_count
 FROM courses
 GROUP BY area
 ORDER BY courses_count DESC;
 
-SELECT
-    t.trainer_id,
-    u.name,
-    SUM(s.total_hours) AS total_hours_taught
+SELECT t.trainer_id,
+       u.name,
+       SUM(s.total_hours) AS total_hours_taught
 FROM trainers t
-JOIN user u ON t.user_id = u.id
-JOIN schedules s ON t.trainer_id = s.trainer_id
+         JOIN user u ON t.user_id = u.id
+         JOIN schedules s ON t.trainer_id = s.trainer_id
 GROUP BY t.trainer_id, u.name
 ORDER BY total_hours_taught DESC
 LIMIT 10;
 
-select * from schedule_slots;
-select * from documents;
-select * from user;
+select *
+from schedule_slots;
+select *
+from documents;
+select *
+from user;
 
-insert into document_types values ('PROFILE_PIC', 'PROFILE PICTURE');
+insert into document_types
+values ('PROFILE_PIC', 'PROFILE PICTURE');
 
-select * from trainers where user_id = '6a3qQS4s44S1dRPa9qoPF4sCctpkwH49';
-select * from availabilities;
-
+select *
+from trainers
+where user_id = '6a3qQS4s44S1dRPa9qoPF4sCctpkwH49';
+select *
+from availabilities;
 
