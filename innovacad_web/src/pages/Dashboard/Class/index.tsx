@@ -6,6 +6,7 @@ import { type ModalFieldDefinition } from "@/components/Modal/Edit";
 import { createResource, For, Show, createMemo } from "solid-js";
 import toast from "solid-toast";
 import capitalize from "@/utils/capitalize";
+import type { Trainer } from "@/types/user";
 
 const createEmptyClass = (): Class =>
   ({
@@ -49,16 +50,26 @@ const validateClass = (klass: Class): { valid: boolean; errors: string[] } => {
 
 const ClassesPage = () => {
   const api = useApi();
+
   const [classesData, { mutate }] = createResource<Class[]>(api.fetchClasses);
   const [courses] = createResource<Course[]>(api.fetchCourses);
+  const [trainers] = createResource<Trainer[]>(api.fetchTrainers);
 
   const courseOptions = createMemo(() => {
     const list = courses();
     if (!list) return [];
-
     return list.map((course) => ({
       label: `${course.identifier} - ${course.name}`,
       value: course.course_id!,
+    }));
+  });
+
+  const trainerOptions = createMemo(() => {
+    const list = trainers();
+    if (!list) return [];
+    return list.map((t) => ({
+      label: `${t.name} (${t.email})`,
+      value: t.trainerId!,
     }));
   });
 
@@ -110,8 +121,14 @@ const ClassesPage = () => {
         throw new Error("Validation failed");
       }
 
+      const modulesDto = (klass.modules || []).map((m: any) => ({
+        course_module_id: m.courses_modules_id,
+        trainer_id: m.trainer_id || null,
+      }));
+
       if (original) {
         const changedFields: any = {};
+
         if (klass.course_id !== original.course_id)
           changedFields.course_id = klass.course_id;
         if (klass.location !== original.location)
@@ -120,6 +137,7 @@ const ClassesPage = () => {
           changedFields.identifier = klass.identifier;
         if (klass.status !== original.status)
           changedFields.status = klass.status;
+
         if (klass.start_date_timestamp !== original.start_date_timestamp)
           changedFields.start_date_timestamp = epochToDateTime(
             klass.start_date_timestamp!,
@@ -129,40 +147,36 @@ const ClassesPage = () => {
             klass.end_date_timestamp!,
           );
 
-        const originalIds = (original.modules || []).map(
-          (m) => m.courses_modules_id,
-        );
         const currentIds = (klass.modules || []).map(
           (m) => m.courses_modules_id,
         );
-
-        const addModulesIds = currentIds.filter(
-          (id) => !originalIds.includes(id),
+        const originalIds = (original.modules || []).map(
+          (m) => m.courses_modules_id,
         );
 
-        const removeClassesModulesIds = originalIds.filter(
+        const removeModulesIds = originalIds.filter(
           (id) => !currentIds.includes(id),
         );
 
-        if (addModulesIds.length > 0)
-          changedFields.add_modules_ids = addModulesIds;
+        if (modulesDto.length > 0) {
+          changedFields.add_modules = modulesDto;
+        }
 
-        if (removeClassesModulesIds.length > 0)
-          changedFields.remove_modules_ids = removeClassesModulesIds;
-
-        console.log("Changed Fields:", changedFields);
-
-        console.log("Changed Fields:", changedFields);
+        if (removeModulesIds.length > 0) {
+          changedFields.remove_modules_ids = removeModulesIds;
+        }
 
         if (Object.keys(changedFields).length === 0) return;
 
         await api.updateClass(String(klass.class_id), changedFields);
+
         mutate(
           (prev) =>
             prev?.map((u) => (u.class_id === klass.class_id ? klass : u)) || [],
         );
         toast.success(`Class updated successfully`);
       } else {
+        // --- Lógica de CREATE ---
         const classObj = {
           course_id: String(klass.course_id),
           location: String(klass.location),
@@ -172,7 +186,7 @@ const ClassesPage = () => {
             String(klass.start_date_timestamp),
           ),
           end_date_timestamp: epochToDateTime(String(klass.end_date_timestamp)),
-          modules_ids: (klass.modules || []).map((m) => m.courses_modules_id),
+          modules: modulesDto, // Envia a lista com courseModuleId e trainerId
         };
 
         const newClass = await api.createClass(classObj);
@@ -195,7 +209,9 @@ const ClassesPage = () => {
     );
   };
 
+  // 5. Componente Customizado: Gestor de Módulos com Seleção de Formador
   const renderModulesManager = (formData: Class, setFormData: any) => {
+    // Calcula módulos disponíveis com base no Curso selecionado
     const availableModules = createMemo(() => {
       const allCourses = courses();
       if (!allCourses || !formData.course_id) return [];
@@ -206,6 +222,7 @@ const ClassesPage = () => {
       return selectedCourse?.modules || [];
     });
 
+    // Função para adicionar/remover módulo da lista
     const toggleModule = (courseModuleId: string) => {
       const currentModules = formData.modules || [];
       const exists = currentModules.some(
@@ -224,22 +241,39 @@ const ClassesPage = () => {
           ...prev,
           modules: [
             ...prev.modules,
-            { courses_modules_id: courseModuleId, current_duration: 0 },
+            // Adiciona novo módulo sem formador inicial
+            {
+              courses_modules_id: courseModuleId,
+              current_duration: 0,
+              trainer_id: null,
+            },
           ],
         }));
       }
+    };
+
+    // Função para atualizar o formador de um módulo específico
+    const updateModuleTrainer = (courseModuleId: string, trainerId: string) => {
+      setFormData((prev: Class) => ({
+        ...prev,
+        modules: prev.modules.map((m) =>
+          m.courses_modules_id === courseModuleId
+            ? { ...m, trainer_id: trainerId || null } // Atualiza o trainer_id
+            : m,
+        ),
+      }));
     };
 
     return (
       <div class="form-control w-full border p-4 rounded-xl bg-base-100 shadow-sm mt-6">
         <header class="mb-4 flex justify-between items-center">
           <div>
-            <h3 class="text-lg font-bold">Class Modules</h3>
+            <h3 class="text-lg font-bold">Class Modules & Trainers</h3>
             <p class="text-xs opacity-60">
-              Select modules to include in this class.
+              Select modules to include and assign a default trainer.
             </p>
           </div>
-          <Show when={courses.loading}>
+          <Show when={courses.loading || trainers.loading}>
             <span class="loading loading-spinner loading-sm text-primary"></span>
           </Show>
         </header>
@@ -252,7 +286,7 @@ const ClassesPage = () => {
             </div>
           }
         >
-          <div class="space-y-2 max-h-64 overflow-y-auto pr-2">
+          <div class="space-y-2 max-h-96 overflow-y-auto pr-2">
             <For
               each={availableModules()}
               fallback={
@@ -262,32 +296,64 @@ const ClassesPage = () => {
               }
             >
               {(mod) => {
-                const isChecked = () =>
-                  formData.modules?.some(
-                    (m) => m.courses_modules_id === mod.courses_modules_id,
-                  );
+                // Verificar se este módulo está selecionado na turma
+                const selectedModule = formData.modules?.find(
+                  (m) => m.courses_modules_id === mod.courses_modules_id,
+                );
+                const isChecked = !!selectedModule;
 
                 return (
-                  <label class="flex items-center justify-between p-3 rounded-lg border border-base-300 hover:bg-base-200 cursor-pointer transition-all">
-                    <div class="flex flex-col">
-                      <span class="font-medium text-sm">
-                        {mod.module_name || "Unnamed Module"}
-                      </span>
-                      <div class="flex gap-2 text-[10px] font-mono opacity-50">
-                        <span>{mod.duration}h</span>
-                        <span>|</span>
-                        <span>
-                          ID: {mod.courses_modules_id?.substring(0, 8)}...
-                        </span>
-                      </div>
+                  <div
+                    class={`p-3 rounded-lg border transition-all duration-200 ${isChecked ? "bg-base-200 border-primary shadow-sm" : "border-base-300"}`}
+                  >
+                    {/* Linha 1: Checkbox e Nome do Módulo */}
+                    <div class="flex items-center justify-between">
+                      <label class="flex items-center gap-3 cursor-pointer flex-1">
+                        <input
+                          type="checkbox"
+                          class="checkbox checkbox-primary checkbox-sm"
+                          checked={isChecked}
+                          onChange={() => toggleModule(mod.courses_modules_id!)}
+                        />
+                        <div class="flex flex-col">
+                          <span class="font-medium text-sm">
+                            {mod.module_name || "Unnamed Module"}
+                          </span>
+                          <div class="flex gap-2 text-[10px] font-mono opacity-50">
+                            <span>{mod.duration}h</span>
+                          </div>
+                        </div>
+                      </label>
                     </div>
-                    <input
-                      type="checkbox"
-                      class="checkbox checkbox-primary"
-                      checked={isChecked()}
-                      onChange={() => toggleModule(mod.courses_modules_id!)}
-                    />
-                  </label>
+
+                    {/* Linha 2: Dropdown de Formador (Só aparece se selecionado) */}
+                    <Show when={isChecked}>
+                      <div class="pl-8 mt-3 animate-fadeIn">
+                        <div class="flex flex-col gap-1">
+                          <span class="text-[10px] font-bold opacity-60 uppercase">
+                            Assigned Trainer
+                          </span>
+                          <select
+                            class="select select-bordered select-xs w-full max-w-xs"
+                            value={selectedModule?.trainer_id || ""}
+                            onChange={(e) =>
+                              updateModuleTrainer(
+                                mod.courses_modules_id!,
+                                e.currentTarget.value,
+                              )
+                            }
+                          >
+                            <option value="">-- No Default Trainer --</option>
+                            <For each={trainerOptions()}>
+                              {(t) => (
+                                <option value={t.value}>{t.label}</option>
+                              )}
+                            </For>
+                          </select>
+                        </div>
+                      </div>
+                    </Show>
+                  </div>
                 );
               }}
             </For>
@@ -295,10 +361,16 @@ const ClassesPage = () => {
 
           <div class="mt-4 pt-2 border-t border-base-300 flex justify-between items-center">
             <span class="text-xs font-semibold uppercase opacity-50">
-              Selected
+              Selected Modules
             </span>
-            <div class="badge badge-secondary">
-              {formData.modules?.length || 0}
+            <div class="flex gap-2">
+              <div class="badge badge-neutral badge-outline text-xs">
+                {formData.modules?.length || 0} Total
+              </div>
+              <div class="badge badge-primary badge-outline text-xs">
+                {formData.modules?.filter((m: any) => m.trainer_id).length || 0}{" "}
+                w/ Trainer
+              </div>
             </div>
           </div>
         </Show>
@@ -349,12 +421,18 @@ const ClassesPage = () => {
           },
         },
         {
-          formattedName: "Modules",
+          formattedName: "Modules Info",
           fieldName: "modules",
           customGeneration: (e: Class) => (
-            <span class="badge badge-neutral badge-outline">
-              {e.modules?.length || 0} Modules
-            </span>
+            <div class="flex flex-col items-end gap-1">
+              <span class="badge badge-neutral badge-sm">
+                {e.modules?.length || 0} Mods
+              </span>
+              <span class="text-[9px] opacity-50">
+                {e.modules?.filter((m: any) => m.trainer_id).length || 0}{" "}
+                Assigned
+              </span>
+            </div>
           ),
         },
         {

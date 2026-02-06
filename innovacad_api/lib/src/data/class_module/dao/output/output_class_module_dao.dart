@@ -11,7 +11,13 @@ class OutputClassModuleDao {
   final String coursesModulesId;
 
   @annotation.JsonKey(name: 'classes_modules_id')
-  final String classesModulesId;
+  final String? classesModulesId;
+
+  @annotation.JsonKey(name: 'trainer_id')
+  final String? trainerId;
+
+  @annotation.JsonKey(name: 'trainer_name')
+  final String? trainerName;
 
   @annotation.JsonKey(name: 'total_duration')
   @NumberConverter()
@@ -30,6 +36,8 @@ class OutputClassModuleDao {
     required this.currentDuration,
     required this.moduleName,
     required this.totalDuration,
+    this.trainerId,
+    this.trainerName,
   });
 
   Map<String, dynamic> toJson() => _$OutputClassModuleDaoToJson(this);

@@ -19,7 +19,8 @@ const VerifyEmail = () => {
   const { sendVerificationEmail, verifyEmail } = useApi();
   const navigate = useNavigate();
 
-  if (!session() || session()?.verified) {
+  if (!!session() && session()?.verified) {
+    console.log(session());
     navigate("/dashboard/");
     return;
   }

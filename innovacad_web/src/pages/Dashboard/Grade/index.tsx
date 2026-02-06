@@ -1,8 +1,12 @@
 import EntityTable from "@/components/EntityTable";
+import type { ModalFieldDefinition } from "@/components/Modal/Edit";
 import { useApi } from "@/hooks/useApi";
-import { GradeTypeEnum, type Grade } from "@/types/grade";
-import type { Trainee } from "@/types/user";
+import { useUserDetails } from "@/providers/UserDetailsProvider";
 import type { Class } from "@/types/class";
+import type { Enrollment } from "@/types/enrollment";
+import { GradeTypeEnum, type Grade } from "@/types/grade";
+import type { Schedule } from "@/types/schedule";
+import type { Trainee } from "@/types/user";
 import { createMemo, createResource } from "solid-js";
 import toast from "solid-toast";
 
@@ -13,19 +17,17 @@ const createEmptyGrade = (): Grade =>
     trainee_id: "",
     grade: 0,
     start_date_timestamp: "",
-    grade_type: GradeTypeEnum.FINAL,
+    grade_type: GradeTypeEnum.ASSESSMENT,
   }) as unknown as Grade;
 
 const validateGrade = (grade: Grade): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
-  const grade_module_id = String(grade.class_module_id || "").trim();
-  if (!grade_module_id) {
+  if (!String(grade.class_module_id || "").trim()) {
     errors.push("Class Module is required");
   }
 
-  const trainee_id = String(grade.trainee_id || "").trim();
-  if (!trainee_id) {
+  if (!String(grade.trainee_id || "").trim()) {
     errors.push("Trainee is required");
   }
 
@@ -42,10 +44,6 @@ const validateGrade = (grade: Grade): { valid: boolean; errors: string[] } => {
   const grade_type = String(grade.grade_type || "").trim();
   if (!grade_type) {
     errors.push("Grade Type is required");
-  } else if (
-    !Object.values(GradeTypeEnum).includes(grade_type as GradeTypeEnum)
-  ) {
-    errors.push("Grade Type is invalid");
   }
 
   return {
@@ -54,55 +52,65 @@ const validateGrade = (grade: Grade): { valid: boolean; errors: string[] } => {
   };
 };
 
-const getChangedFields = (
-  oldGrade: Grade,
-  newGrade: Grade,
-): {
-  class_module_id?: string;
-  trainee_id?: string;
-  grade?: string;
-  grade_type?: string;
-} => {
+const getChangedFields = (oldGrade: Grade, newGrade: Grade) => {
   const changes: any = {};
-
-  if (String(oldGrade.class_module_id) !== String(newGrade.class_module_id)) {
+  if (String(oldGrade.class_module_id) !== String(newGrade.class_module_id))
     changes.class_module_id = String(newGrade.class_module_id);
-  }
-
-  if (String(oldGrade.trainee_id) !== String(newGrade.trainee_id)) {
+  if (String(oldGrade.trainee_id) !== String(newGrade.trainee_id))
     changes.trainee_id = String(newGrade.trainee_id);
-  }
-
-  if (String(oldGrade.grade) !== String(newGrade.grade)) {
+  if (String(oldGrade.grade) !== String(newGrade.grade))
     changes.grade = String(newGrade.grade);
-  }
-
-  if (String(oldGrade.grade_type) !== String(newGrade.grade_type)) {
+  if (String(oldGrade.grade_type) !== String(newGrade.grade_type))
     changes.grade_type = String(newGrade.grade_type);
-  }
-
   return changes;
 };
 
 const GradesPage = () => {
   const api = useApi();
+  const { user } = useUserDetails();
 
   const [gradesData, { mutate }] = createResource<Grade[]>(api.fetchGrades);
-
   const [trainees] = createResource<Trainee[]>(api.fetchTrainees);
   const [classes] = createResource<Class[]>(api.fetchClasses);
+  const [enrollments] = createResource<Enrollment[]>(api.fetchEnrollments);
+  const [mySchedules] = createResource<Schedule[]>(api.fetchUserSchedules);
 
-  const traineeOptions = createMemo(() => {
-    const list = trainees();
-    if (!list) return [];
-    return list.map((t) => ({
-      label: `${t.name} (${t.email})`,
-      value: t.traineeId!,
-    }));
+  const myAllowedModuleIds = createMemo(() => {
+    const u = user();
+    if (u?.role === "admin" || u?.role === "coordinator") return null;
+
+    const schedules = mySchedules();
+    if (!schedules) return [];
+
+    return [...new Set(schedules.map((s) => s.class_module_id))];
   });
 
-  const classModuleOptions = createMemo(() => {
+  const myAllowedClassIds = createMemo(() => {
+    const u = user();
+    const allowedModules = myAllowedModuleIds();
+
+    if (allowedModules === null) return null;
+
+    const listClasses = classes();
+    if (!listClasses) return [];
+
+    const allowedClassIds: string[] = [];
+
+    listClasses.forEach((cls) => {
+      const hasModule = cls.modules?.some((m) => {
+        const modId = (m as any).classes_modules_id || m.courses_modules_id;
+        return allowedModules.includes(modId);
+      });
+      if (hasModule && cls.class_id) allowedClassIds.push(cls.class_id);
+    });
+
+    return allowedClassIds;
+  });
+
+  const moduleOptions = createMemo(() => {
     const list = classes();
+    const allowedModules = myAllowedModuleIds();
+
     if (!list) return [];
 
     const options: { label: string; value: string }[] = [];
@@ -113,16 +121,132 @@ const GradesPage = () => {
           const valueId =
             (mod as any).classes_modules_id || mod.courses_modules_id;
 
-          options.push({
-            label: `${cls.identifier} - ${mod.module_name} (${cls.location})`,
-            value: valueId,
-          });
+          if (allowedModules === null || allowedModules.includes(valueId)) {
+            options.push({
+              label: `${cls.identifier} - ${mod.module_name} (${cls.location})`,
+              value: valueId,
+            });
+          }
         });
       }
     });
 
     return options;
   });
+
+  const studentOptions = createMemo(() => {
+    const allTrainees = trainees();
+    const allEnrollments = enrollments();
+    const allowedClasses = myAllowedClassIds();
+
+    if (!allTrainees || !allEnrollments) return [];
+
+    const validEnrollments = allEnrollments.filter((e) => {
+      return allowedClasses === null || allowedClasses.includes(e.class_id!);
+    });
+
+    return validEnrollments
+      .map((enrol) => {
+        const t = allTrainees.find((u) => u.traineeId === enrol.trainee_id);
+        if (!t) return null;
+        return {
+          label: `${t.name} (${t.email})`,
+          value: t.traineeId!,
+        };
+      })
+      .filter((opt) => opt !== null) as { label: string; value: string }[];
+  });
+
+  const filteredGradesData = createMemo(() => {
+    const list = gradesData();
+    const allowedModules = myAllowedModuleIds();
+
+    if (!list) return [];
+    if (allowedModules === null) return list;
+
+    return list.filter((g) => allowedModules.includes(g.class_module_id));
+  });
+
+  const formFieldsConfig = createMemo<ModalFieldDefinition<Grade>[]>(() => [
+    {
+      name: "class_module_id",
+      label: "Class Module",
+      type: "select",
+      options: moduleOptions(),
+      required: true,
+      placeholder: classes.loading ? "Loading modules..." : "Select Module",
+    },
+    {
+      name: "trainee_id",
+      label: "Trainee",
+      type: "select",
+      options: studentOptions(),
+      required: true,
+      placeholder: trainees.loading ? "Loading trainees..." : "Select Trainee",
+    },
+    {
+      name: "grade",
+      label: "Grade (0-20)",
+      type: "number",
+      required: true,
+    },
+    {
+      name: "grade_type",
+      label: "Grade Type",
+      type: "select",
+      options: Object.values(GradeTypeEnum).map((value) => ({
+        label: value,
+        value: value,
+      })),
+      required: true,
+    },
+  ]);
+
+  const handleSaveGrade = async (grade: Grade, original: Grade | null) => {
+    try {
+      const validation = validateGrade(grade);
+      if (!validation.valid) {
+        validation.errors.forEach((error) => toast.error(error));
+        throw new Error("Validation failed");
+      }
+
+      if (original) {
+        const changedFields = getChangedFields(original, grade);
+        if (Object.keys(changedFields).length === 0) return;
+
+        await api.updateGrade(String(grade.grade_id), changedFields);
+        mutate(
+          (prev) =>
+            prev?.map((u) => (u.grade_id === grade.grade_id ? grade : u)) || [],
+        );
+        toast.success(`Grade updated successfully`);
+      } else {
+        const gradeObj = {
+          class_module_id: String(grade.class_module_id),
+          trainee_id: String(grade.trainee_id),
+          grade: String(grade.grade),
+          grade_type: String(grade.grade_type),
+        };
+        const newGrade = await api.createGrade(gradeObj);
+        mutate((prev) => [...(prev || []), newGrade]);
+        toast.success("Grade created successfully.");
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message !== "Validation failed") {
+        toast.error(error.message || "Failed to save grade");
+      }
+      throw error;
+    }
+  };
+
+  const confirmDelete = async (gradeToDelete: Grade) => {
+    await api.deleteGrade(String(gradeToDelete.grade_id));
+    mutate(
+      (prev) =>
+        prev?.filter((c) => c.grade_id !== gradeToDelete.grade_id) || [],
+    );
+    toast.success("Grade deleted");
+  };
 
   const getTraineeName = (id: string | undefined) => {
     if (!id || !trainees()) return id;
@@ -143,73 +267,20 @@ const GradesPage = () => {
     return id;
   };
 
-  const handleSaveGrade = async (grade: Grade, original: Grade | null) => {
-    try {
-      const validation = validateGrade(grade);
-      if (!validation.valid) {
-        validation.errors.forEach((error) => toast.error(error));
-        throw new Error("Validation failed");
-      }
-
-      if (original) {
-        const changedFields = getChangedFields(original, grade);
-
-        if (Object.keys(changedFields).length === 0) return;
-
-        await api.updateGrade(String(grade.grade_id), changedFields);
-
-        mutate(
-          (prev) =>
-            prev?.map((u) => (u.grade_id === grade.grade_id ? grade : u)) || [],
-        );
-
-        const changedFieldNames = Object.keys(changedFields).join(", ");
-        toast.success(`Grade updated successfully (${changedFieldNames})`);
-      } else {
-        const gradeObj = {
-          class_module_id: String(grade.class_module_id),
-          trainee_id: String(grade.trainee_id),
-          grade: String(grade.grade),
-          grade_type: String(grade.grade_type),
-        };
-
-        const newGrade = await api.createGrade(gradeObj);
-
-        mutate((prev: Grade[] | undefined) => [...(prev || []), newGrade]);
-        toast.success("Grade created successfully.");
-      }
-    } catch (error) {
-      if (error instanceof Error && error.message !== "Validation failed") {
-        toast.error(error.message || "Failed to save grade");
-      }
-      throw error;
-    }
-  };
-
-  const confirmDelete = async (gradeToDelete: Grade) => {
-    await api.deleteGrade(String(gradeToDelete.grade_id));
-    mutate(
-      (prev: Grade[] | undefined) =>
-        prev?.filter((c: Grade) => c.grade_id !== gradeToDelete.grade_id) || [],
-    );
-  };
-
   return (
     <EntityTable<Grade>
       title="Manage Grades"
-      data={gradesData}
-      handleEditClick={(grade) => ({
-        ...grade,
-      })}
+      data={filteredGradesData}
+      handleEditClick={(grade) => ({ ...grade })}
       handleAddClick={() => createEmptyGrade()}
       confirmDelete={confirmDelete}
       handleSave={handleSaveGrade}
+      formFields={formFieldsConfig()}
       filter={(e: Grade, search: string) => {
         const s = search.toLowerCase();
         const traineeName = getTraineeName(e.trainee_id)?.toLowerCase() || "";
         const moduleName =
           getClassModuleName(e.class_module_id)?.toLowerCase() || "";
-
         return (
           (String(e.grade).includes(s) ||
             traineeName.includes(s) ||
@@ -217,47 +288,9 @@ const GradesPage = () => {
           false
         );
       }}
-      formFields={[
-        {
-          label: "Class Module",
-          name: "class_module_id",
-          type: "select",
-          options: classModuleOptions(),
-          required: true,
-          placeholder: classes.loading
-            ? "Loading modules..."
-            : "Select Class Module",
-        },
-        {
-          label: "Trainee",
-          name: "trainee_id",
-          type: "select",
-          options: traineeOptions(),
-          required: true,
-          placeholder: trainees.loading
-            ? "Loading trainees..."
-            : "Select Trainee",
-        },
-        {
-          label: "Grade (0-20)",
-          name: "grade",
-          type: "number",
-          required: true,
-        },
-        {
-          label: "Grade Type",
-          name: "grade_type",
-          type: "select",
-          options: Object.values(GradeTypeEnum).map((value) => ({
-            label: value,
-            value: value,
-          })),
-          required: true,
-        },
-      ]}
       fields={[
         {
-          formattedName: "Grade ID",
+          formattedName: "ID",
           fieldName: "grade_id",
           canCopy: true,
           smaller: true,
@@ -270,7 +303,6 @@ const GradesPage = () => {
               {getClassModuleName(e.class_module_id)}
             </span>
           ),
-          smaller: true,
         },
         {
           formattedName: "Trainee",
@@ -286,9 +318,11 @@ const GradesPage = () => {
           fieldName: "grade",
           customGeneration: (e) => (
             <div
-              class={`badge ${Number(e.grade) >= 10 ? "badge-success" : "badge-error"} badge-outline`}
+              class={`badge ${
+                Number(e.grade) >= 10 ? "badge-success" : "badge-error"
+              } badge-outline font-bold`}
             >
-              {e.grade}
+              {Number(e.grade).toFixed(1)}
             </div>
           ),
         },
@@ -299,7 +333,7 @@ const GradesPage = () => {
           smaller: true,
         },
       ]}
-    ></EntityTable>
+    />
   );
 };
 

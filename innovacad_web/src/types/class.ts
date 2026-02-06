@@ -16,6 +16,8 @@ export type ClassModule = {
   current_duration?: number;
   module_name?: string;
   total_duration?: number;
+  trainer_id?: string | undefined;
+  trainer_name?: string | undefined;
 };
 
 export type ClassResponseData = {
@@ -28,6 +30,8 @@ export type ClassResponseData = {
   end_date_timestamp: number | undefined;
   modules?: ClassModule[];
   course_identifier: string | undefined;
+  trainer_id?: string | undefined;
+  trainer_name?: string | undefined;
 };
 
 export class Class {

@@ -2,10 +2,9 @@ import { CircleQuestionMark } from "lucide-solid";
 import {
   createSignal,
   Show,
-  For,
-  createEffect,
-  type JSXElement,
+  For, // For é essencial aqui
   createMemo,
+  type JSXElement,
 } from "solid-js";
 import { Portal } from "solid-js/web";
 
@@ -33,43 +32,33 @@ export interface ModalFieldDefinition<T> {
 
 interface ModalEditProps<T> {
   value: T;
-  setValue: (value: T | null) => void;
+  setValue: (value: T) => void;
   onDelete?: () => Promise<void>;
   onSave: (value: T) => Promise<void>;
   onCancel: () => void;
   title: string;
-
   fields?: ModalFieldDefinition<T>[];
-
   disabledFields?: string[];
-
   renderCustomFields?: (
     formData: T,
-    setFormData: (prev: (prev: T) => T) => void,
+    setFormData: (prev: T | ((p: T) => T)) => void,
   ) => JSXElement;
 }
 
 const PortalTooltip = (props: { text: string; children: any }) => {
   let ref: HTMLDivElement | undefined;
   const [pos, setPos] = createSignal<{ x: number; y: number } | null>(null);
-
-  const show = () => {
-    if (!ref) return;
-    const rect = ref.getBoundingClientRect();
-    setPos({
-      x: rect.left + rect.width / 2,
-      y: rect.top - 6,
-    });
-  };
-
-  const hide = () => setPos(null);
-
   return (
     <>
       <div
         ref={ref}
-        onMouseEnter={show}
-        onMouseLeave={hide}
+        onMouseEnter={() => {
+          if (ref) {
+            const r = ref.getBoundingClientRect();
+            setPos({ x: r.left + r.width / 2, y: r.top - 6 });
+          }
+        }}
+        onMouseLeave={() => setPos(null)}
         class="inline-flex cursor-help align-middle"
       >
         {props.children}
@@ -91,113 +80,61 @@ const PortalTooltip = (props: { text: string; children: any }) => {
 
 const formatDateForInput = (val: any, type: ModalFieldType): string => {
   if (!val) return "";
-
-  if (typeof val === "string" && type === "date" && val.includes("T")) {
+  if (typeof val === "string" && type === "date" && val.includes("T"))
     return val.split("T")[0];
-  }
-
   const numericVal =
     typeof val === "string" && /^\d+$/.test(val) ? parseInt(val, 10) : val;
   const date = new Date(numericVal);
   if (isNaN(date.getTime())) return "";
-
   const pad = (n: number) => n.toString().padStart(2, "0");
   const YYYY = date.getFullYear();
   const MM = pad(date.getMonth() + 1);
   const DD = pad(date.getDate());
-
-  if (type === "date") {
-    return `${YYYY}-${MM}-${DD}`;
-  }
-
+  if (type === "date") return `${YYYY}-${MM}-${DD}`;
   const hh = pad(date.getHours());
   const mm = pad(date.getMinutes());
   return `${YYYY}-${MM}-${DD}T${hh}:${mm}`;
 };
 
-const getFieldLabel = (fieldName: string): string => {
-  return fieldName
+const getFieldLabel = (fieldName: string) =>
+  fieldName
     .replace(/([A-Z])/g, " $1")
     .replace(/^./, (str) => str.toUpperCase())
     .trim();
-};
 
 const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
-  const [formData, setFormData] = createSignal<T>(props.value);
   const [loading, setLoading] = createSignal(false);
 
-  createEffect(() => {
-    setFormData(() => props.value);
-  });
-
   const handleInputChange = (field: keyof T, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    props.setValue({ ...props.value, [field]: value } as T);
   };
 
   const handleSave = async () => {
     setLoading(true);
     try {
-      await props.onSave(formData());
+      await props.onSave(props.value);
     } finally {
       setLoading(false);
     }
   };
 
-  const displayFields = createMemo(() => {
-    if (props.fields && props.fields.length > 0) {
+  const visibleFields = createMemo(() => {
+    if (props.fields && props.fields.length > 0)
       return props.fields.filter((f) => !f.hidden);
-    }
-
-    const excludedFields = [
-      "id",
-      "traineeId",
-      "trainerId",
-      "class_Id",
-      "token",
-      "session_token",
-      "image",
-      "verified",
-      "role",
-      "tojson",
-      "modules",
-      "modules_ids",
-    ];
-
-    return Object.keys(formData())
-      .filter((key) => !excludedFields.includes(key.toLowerCase()))
-      .map((key) => {
-        const val = formData()[key];
-        const fKey = key.toLowerCase();
-        let type: ModalFieldType = "text";
-
-        if (fKey.includes("email")) type = "email";
-        else if (fKey.includes("password")) type = "password";
-        else if (
-          fKey.includes("date") ||
-          fKey.includes("time") ||
-          fKey.includes("at")
-        )
-          type = "datetime-local";
-        else if (typeof val === "boolean") type = "checkbox";
-        else if (typeof val === "number") type = "number";
-
-        return {
+    return Object.keys(props.value).map(
+      (key) =>
+        ({
           name: key as keyof T & string,
           label: getFieldLabel(key),
-          type,
-          disabled: props.disabledFields?.includes(key),
-        } as ModalFieldDefinition<T>;
-      });
+          type: "text",
+        }) as ModalFieldDefinition<T>,
+    );
   });
 
   return (
     <dialog id="edit_modal" class="modal modal-open">
       <div class="modal-box w-11/12 max-w-md p-0 overflow-hidden flex flex-col bg-base-100 rounded-xl">
-        {/* Header */}
-        <div class="bg-linear-to-r from-primary to-primary/80 px-6 py-4 flex items-center justify-between shrink-0">
+        <div class="bg-gradient-to-r from-primary to-primary/80 px-6 py-4 flex items-center justify-between shrink-0">
           <div class="flex-1">
             <h3 class="font-bold text-lg text-primary-content">
               {props.title}
@@ -211,11 +148,10 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
           </button>
         </div>
 
-        {/* Body */}
         <div class="px-6 py-4 overflow-y-auto max-h-[60vh] space-y-4">
-          <For each={displayFields()}>
+          <For each={visibleFields()}>
             {(field) => {
-              const value = () => formData()[field.name];
+              const value = () => props.value[field.name];
               const isDisabled = field.disabled ?? false;
               const label = field.label || getFieldLabel(field.name);
 
@@ -255,11 +191,11 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
                       }
                     >
                       <option value="" disabled>
-                        Select {label}
+                        {field.placeholder || `Select ${label}`}
                       </option>
                       <For each={field.options}>
                         {(opt) => (
-                          <option value={opt.value}>{opt.label}</option>
+                          <option value={String(opt.value)}>{opt.label}</option>
                         )}
                       </For>
                     </select>
@@ -298,24 +234,18 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
                     class="input input-bordered w-full focus:input-primary"
                     disabled={isDisabled}
                     value={
-                      field.type === "datetime-local" || field.type === "date"
-                        ? formatDateForInput(value(), field.type)
+                      field.type?.includes("date")
+                        ? formatDateForInput(value(), field.type!)
                         : String(value() || "")
                     }
                     onInput={(e) => {
                       const val = e.currentTarget.value;
-                      if (
-                        field.type === "datetime-local" ||
-                        field.type === "date"
-                      ) {
-                        const timestamp = new Date(val).getTime();
-                        if (!isNaN(timestamp))
-                          handleInputChange(field.name, timestamp);
-                      } else if (field.type === "number") {
+                      if (field.type?.includes("date")) {
+                        const ts = new Date(val).getTime();
+                        if (!isNaN(ts)) handleInputChange(field.name, ts);
+                      } else if (field.type === "number")
                         handleInputChange(field.name, Number(val));
-                      } else {
-                        handleInputChange(field.name, val);
-                      }
+                      else handleInputChange(field.name, val);
                     }}
                   />
                 </div>
@@ -327,18 +257,20 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
             <div class="divider text-xs uppercase opacity-50 font-bold tracking-widest mt-6">
               Configuration
             </div>
-            {props.renderCustomFields!(formData(), setFormData)}
+            {props.renderCustomFields!(props.value, (newVal) => {
+              const res =
+                typeof newVal === "function"
+                  ? (newVal as Function)(props.value)
+                  : newVal;
+              props.setValue(res);
+            })}
           </Show>
         </div>
 
-        {/* Footer */}
         <div class="bg-base-200/50 px-6 py-3 flex gap-2 justify-end border-t border-base-300 shrink-0">
           <button
             class="btn btn-ghost btn-sm font-medium"
-            onClick={() => {
-              props.onCancel();
-              setFormData((_) => props.value);
-            }}
+            onClick={props.onCancel}
             disabled={loading()}
           >
             Cancel

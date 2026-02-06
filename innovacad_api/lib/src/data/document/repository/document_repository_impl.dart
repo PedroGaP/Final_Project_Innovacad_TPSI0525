@@ -21,6 +21,8 @@ class DocumentRepositoryImpl {
       db = await MysqlConfiguration.connect();
       final uuid = Uuid().v4();
 
+      await db.startTrans();
+
       await db.insert(
         table: 'documents',
         insertData: {
@@ -32,11 +34,30 @@ class DocumentRepositoryImpl {
           'type_code': typeCode,
           'user_id': userId,
         },
-        debug: true,
+        // debug: true,
       );
+
+      if (typeCode == 'PROFILE_PIC') {
+        String userImagePath = filePath;
+        if (userImagePath.startsWith('public/')) {
+          userImagePath = userImagePath.substring(7);
+        } else if (userImagePath.startsWith('public\\')) {
+          userImagePath = userImagePath.substring(7);
+        }
+
+        await db.query(
+          "UPDATE user SET image = ? WHERE id = ?",
+          whereValues: [userImagePath, userId],
+          isStmt: true,
+        );
+      }
+
+      await db.commit();
 
       return Result.success(uuid);
     } catch (e, s) {
+      if (db != null) await db.rollback();
+
       return Result.failure(
         AppError(
           AppErrorType.internal,

@@ -20,8 +20,8 @@ UpdateClassDto _$UpdateClassDtoFromJson(Map<String, dynamic> json) =>
         json['end_date_timestamp'],
         const DateTimeConverter().fromJson,
       ),
-      addModulesIds: (json['add_modules_ids'] as List<dynamic>?)
-          ?.map((e) => e as String)
+      addModules: (json['add_modules'] as List<dynamic>?)
+          ?.map((e) => LinkClassModuleDto.fromJson(e as Map<String, dynamic>))
           .toList(),
       removeClassesModulesIds: (json['remove_modules_ids'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -42,7 +42,7 @@ Map<String, dynamic> _$UpdateClassDtoToJson(UpdateClassDto instance) =>
         instance.endDateTimestamp,
         const DateTimeConverter().toJson,
       ),
-      'add_modules_ids': instance.addModulesIds,
+      'add_modules': instance.addModules,
       'remove_modules_ids': instance.removeClassesModulesIds,
     };
 

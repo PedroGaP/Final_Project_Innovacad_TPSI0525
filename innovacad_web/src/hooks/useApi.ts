@@ -76,6 +76,7 @@ export const API_ENDPOINTS = {
     BASE: "/documents",
     UPLOAD: "/documents/upload",
   },
+  STATISTICS: "/statistics",
 } as const;
 
 const baseUrl = API_ENDPOINTS.BASE;
@@ -201,37 +202,35 @@ export const useApi = () => {
    * Map response data to appropriate User type
    */
   const mapToUserType = (data: UserResponseData): User => {
-    console.log("Raw API Data:", data); 
+    console.log("Raw API Data:", data);
 
     if (!data) throw new Error("The user data is undefined");
 
     if (
-      data.role === "coordinator" || 
-      data.role === "trainer" || 
+      data.role === "coordinator" ||
+      data.role === "trainer" ||
       "trainer_id" in data
     ) {
-      const tId = data.trainer_id || ""; 
-      
-      const trainer = new Trainer(
-        data,
-        tId,
-        data.birthday_date,
-      );
+      const tId = data.trainer_id || "";
+
+      const trainer = new Trainer(data, tId, data.birthday_date);
 
       (trainer as any).is_coordinator = !!data.is_coordinator;
       if (data.role === "coordinator") (trainer as any).is_coordinator = true;
-      
-      (trainer as any).coordinated_class_ids = Array.isArray(data.coordinated_class_ids)
+
+      (trainer as any).coordinated_class_ids = Array.isArray(
+        data.coordinated_class_ids,
+      )
         ? data.coordinated_class_ids
         : [];
-      
+
       Object.assign(trainer, data);
-      
+
       return trainer;
     }
 
     if ("trainee_id" in data || data.role === "trainee") {
-      const tId = data.trainee_id || ""; 
+      const tId = data.trainee_id || "";
       const trainee = new Trainee(data, tId, data.birthday_date);
       Object.assign(trainee, data);
       return trainee;
@@ -874,11 +873,15 @@ export const useApi = () => {
     status: string | undefined;
     start_date_timestamp: string | undefined;
     end_date_timestamp: string | undefined;
+    modules?: { course_module_id: string; trainer_id?: string | null }[];
   }): Promise<Class> => {
     const res = await fetchApi<ClassResponseData>(
       API_ENDPOINTS.ENTITY.CLASS,
       "POST",
-      data,
+      {
+        ...data,
+        modules: data.modules,
+      },
     );
 
     if (res.isError || !res.data) {
@@ -914,7 +917,7 @@ export const useApi = () => {
       status?: string | undefined;
       start_date_timestamp?: string | undefined;
       end_date_timestamp?: string | undefined;
-      add_modules_ids?: string[] | undefined;
+      add_modules?: { course_module_id: string; trainer_id?: string | null }[];
       remove_modules_ids?: string[] | undefined;
     },
   ): Promise<Class> => {
@@ -928,8 +931,8 @@ export const useApi = () => {
       updateData.start_date_timestamp = data.start_date_timestamp;
     if (data.end_date_timestamp !== undefined)
       updateData.end_date_timestamp = data.end_date_timestamp;
-    if (data.add_modules_ids !== undefined)
-      updateData.add_modules_ids = data.add_modules_ids;
+    if (data.add_modules !== undefined)
+      updateData.add_modules = data.add_modules;
     if (data.remove_modules_ids !== undefined)
       updateData.remove_modules_ids = data.remove_modules_ids;
 
@@ -1656,6 +1659,81 @@ export const useApi = () => {
     return schedules;
   };
 
+  /**
+   * Fetch dashboard statistics
+   */
+  const fetchStatistics = async () => {
+    const res = await fetchApi<any>(API_ENDPOINTS.STATISTICS, "GET");
+
+    if (res.isError || !res.data) {
+      throw new Error(`Fetch statistics failed: ${res.error?.message}`);
+    }
+
+    return res.data;
+  };
+
+  /**
+   * Export Trainee Sheet
+   */
+  const exportTraineeSheet = async (traineeId: string, name: string) => {
+    if (!user() || !user()?.token) throw new Error("No token");
+
+    const res = await fetch(
+      `${baseUrl}${API_ENDPOINTS.USERS.TRAINEES}/${traineeId}/export`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${user()!.token}`,
+        },
+      },
+    );
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Falha ao exportar a ficha do formando");
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Ficha_Formando_${name.replace(/\s+/g, "_")}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
+  const exportTrainerSheet = async (trainerId: string, name: string) => {
+    if (!user() || !user()?.token) throw new Error("No token");
+
+    const res = await fetch(
+      `${baseUrl}${API_ENDPOINTS.USERS.TRAINERS}/${trainerId}/export`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${user()!.token}`,
+        },
+      },
+    );
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Failed to export trainer sheet");
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Ficha_Formador_${name.replace(/\s+/g, "_")}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
   return {
     // Sign In/Up
     signIn,
@@ -1686,12 +1764,14 @@ export const useApi = () => {
     createTrainee,
     updateTrainee,
     deleteTrainee,
+    exportTraineeSheet,
 
     // Trainers
     fetchTrainers,
     createTrainer,
     updateTrainer,
     deleteTrainer,
+    exportTrainerSheet,
 
     // Classes
     fetchClasses,
@@ -1746,5 +1826,8 @@ export const useApi = () => {
     fetchDocuments,
     uploadDocument,
     deleteDocument,
+
+    // Statistics
+    fetchStatistics,
   };
 };
