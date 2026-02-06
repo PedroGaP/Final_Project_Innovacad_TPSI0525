@@ -2,8 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
+import 'package:innovacad_api/src/data/trainer/dao/skills_output/skill_output_dao.dart';
 import 'package:innovacad_api/src/domain/domain.dart';
-import 'package:innovacad_api/src/domain/trainer/repository/i_trainer_repository.dart';
 import 'package:mysql_utils/mysql_utils.dart';
 import 'package:uuid/uuid.dart';
 import 'package:vaden/vaden.dart' as v;
@@ -13,10 +13,15 @@ import 'package:pdf/widgets.dart' as pw;
 @v.Repository()
 class TrainerRepositoryImpl implements ITrainerRepository {
   final RemoteUserService _remoteUserService;
+  final IModuleRepository _moduleRepository;
   final Dio dio;
   final String table = "trainers";
 
-  TrainerRepositoryImpl(this._remoteUserService, this.dio);
+  TrainerRepositoryImpl(
+    this._remoteUserService,
+    this._moduleRepository,
+    this.dio,
+  );
 
   bool _parseBool(dynamic value) {
     if (value == null) return false;
@@ -331,6 +336,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
     }
   }
 
+  @override
   Future<Result<List<int>>> generateTrainerPdf(String trainerId) async {
     try {
       final db = await MysqlConfiguration.connect();
@@ -603,6 +609,45 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       return Result.success(await pdf.save());
     } catch (e) {
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    }
+  }
+
+  @override
+  Future<Result<List<SkillOutputDao>>> getSkills(String id) async {
+    try {
+      final trainer = await getById(id);
+
+      if (trainer.isFailure || trainer.data?.skills == null)
+        return Result.failure(
+          AppError(AppErrorType.notFound, "Trainer not found!"),
+        );
+
+      List<SkillOutputDao> skills = [];
+
+      if (trainer.data?.skills != null) {
+        for (var skill in trainer.data!.skills) {
+          final module = await _moduleRepository.getById(skill.moduleId);
+
+          if (module.isSuccess) {
+            skills.add(
+              SkillOutputDao(
+                name: module.data!.name,
+                competenceLevel: skill.competenceLevel,
+              ),
+            );
+          }
+        }
+      }
+
+      return Result.success(skills);
+    } catch (e) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Failed to fetch trainer skills!",
+          details: {"error": e.toString()},
+        ),
+      );
     }
   }
 }
