@@ -1,5 +1,6 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
+import 'package:innovacad_api/src/data/trainer/dao/skills_output/skill_output_dao.dart';
 import 'package:innovacad_api/src/domain/domain.dart';
 import 'package:vaden/vaden.dart';
 
@@ -46,4 +47,8 @@ class TrainerServiceImpl implements ITrainerService {
   Future<Result<List<int>>> generateTrainerPdf(String id) async {
     return _repository.generateTrainerPdf(id);
   }
+
+  @override
+  Future<Result<List<SkillOutputDao>>> getSkills(String id) async =>
+      await _repository.getSkills(id);
 }
