@@ -103,7 +103,7 @@ class TrainerController {
         'Retrieves the coordinated classes from a trainer by their unique identifier',
   )
   @ApiParam(name: 'trainerId', description: 'The trainer ID', required: true)
-  @Get('/skills/<trainerId>')
+  @Get('/coordinated-classes/<trainerId>')
   Future<Response> getCoordinatedClasses(@Param("trainerId") String id) async {
     final result = await _service.getCoordinatedClasses(id);
     return resultToResponse(result);
