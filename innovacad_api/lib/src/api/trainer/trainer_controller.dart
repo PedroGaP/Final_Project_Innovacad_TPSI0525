@@ -96,4 +96,16 @@ class TrainerController {
     final result = await _service.getSkills(id);
     return resultToResponse(result);
   }
+
+  @ApiOperation(
+    summary: 'Get trainer coordinated classes by trainer ID',
+    description:
+        'Retrieves the coordinated classes from a trainer by their unique identifier',
+  )
+  @ApiParam(name: 'trainerId', description: 'The trainer ID', required: true)
+  @Get('/skills/<trainerId>')
+  Future<Response> getCoordinatedClasses(@Param("trainerId") String id) async {
+    final result = await _service.getCoordinatedClasses(id);
+    return resultToResponse(result);
+  }
 }
