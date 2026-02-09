@@ -25,4 +25,7 @@ abstract class ITrainerService
 
   @override
   Future<Result<List<SkillOutputDao>>> getSkills(String id);
+
+  @override
+  Future<Result<List<String>>> getCoordinatedClasses(String id);
 }
