@@ -8,7 +8,7 @@ import FacebookLogo from "@/assets/facebook.svg";
 import { API_ENDPOINTS, useApi } from "@/hooks/useApi";
 import { type Document, DocumentTypeLabels } from "@/types/document";
 import toast from "solid-toast";
-import type { Trainee, Trainer } from "@/types/user";
+import type { Trainee, Trainer, User } from "@/types/user";
 
 const AccountSettingsPage = () => {
   const { user, setUser } = useUserDetails();
@@ -113,26 +113,25 @@ const AccountSettingsPage = () => {
     try {
       await uploadDocument(u.id!, formData);
 
-      await new Promise((r) => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 500));
+
       const updatedDocs = await fetchDocuments(u.id!);
       const newPic = updatedDocs.find((d) => d.type_code === "PROFILE_PIC");
 
-      if (!newPic) {
-        throw new Error(
-          "Upload successful, but image not found. Check Database types.",
-        );
-      }
+      if (!newPic) throw new Error("Image uploaded but not found in list.");
 
-      const imagePath = `${newPic.file_path.replace(/^public[\\/]/, "")}`;
+      let imagePath = newPic.file_path;
+
+      imagePath = imagePath.replace(/^public[\\/]/, "").replace(/\\/g, "/");
 
       if (u.role === "trainer" || u.role === "coordinator") {
-        const trainerUser = u as Trainer;
-        const trainerId = trainerUser.trainerId;
-        await updateTrainer(trainerId!, { image: imagePath } as any);
+        await updateTrainer((u as Trainer).trainerId!, {
+          image: imagePath,
+        } as any);
       } else if (u.role === "trainee") {
-        const traineeUser = u as Trainee;
-        const traineeId = traineeUser.traineeId;
-        await updateTrainee(traineeId!, { image: imagePath } as any);
+        await updateTrainee((u as Trainee).traineeId!, {
+          image: imagePath,
+        } as any);
       }
 
       const updatedUser = Object.assign(
@@ -141,11 +140,16 @@ const AccountSettingsPage = () => {
       );
       updatedUser.image = imagePath;
 
-      setUser(updatedUser);
+      setUser(updatedUser as User | Trainer | Trainee);
+
       setImageKey(Date.now());
 
       toast.success("Profile picture updated!", { id: toastId });
       refetchDocs();
+
+      toast.success("Profile picture updated!", { id: toastId });
+
+      // ex: await refreshSession();
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || "Failed to update profile picture", {
@@ -219,14 +223,27 @@ const AccountSettingsPage = () => {
             </label>
             <div class="flex items-center gap-6">
               <div class="avatar">
-                <div class="w-16 h-16 rounded-full ring ring-base-200 ring-offset-2 ring-offset-base-100 overflow-hidden">
-                  <img
-                    onError={(e: any) => {
-                      e.target.src = `https://ui-avatars.com/api/?name=${user()?.name}&background=random`;
-                    }}
-                    src={`${API_ENDPOINTS.BASE}/${user()?.image}?t=${imageKey()}`}
-                    alt="Avatar"
-                  />
+                <div class="w-16 h-16 rounded-full ring ring-base-200 ring-offset-2 ring-offset-base-100 overflow-hidden bg-base-300 flex items-center justify-center">
+                  <Show
+                    when={user()?.image && user()?.image !== "null"}
+                    fallback={
+                      <img
+                        src={`https://ui-avatars.com/api/?name=${user()?.name || "User"}&background=random&color=fff`}
+                        alt="Default Avatar"
+                      />
+                    }
+                  >
+                    <img
+                      src={`${API_ENDPOINTS.BASE}/${user()?.image}?t=${imageKey()}`}
+                      alt="Avatar"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                        e.currentTarget.parentElement?.classList.add(
+                          "bg-base-300",
+                        );
+                      }}
+                    />
+                  </Show>
                 </div>
               </div>
               <div class="flex flex-col gap-1">
