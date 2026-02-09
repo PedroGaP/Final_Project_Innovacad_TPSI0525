@@ -5,12 +5,25 @@ import { useUserDetails } from "@/providers/UserDetailsProvider";
 import type { Class } from "@/types/class";
 import type { Enrollment } from "@/types/enrollment";
 import { GradeTypeEnum, type Grade } from "@/types/grade";
-import type { Schedule } from "@/types/schedule";
 import type { Trainee } from "@/types/user";
 import { createMemo, createResource } from "solid-js";
 import toast from "solid-toast";
 
-const createEmptyGrade = (): Grade =>
+interface GradeForm extends Grade {
+  class_id?: string;
+}
+
+const normalizeId = (id: any) =>
+  String(id || "")
+    .trim()
+    .toLowerCase();
+
+const getMyTrainerId = (u: any): string => {
+  if (!u) return "";
+  return normalizeId(u.trainer_id || u.trainerId || u.id);
+};
+
+const createEmptyGrade = (): GradeForm =>
   ({
     grade_id: "",
     class_module_id: "",
@@ -18,19 +31,15 @@ const createEmptyGrade = (): Grade =>
     grade: 0,
     start_date_timestamp: "",
     grade_type: GradeTypeEnum.ASSESSMENT,
-  }) as unknown as Grade;
+    class_id: "",
+  }) as unknown as GradeForm;
 
 const validateGrade = (grade: Grade): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
-
-  if (!String(grade.class_module_id || "").trim()) {
+  if (!String(grade.class_module_id || "").trim())
     errors.push("Class Module is required");
-  }
-
-  if (!String(grade.trainee_id || "").trim()) {
+  if (!String(grade.trainee_id || "").trim())
     errors.push("Trainee is required");
-  }
-
   if (
     grade.grade === undefined ||
     grade.grade === null ||
@@ -40,16 +49,9 @@ const validateGrade = (grade: Grade): { valid: boolean; errors: string[] } => {
   } else if (Number(grade.grade) < 0 || Number(grade.grade) > 20) {
     errors.push("Grade must be between 0 and 20");
   }
-
-  const grade_type = String(grade.grade_type || "").trim();
-  if (!grade_type) {
+  if (!String(grade.grade_type || "").trim())
     errors.push("Grade Type is required");
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
+  return { valid: errors.length === 0, errors };
 };
 
 const getChangedFields = (oldGrade: Grade, newGrade: Grade) => {
@@ -73,117 +75,76 @@ const GradesPage = () => {
   const [trainees] = createResource<Trainee[]>(api.fetchTrainees);
   const [classes] = createResource<Class[]>(api.fetchClasses);
   const [enrollments] = createResource<Enrollment[]>(api.fetchEnrollments);
-  const [mySchedules] = createResource<Schedule[]>(api.fetchUserSchedules);
 
   const myAllowedModuleIds = createMemo(() => {
     const u = user();
-    if (u?.role === "admin" || u?.role === "coordinator") return null;
+    if (!u) return [];
+    if (u.role === "admin" || u.role === "coordinator") return null;
 
-    const schedules = mySchedules();
-    if (!schedules) return [];
+    const allClasses = classes();
+    if (!allClasses) return [];
 
-    return [...new Set(schedules.map((s) => s.class_module_id))];
-  });
+    const myId = getMyTrainerId(u);
+    const allowedIds: string[] = [];
 
-  const myAllowedClassIds = createMemo(() => {
-    const u = user();
-    const allowedModules = myAllowedModuleIds();
-
-    if (allowedModules === null) return null;
-
-    const listClasses = classes();
-    if (!listClasses) return [];
-
-    const allowedClassIds: string[] = [];
-
-    listClasses.forEach((cls) => {
-      const hasModule = cls.modules?.some((m) => {
-        const modId = (m as any).classes_modules_id || m.courses_modules_id;
-        return allowedModules.includes(modId);
+    allClasses.forEach((cls) => {
+      cls.modules?.forEach((mod: any) => {
+        const tId = normalizeId(mod.trainer_id || mod.trainerId);
+        if (tId === myId) {
+          const mId =
+            mod.classes_modules_id ||
+            mod.classesModulesId ||
+            mod.courses_modules_id;
+          if (mId) allowedIds.push(normalizeId(mId));
+        }
       });
-      if (hasModule && cls.class_id) allowedClassIds.push(cls.class_id);
     });
 
-    return allowedClassIds;
+    return [...new Set(allowedIds)];
   });
 
-  const moduleOptions = createMemo(() => {
+  const getTraineeName = (id: string | undefined) => {
+    if (!id || !trainees()) return id;
+    const found = trainees()?.find((t) => t.traineeId === id);
+    return found ? found.name : id;
+  };
+
+  const getClassModuleName = (id: string | undefined) => {
+    if (!id || !classes()) return id;
+    const target = normalizeId(id);
+    for (const cls of classes()!) {
+      const foundMod = cls.modules?.find(
+        (m: any) =>
+          normalizeId(m.classes_modules_id || m.courses_modules_id) === target,
+      );
+      if (foundMod) return `${cls.identifier} - ${foundMod.module_name}`;
+    }
+    return id;
+  };
+
+  const findClassIdByModuleId = (modId: string): string => {
     const list = classes();
-    const allowedModules = myAllowedModuleIds();
-
-    if (!list) return [];
-
-    const options: { label: string; value: string }[] = [];
-
-    list.forEach((cls) => {
-      if (cls.modules && cls.modules.length > 0) {
-        cls.modules.forEach((mod) => {
-          const valueId =
-            (mod as any).classes_modules_id || mod.courses_modules_id;
-
-          if (allowedModules === null || allowedModules.includes(valueId)) {
-            options.push({
-              label: `${cls.identifier} - ${mod.module_name} (${cls.location})`,
-              value: valueId,
-            });
-          }
-        });
-      }
-    });
-
-    return options;
-  });
-
-  const studentOptions = createMemo(() => {
-    const allTrainees = trainees();
-    const allEnrollments = enrollments();
-    const allowedClasses = myAllowedClassIds();
-
-    if (!allTrainees || !allEnrollments) return [];
-
-    const validEnrollments = allEnrollments.filter((e) => {
-      return allowedClasses === null || allowedClasses.includes(e.class_id!);
-    });
-
-    return validEnrollments
-      .map((enrol) => {
-        const t = allTrainees.find((u) => u.traineeId === enrol.trainee_id);
-        if (!t) return null;
-        return {
-          label: `${t.name} (${t.email})`,
-          value: t.traineeId!,
-        };
-      })
-      .filter((opt) => opt !== null) as { label: string; value: string }[];
-  });
+    if (!list || !modId) return "";
+    const target = normalizeId(modId);
+    for (const cls of list) {
+      const found = cls.modules?.some(
+        (m: any) =>
+          normalizeId(m.classes_modules_id || m.courses_modules_id) === target,
+      );
+      if (found) return String(cls.class_id);
+    }
+    return "";
+  };
 
   const filteredGradesData = createMemo(() => {
     const list = gradesData();
-    const allowedModules = myAllowedModuleIds();
-
+    const allowed = myAllowedModuleIds();
     if (!list) return [];
-    if (allowedModules === null) return list;
-
-    return list.filter((g) => allowedModules.includes(g.class_module_id));
+    if (allowed === null) return list;
+    return list.filter((g) => allowed.includes(normalizeId(g.class_module_id)));
   });
 
-  const formFieldsConfig = createMemo<ModalFieldDefinition<Grade>[]>(() => [
-    {
-      name: "class_module_id",
-      label: "Class Module",
-      type: "select",
-      options: moduleOptions(),
-      required: true,
-      placeholder: classes.loading ? "Loading modules..." : "Select Module",
-    },
-    {
-      name: "trainee_id",
-      label: "Trainee",
-      type: "select",
-      options: studentOptions(),
-      required: true,
-      placeholder: trainees.loading ? "Loading trainees..." : "Select Trainee",
-    },
+  const simpleFields = createMemo<ModalFieldDefinition<GradeForm>[]>(() => [
     {
       name: "grade",
       label: "Grade (0-20)",
@@ -202,30 +163,32 @@ const GradesPage = () => {
     },
   ]);
 
-  const handleSaveGrade = async (grade: Grade, original: Grade | null) => {
+  const handleSaveGrade = async (grade: GradeForm, original: Grade | null) => {
+    const { class_id, ...payload } = grade;
+
     try {
-      const validation = validateGrade(grade);
+      const validation = validateGrade(payload);
       if (!validation.valid) {
         validation.errors.forEach((error) => toast.error(error));
         throw new Error("Validation failed");
       }
 
       if (original) {
-        const changedFields = getChangedFields(original, grade);
+        const changedFields = getChangedFields(original, payload);
         if (Object.keys(changedFields).length === 0) return;
-
         await api.updateGrade(String(grade.grade_id), changedFields);
         mutate(
           (prev) =>
-            prev?.map((u) => (u.grade_id === grade.grade_id ? grade : u)) || [],
+            prev?.map((u) => (u.grade_id === grade.grade_id ? payload : u)) ||
+            [],
         );
         toast.success(`Grade updated successfully`);
       } else {
         const gradeObj = {
-          class_module_id: String(grade.class_module_id),
-          trainee_id: String(grade.trainee_id),
-          grade: String(grade.grade),
-          grade_type: String(grade.grade_type),
+          class_module_id: String(payload.class_module_id),
+          trainee_id: String(payload.trainee_id),
+          grade: String(payload.grade),
+          grade_type: String(payload.grade_type),
         };
         const newGrade = await api.createGrade(gradeObj);
         mutate((prev) => [...(prev || []), newGrade]);
@@ -248,34 +211,161 @@ const GradesPage = () => {
     toast.success("Grade deleted");
   };
 
-  const getTraineeName = (id: string | undefined) => {
-    if (!id || !trainees()) return id;
-    const found = trainees()?.find((t) => t.traineeId === id);
-    return found ? found.name : id;
-  };
-
-  const getClassModuleName = (id: string | undefined) => {
-    if (!id || !classes()) return id;
-    for (const cls of classes()!) {
-      const foundMod = cls.modules?.find(
-        (m: any) => m.classes_modules_id === id || m.courses_modules_id === id,
-      );
-      if (foundMod) {
-        return `${cls.identifier} - ${foundMod.module_name}`;
-      }
-    }
-    return id;
-  };
-
   return (
-    <EntityTable<Grade>
+    <EntityTable<GradeForm>
       title="Manage Grades"
       data={filteredGradesData}
-      handleEditClick={(grade) => ({ ...grade })}
+      handleEditClick={(grade) => ({
+        ...grade,
+        class_id: findClassIdByModuleId(grade.class_module_id!),
+      })}
       handleAddClick={() => createEmptyGrade()}
       confirmDelete={confirmDelete}
       handleSave={handleSaveGrade}
-      formFields={formFieldsConfig()}
+      formFields={simpleFields()}
+      renderCustomFields={(formData, setFormData) => {
+        const allowedModules = myAllowedModuleIds();
+
+        const classOptions = (() => {
+          const all = classes() || [];
+          if (allowedModules === null) return all;
+
+          return all.filter((c) =>
+            c.modules?.some((m: any) => {
+              const id = normalizeId(
+                m.classes_modules_id ||
+                  m.classesModulesId ||
+                  m.courses_modules_id,
+              );
+              return allowedModules.includes(id);
+            }),
+          );
+        })();
+
+        const moduleOptions = (() => {
+          if (!formData.class_id) return [];
+          const selectedClass = classes()?.find(
+            (c) => normalizeId(c.class_id) === normalizeId(formData.class_id),
+          );
+          if (!selectedClass || !selectedClass.modules) return [];
+
+          return selectedClass.modules
+            .filter((m: any) => {
+              const id = normalizeId(
+                m.classes_modules_id ||
+                  m.classesModulesId ||
+                  m.courses_modules_id,
+              );
+              return allowedModules === null || allowedModules.includes(id);
+            })
+            .map((m: any) => ({
+              label: m.module_name,
+              value: m.classes_modules_id || m.courses_modules_id,
+            }));
+        })();
+
+        const traineeOptions = (() => {
+          if (!formData.class_id) return [];
+          const enrols = enrollments() || [];
+          const studs = trainees() || [];
+
+          return enrols
+            .filter(
+              (e) => normalizeId(e.class_id) === normalizeId(formData.class_id),
+            )
+            .map((e) => {
+              const t = studs.find(
+                (s) => normalizeId(s.traineeId) === normalizeId(e.trainee_id),
+              );
+              return t
+                ? { label: `${t.name} (${t.email})`, value: t.traineeId! }
+                : null;
+            })
+            .filter(Boolean) as { label: string; value: string }[];
+        })();
+
+        const isClassSelected = !!formData.class_id && formData.class_id !== "";
+
+        return (
+          <>
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text font-bold">Class</span>
+              </label>
+              <select
+                class="select select-bordered w-full"
+                value={formData.class_id || ""}
+                onChange={(e) => {
+                  const newVal = e.currentTarget.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    class_id: newVal,
+                    class_module_id: "",
+                    trainee_id: "",
+                  }));
+                }}
+              >
+                <option value="" disabled>
+                  Select Class
+                </option>
+                {classOptions.map((c) => (
+                  <option value={String(c.class_id)}>
+                    {c.identifier} ({c.location})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text font-bold">Module</span>
+              </label>
+              <select
+                class="select select-bordered w-full"
+                value={formData.class_module_id || ""}
+                disabled={!isClassSelected}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    class_module_id: e.currentTarget.value,
+                  }))
+                }
+              >
+                <option value="" disabled>
+                  Select Module
+                </option>
+                {moduleOptions.map((m) => (
+                  <option value={String(m.value)}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text font-bold">Trainee</span>
+              </label>
+              <select
+                class="select select-bordered w-full"
+                value={formData.trainee_id || ""}
+                disabled={!isClassSelected}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    trainee_id: e.currentTarget.value,
+                  }))
+                }
+              >
+                <option value="" disabled>
+                  Select Trainee
+                </option>
+                {traineeOptions.map((t) => (
+                  <option value={String(t.value)}>{t.label}</option>
+                ))}
+              </select>
+            </div>
+          </>
+        );
+      }}
       filter={(e: Grade, search: string) => {
         const s = search.toLowerCase();
         const traineeName = getTraineeName(e.trainee_id)?.toLowerCase() || "";
@@ -318,9 +408,7 @@ const GradesPage = () => {
           fieldName: "grade",
           customGeneration: (e) => (
             <div
-              class={`badge ${
-                Number(e.grade) >= 10 ? "badge-success" : "badge-error"
-              } badge-outline font-bold`}
+              class={`badge ${Number(e.grade) >= 10 ? "badge-success" : "badge-error"} badge-outline font-bold`}
             >
               {Number(e.grade).toFixed(1)}
             </div>

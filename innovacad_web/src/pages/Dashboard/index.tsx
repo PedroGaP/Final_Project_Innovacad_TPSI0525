@@ -165,16 +165,6 @@ const DashboardLayout = (props: any) => {
                   </div>
                 </label>
 
-                {/* Notifications */}
-                <button class="btn btn-ghost btn-circle">
-                  <div class="indicator">
-                    <Icon name="Bell" size={20} />
-                    <span class="badge badge-xs badge-primary indicator-item">
-                      +9
-                    </span>
-                  </div>
-                </button>
-
                 {/* User Menu */}
                 <div class="dropdown dropdown-end z-[110]">
                   <label
@@ -183,16 +173,27 @@ const DashboardLayout = (props: any) => {
                   >
                     <Show when={!!user()}>
                       <div class="avatar">
-                        <div class="w-8 h-8 rounded-full border border-base-300">
-                          <img
-                            onError={(e: any) => {
-                              e.target.src = `https://ui-avatars.com/api/?name=${user()?.name}&background=random`;
-                            }}
-                            src={`${API_ENDPOINTS.BASE}/${user()?.image}?t=${imageCacheKey()}`}
-                            alt="Avatar"
-                          />
+                        <div class="w-8 h-8 rounded-full border border-base-300 overflow-hidden flex items-center justify-center bg-base-200">
+                          <Show
+                            when={user()?.image && user()?.image !== "null"}
+                            fallback={
+                              <img
+                                src={`https://ui-avatars.com/api/?name=${user()?.name || "User"}&background=random`}
+                                alt={user()?.name}
+                              />
+                            }
+                          >
+                            <img
+                              onError={(e: any) => {
+                                e.target.src = `https://ui-avatars.com/api/?name=${user()?.name}&background=random`;
+                              }}
+                              src={`${API_ENDPOINTS.BASE}/${user()?.image}`}
+                              alt="Avatar"
+                            />
+                          </Show>
                         </div>
                       </div>
+
                       <div class="hidden md:flex flex-col items-start leading-tight">
                         <span class="text-sm font-bold">{user()?.name}</span>
                         <span class="text-[10px] uppercase opacity-50 font-black tracking-wider">
