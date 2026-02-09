@@ -6,8 +6,6 @@ import { newPasswordEmail } from "@/components/NewPasswordEmail";
 import EntityTable from "@/components/EntityTable";
 import UserDocumentsManager from "@/components/DocumentManager";
 
-// --- Funções Auxiliares ---
-
 const createEmptyTrainer = (): Trainer =>
   ({
     id: "",
@@ -94,7 +92,6 @@ const getChangedFields = (
   return changes;
 };
 
-// --- Componente Principal ---
 
 const TrainerPage = () => {
   const api = useApi();
@@ -115,7 +112,6 @@ const TrainerPage = () => {
       }
 
       if (original) {
-        // --- UPDATE ---
         const changedFields = getChangedFields(original, trainer);
 
         if (Object.keys(changedFields).length === 0) return;
@@ -135,7 +131,6 @@ const TrainerPage = () => {
 
         toast.success(`Trainer updated successfully`);
       } else {
-        // --- CREATE ---
         const tempPassword = "T" + Math.random().toString(36).slice(-10) + "1@";
 
         const trainerObj = {
@@ -282,7 +277,6 @@ const TrainerPage = () => {
           type: "date",
         },
       ]}
-      // --- GESTÃO DE DOCUMENTOS ---
       renderCustomFields={(formData) => (
         <Show
           when={formData.id}

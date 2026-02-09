@@ -13,6 +13,7 @@ class CourseRepositoryImpl implements ICourseRepository {
     c.course_id,
     c.identifier,
     c.name,
+    c.area,
     cm.module_id,
     cm.courses_modules_id,
     cm.sequence_course_module_id
@@ -22,60 +23,60 @@ class CourseRepositoryImpl implements ICourseRepository {
 
   @override
   Future<Result<List<OutputCourseDao>>> getAll() async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final coursesResults = await db.getAll(table: 'courses');
 
-      final coursesResults = await db.getAll(table: 'courses');
+        if (coursesResults.isEmpty) return Result.success([]);
 
-      if (coursesResults.isEmpty) return Result.success([]);
+        final courseIds = coursesResults
+            .map((c) => "'${c['course_id'].toString().trim()}'")
+            .join(',');
 
-      final courseIds = coursesResults
-          .map((c) => "'${c['course_id'].toString().trim()}'")
-          .join(',');
+        final modulesQuery =
+            """
+          SELECT 
+            cm.courses_modules_id,
+            cm.course_id,
+            cm.module_id,
+            cm.sequence_course_module_id,
+            m.name AS module_name, 
+            m.duration
+          FROM courses_modules cm
+          LEFT JOIN modules m ON cm.module_id = m.module_id
+          WHERE cm.course_id IN ($courseIds)
+        """;
 
-      final modulesQuery =
-          """
-        SELECT 
-          cm.courses_modules_id,
-          cm.course_id,
-          cm.module_id,
-          cm.sequence_course_module_id,
-          m.name AS module_name, 
-          m.duration
-        FROM courses_modules cm
-        LEFT JOIN modules m ON cm.module_id = m.module_id
-        WHERE cm.course_id IN ($courseIds)
-      """;
+        final modulesResult = await db.query(modulesQuery);
 
-      final modulesResult = await db.query(modulesQuery);
+        final Map<String, List<Map<String, dynamic>>> modulesMap = {};
 
-      final Map<String, List<Map<String, dynamic>>> modulesMap = {};
+        for (final row in modulesResult.rowsAssoc) {
+          final data = row.assoc();
 
-      for (final row in modulesResult.rowsAssoc) {
-        final data = row.assoc();
+          final cId = data['course_id'].toString().trim().toLowerCase();
 
-        final cId = data['course_id'].toString().trim().toLowerCase();
-
-        if (!modulesMap.containsKey(cId)) {
-          modulesMap[cId] = [];
+          if (!modulesMap.containsKey(cId)) {
+            modulesMap[cId] = [];
+          }
+          modulesMap[cId]!.add(data);
         }
-        modulesMap[cId]!.add(data);
-      }
 
-      final List<OutputCourseDao> outputList = coursesResults.map((courseData) {
-        final cId = courseData['course_id'].toString().trim().toLowerCase();
+        final List<OutputCourseDao> outputList = coursesResults.map((
+          courseData,
+        ) {
+          final cId = courseData['course_id'].toString().trim().toLowerCase();
 
-        final Map<String, dynamic> fullData = Map.from(courseData);
+          final Map<String, dynamic> fullData = Map.from(courseData);
 
-        final modulesList = modulesMap[cId] ?? [];
-        fullData['modules'] = modulesList;
+          final modulesList = modulesMap[cId] ?? [];
+          fullData['modules'] = modulesList;
 
-        return OutputCourseDao.fromJson(fullData);
-      }).toList();
+          return OutputCourseDao.fromJson(fullData);
+        }).toList();
 
-      return Result.success(outputList);
+        return Result.success(outputList);
+      });
     } catch (e, s) {
       print("ERRO CRÍTICO: $e");
       return Result.failure(
@@ -90,51 +91,49 @@ class CourseRepositoryImpl implements ICourseRepository {
 
   @override
   Future<Result<OutputCourseDao>> getById(String id) async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
-
-      final courseResult = await db.getOne(
-        table: 'courses',
-        where: {"course_id": id},
-      );
-
-      if (courseResult.isEmpty) {
-        return Result.failure(
-          AppError(AppErrorType.notFound, "Course not found"),
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final courseResult = await db.getOne(
+          table: 'courses',
+          where: {"course_id": id},
         );
-      }
 
-      final modulesQuery = """
-        SELECT 
-          cm.courses_modules_id,
-          cm.classes_modules_id,
-          cm.course_id,
-          cm.module_id,
-          cm.sequence_course_module_id,
-          m.name AS module_name, 
-          m.duration
-        FROM courses_modules cm
-        LEFT JOIN modules m ON cm.module_id = m.module_id
-        WHERE cm.course_id = ?
-      """;
+        if (courseResult.isEmpty) {
+          return Result.failure(
+            AppError(AppErrorType.notFound, "Course not found"),
+          );
+        }
 
-      final modulesResult = await db.query(
-        modulesQuery,
-        whereValues: [id],
-        isStmt: true,
-      );
+        final modulesQuery = """
+          SELECT cm.courses_modules_id,
+              cms.classes_modules_id,
+              cm.course_id,
+              cm.module_id,
+              cm.sequence_course_module_id,
+              m.name AS module_name,
+              m.duration
+          FROM courses_modules cm
+              LEFT JOIN modules m ON cm.module_id = m.module_id
+              LEFT JOIN classes_modules cms ON cms.courses_modules_id = cm.courses_modules_id
+          WHERE cm.course_id = ?
+        """;
 
-      final Map<String, dynamic> fullData = Map.from(courseResult);
+        final modulesResult = await db.query(
+          modulesQuery,
+          whereValues: [id],
+          isStmt: true,
+        );
 
-      final modulesList = modulesResult.rowsAssoc
-          .map((row) => row.assoc())
-          .toList();
+        final Map<String, dynamic> fullData = Map.from(courseResult);
 
-      fullData['modules'] = modulesList;
+        final modulesList = modulesResult.rowsAssoc
+            .map((row) => row.assoc())
+            .toList();
 
-      return Result.success(OutputCourseDao.fromJson(fullData));
+        fullData['modules'] = modulesList;
+
+        return Result.success(OutputCourseDao.fromJson(fullData));
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -152,7 +151,7 @@ class CourseRepositoryImpl implements ICourseRepository {
     final uuid = Uuid();
 
     try {
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
       await db.startTrans();
 
       final String newCourseId = uuid.v4();
@@ -163,25 +162,34 @@ class CourseRepositoryImpl implements ICourseRepository {
           "course_id": newCourseId,
           "identifier": dto.identifier,
           "name": dto.name,
+          "area": dto.area,
         },
       );
 
       if (dto.addModulesIds != null && dto.addModulesIds!.isNotEmpty) {
         final Map<String, String> moduleToRelationMap = {};
+
+        for (final item in dto.addModulesIds!) {
+          moduleToRelationMap[item.moduleId] = uuid.v4();
+        }
+
         final insertValues = <String>[];
         final insertParams = <dynamic>[];
 
         for (final item in dto.addModulesIds!) {
-          final newRelationUuid = uuid.v4();
+          final currentUuid = moduleToRelationMap[item.moduleId];
 
-          moduleToRelationMap[item.moduleId] = newRelationUuid;
+          String? sequenceUuid;
+          if (item.sequenceModuleId != null) {
+            sequenceUuid = moduleToRelationMap[item.sequenceModuleId];
+          }
 
           insertValues.add("(?, ?, ?, ?)");
           insertParams.addAll([
-            newRelationUuid,
+            currentUuid,
             newCourseId,
             item.moduleId,
-            null,
+            sequenceUuid,
           ]);
         }
 
@@ -191,53 +199,22 @@ class CourseRepositoryImpl implements ICourseRepository {
 
           await db.query(insertSql, whereValues: insertParams, isStmt: true);
         }
-
-        final caseCases = <String>[];
-        final caseParams = <dynamic>[];
-        final idsToUpdate = <String>[];
-
-        for (final item in dto.addModulesIds!) {
-          if (item.sequenceModuleId != null) {
-            final currentUuid = moduleToRelationMap[item.moduleId];
-            final parentUuid = moduleToRelationMap[item.sequenceModuleId];
-
-            if (currentUuid != null && parentUuid != null) {
-              caseCases.add("WHEN ? THEN ?");
-              caseParams.add(currentUuid);
-              caseParams.add(parentUuid);
-              idsToUpdate.add("'$currentUuid'");
-            }
-          }
-        }
-
-        if (caseCases.isNotEmpty) {
-          final updateSql =
-              """
-            UPDATE courses_modules 
-            SET sequence_course_module_id = CASE courses_modules_id 
-            ${caseCases.join(' ')} 
-            ELSE sequence_course_module_id 
-            END
-            WHERE courses_modules_id IN (${idsToUpdate.join(',')})
-          """;
-
-          await db.query(updateSql, whereValues: caseParams, isStmt: true);
-        }
       }
 
       await db.commit();
-
       return await getById(newCourseId);
     } catch (e, s) {
-      await db?.rollback();
+      if (db != null) await db.rollback();
       print("Error Creating Course: $e");
       return Result.failure(
         AppError(
           AppErrorType.internal,
-          "Error creating course with sequences",
+          "Error creating course",
           details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -247,20 +224,18 @@ class CourseRepositoryImpl implements ICourseRepository {
     final uuid = Uuid();
 
     try {
-      db = await MysqlConfiguration.connect();
-
-      // 1. Check existence
       final existingCourseResult = await getById(id);
       if (existingCourseResult.isFailure || existingCourseResult.data == null) {
         return existingCourseResult;
       }
 
+      db = await MysqlConfiguration.getConnection();
       await db.startTrans();
 
-      // 2. Update Basic Fields
       final updateData = <String, dynamic>{};
       if (dto.identifier != null) updateData['identifier'] = dto.identifier;
       if (dto.name != null) updateData['name'] = dto.name;
+      if (dto.area != null) updateData['area'] = dto.area;
 
       if (updateData.isNotEmpty) {
         await db.update(
@@ -270,29 +245,22 @@ class CourseRepositoryImpl implements ICourseRepository {
         );
       }
 
-      // 3. Remove Modules
       if (dto.removeCoursesModules != null &&
           dto.removeCoursesModules!.isNotEmpty) {
-        // Safe check for SQL Injection manually since we are injecting into IN (...)
         final idsToRemove = dto.removeCoursesModules!
             .map((e) => "'${e.trim()}'")
             .join(',');
 
-        // Break links first
         await db.query(
           "UPDATE courses_modules SET sequence_course_module_id = NULL WHERE sequence_course_module_id IN ($idsToRemove)",
-          isStmt: true,
         );
-        // Delete rows
+
         await db.query(
           "DELETE FROM courses_modules WHERE courses_modules_id IN ($idsToRemove)",
-          isStmt: true,
         );
       }
 
-      // 4. Add Modules
       if (dto.addCoursesModules != null && dto.addCoursesModules!.isNotEmpty) {
-        // Fetch current state using transaction connection
         final currentRows = await db.query(
           "SELECT courses_modules_id, module_id FROM courses_modules WHERE course_id = ?",
           whereValues: [id],
@@ -306,29 +274,28 @@ class CourseRepositoryImpl implements ICourseRepository {
                 .toString(),
         };
 
-        // Determine what needs to be inserted
         final newModulesToInsert = <String>[];
+
         for (var item in dto.addCoursesModules!) {
-          // If we don't have this module ID linked to this course yet, we need to insert it
-          if (!moduleToRelationMap.containsKey(
-            item.moduleId.trim().toLowerCase(),
-          )) {
+          final modKey = item.moduleId.trim().toLowerCase();
+          if (!moduleToRelationMap.containsKey(modKey)) {
             newModulesToInsert.add(item.moduleId);
+            moduleToRelationMap[modKey] = uuid.v4();
           }
         }
 
-        // Perform Inserts
         if (newModulesToInsert.isNotEmpty) {
           final insertValues = <String>[];
           final insertParams = <dynamic>[];
 
           for (final modId in newModulesToInsert) {
-            final newRelationUuid = uuid.v4();
-            // Add to map immediately so we can use it for sequencing below
-            moduleToRelationMap[modId.trim().toLowerCase()] = newRelationUuid;
-
             insertValues.add("(?, ?, ?, ?)");
-            insertParams.addAll([newRelationUuid, id, modId, null]);
+            insertParams.addAll([
+              moduleToRelationMap[modId.trim().toLowerCase()],
+              id,
+              modId,
+              null,
+            ]);
           }
 
           final insertSql =
@@ -336,40 +303,50 @@ class CourseRepositoryImpl implements ICourseRepository {
           await db.query(insertSql, whereValues: insertParams, isStmt: true);
         }
 
-        // 5. Update Sequences (The fix for Error 1020)
+        final caseStatements = <String>[];
+        final caseParams = <dynamic>[];
+        final whereIds = <String>[];
+
         for (final item in dto.addCoursesModules!) {
-          final modKey = item.moduleId.trim().toLowerCase();
-          final currentUuid = moduleToRelationMap[modKey];
+          final currentUuid =
+              moduleToRelationMap[item.moduleId.trim().toLowerCase()];
 
-          if (currentUuid == null) continue;
-
-          if (item.sequenceModuleId != null) {
-            final seqKey = item.sequenceModuleId!.trim().toLowerCase();
-            final parentUuid = moduleToRelationMap[seqKey];
-
-            if (parentUuid != null) {
-              // FIX: Use raw query instead of db.update to avoid optimistic lock check on dirty rows
-              await db.query(
-                "UPDATE courses_modules SET sequence_course_module_id = ? WHERE courses_modules_id = ?",
-                whereValues: [parentUuid, currentUuid],
-                isStmt: true,
-              );
+          if (currentUuid != null) {
+            String? parentUuid;
+            if (item.sequenceModuleId != null) {
+              parentUuid =
+                  moduleToRelationMap[item.sequenceModuleId!
+                      .trim()
+                      .toLowerCase()];
             }
-          } else {
-            // Set to null
-            await db.query(
-              "UPDATE courses_modules SET sequence_course_module_id = NULL WHERE courses_modules_id = ?",
-              whereValues: [currentUuid],
-              isStmt: true,
-            );
+
+            caseStatements.add("WHEN ? THEN ?");
+            caseParams.add(currentUuid);
+            caseParams.add(parentUuid);
+
+            whereIds.add("'$currentUuid'");
           }
+        }
+
+        if (caseStatements.isNotEmpty) {
+          final updateSql =
+              """
+            UPDATE courses_modules 
+            SET sequence_course_module_id = CASE courses_modules_id 
+            ${caseStatements.join(' ')} 
+            ELSE sequence_course_module_id 
+            END
+            WHERE courses_modules_id IN (${whereIds.join(',')})
+          """;
+
+          await db.query(updateSql, whereValues: caseParams, isStmt: true);
         }
       }
 
       await db.commit();
       return await getById(id);
     } catch (e, s) {
-      await db?.rollback();
+      if (db != null) await db.rollback();
       print("Update Error: $e");
       return Result.failure(
         AppError(
@@ -378,6 +355,8 @@ class CourseRepositoryImpl implements ICourseRepository {
           details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -394,7 +373,7 @@ class CourseRepositoryImpl implements ICourseRepository {
       if (existingCourse.isFailure || existingCourse.data == null)
         return existingCourse;
 
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
 
       await db.delete(table: table, where: {"course_id": id});
 
@@ -407,6 +386,8 @@ class CourseRepositoryImpl implements ICourseRepository {
           details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 }

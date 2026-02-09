@@ -21,9 +21,14 @@ class CreateCourseDto {
   @JsonKey('remove_modules_ids')
   final List<String>? removeCoursesModulesIds;
 
+  @annotation.JsonKey(name: 'area')
+  @JsonKey('area')
+  final String area;
+
   CreateCourseDto({
     required this.identifier,
     required this.name,
+    required this.area,
     this.addModulesIds,
     this.removeCoursesModulesIds,
   });

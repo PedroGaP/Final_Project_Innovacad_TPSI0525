@@ -11,18 +11,16 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
 
   @override
   Future<Result<List<OutputEnrollmentDao>>> getAll() async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final results = await db.getAll(table: table);
 
-      final results = await db.getAll(table: table);
+        final items = results.map((data) {
+          return OutputEnrollmentDao.fromJson(data);
+        }).toList();
 
-      final items = results.map((data) {
-        return OutputEnrollmentDao.fromJson(data);
-      }).toList();
-
-      return Result.success(items);
+        return Result.success(items);
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -36,21 +34,23 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
 
   @override
   Future<Result<OutputEnrollmentDao>> getById(String id) async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
-
-      final result =
-          await db.getOne(table: table, where: {"enrollment_id": id})
-              as Map<String, dynamic>;
-
-      if (result.isEmpty)
-        return Result.failure(
-          AppError(AppErrorType.notFound, "Enrollment not found"),
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final rawResult = await db.getOne(
+          table: table,
+          where: {"enrollment_id": id},
         );
 
-      return Result.success(OutputEnrollmentDao.fromJson(result));
+        if (rawResult.isEmpty) {
+          return Result.failure(
+            AppError(AppErrorType.notFound, "Enrollment not found"),
+          );
+        }
+
+        final result = Map<String, dynamic>.from(rawResult);
+
+        return Result.success(OutputEnrollmentDao.fromJson(result));
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -67,7 +67,7 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
     MysqlUtils? db;
 
     try {
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
 
       await db.startTrans();
 
@@ -80,25 +80,27 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
         },
       );
 
-      final created =
-          await db.getOne(
-                table: table,
-                where: {"class_id": dto.classId, "trainee_id": dto.traineeId},
-              )
-              as Map<String, dynamic>;
+      final rawCreated = await db.getOne(
+        table: table,
+        where: {"class_id": dto.classId, "trainee_id": dto.traineeId},
+      );
 
-      if (created.isEmpty)
+      if (rawCreated.isEmpty) {
         return Result.failure(
           AppError(
             AppErrorType.internal,
             "Created Enrollment could not be retrieved",
           ),
         );
+      }
+
+      final created = Map<String, dynamic>.from(rawCreated);
 
       await db.commit();
 
       return Result.success(OutputEnrollmentDao.fromJson(created));
     } catch (e, s) {
+      if (db != null) await db.rollback();
       return Result.failure(
         AppError(
           AppErrorType.internal,
@@ -106,6 +108,8 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
           details: {"error": e.toString(), "stacktrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -114,43 +118,41 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
     String id,
     UpdateEnrollmentDto dto,
   ) async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final existingEnrollment = await getById(id);
 
-      final existingEnrollment = await getById(id);
+        if (existingEnrollment.isFailure || existingEnrollment.data == null)
+          return existingEnrollment;
 
-      if (existingEnrollment.isFailure || existingEnrollment.data == null)
-        return existingEnrollment;
+        final updateData = <String, dynamic>{};
 
-      final updateData = <String, dynamic>{};
+        if (dto.classId != null &&
+            dto.classId != existingEnrollment.data!.classId)
+          updateData["class_id"] = dto.classId;
 
-      if (dto.classId != null &&
-          dto.classId != existingEnrollment.data!.classId)
-        updateData["class_id"] = dto.classId;
+        if ((dto.traineeId != null && dto.traineeId!.isNotEmpty) &&
+            dto.traineeId != existingEnrollment.data!.traineeId) {
+          updateData["trainee_id"] = dto.traineeId;
+        }
 
-      if ((dto.traineeId != null && dto.traineeId!.isNotEmpty) &&
-          dto.traineeId != existingEnrollment.data!.traineeId) {
-        updateData["trainee_id"] = dto.traineeId;
-      }
+        if (dto.finalGrade != null ||
+            dto.finalGrade != existingEnrollment.data!.finalGrade)
+          updateData["final_grade"] = dto.finalGradeDouble;
 
-      if (dto.finalGrade != null ||
-          dto.finalGrade != existingEnrollment.data!.finalGrade)
-        updateData["final_grade"] = dto.finalGradeDouble;
+        if (updateData.isEmpty) return existingEnrollment;
 
-      if (updateData.isEmpty) return existingEnrollment;
+        print("Update Data: $updateData");
 
-      print("Update Data: $updateData");
+        await db.update(
+          table: table,
+          updateData: updateData,
+          where: {"enrollment_id": id},
+          debug: true,
+        );
 
-      await db.update(
-        table: table,
-        updateData: updateData,
-        where: {"enrollment_id": id},
-        debug: true,
-      );
-
-      return await getById(id);
+        return await getById(id);
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -164,19 +166,17 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
 
   @override
   Future<Result<OutputEnrollmentDao>> delete(String id) async {
-    MysqlUtils? db;
-
     try {
-      final existingEnrollment = await getById(id);
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final existingEnrollment = await getById(id);
 
-      if (existingEnrollment.isFailure || existingEnrollment.data == null)
+        if (existingEnrollment.isFailure || existingEnrollment.data == null)
+          return existingEnrollment;
+
+        await db.delete(table: table, where: {"enrollment_id": id});
+
         return existingEnrollment;
-
-      db = await MysqlConfiguration.connect();
-
-      await db.delete(table: table, where: {"enrollment_id": id});
-
-      return existingEnrollment;
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(

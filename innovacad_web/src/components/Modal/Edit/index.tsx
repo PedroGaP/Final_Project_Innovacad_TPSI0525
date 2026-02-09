@@ -2,7 +2,7 @@ import { CircleQuestionMark } from "lucide-solid";
 import {
   createSignal,
   Show,
-  For, // For é essencial aqui
+  For,
   createMemo,
   type JSXElement,
 } from "solid-js";

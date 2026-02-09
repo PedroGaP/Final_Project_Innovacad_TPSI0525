@@ -30,7 +30,13 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       LEFT JOIN rooms r ON s.room_id = r.room_id""";
 
   String _toSqlDate(DateTime dt) {
-    return dt.toIso8601String().replaceAll('T', ' ').substring(0, 19);
+    final y = dt.year.toString().padLeft(4, '0');
+    final m = dt.month.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
+    final h = dt.hour.toString().padLeft(2, '0');
+    final min = dt.minute.toString().padLeft(2, '0');
+    final s = dt.second.toString().padLeft(2, '0');
+    return "$y-$m-$d $h:$min:$s";
   }
 
   DateTime _combineDateAndTime(DateTime date, String timeStr) {
@@ -110,16 +116,16 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
 
   @override
   Future<Result<List<OutputScheduleDao>>> getAll() async {
-    MysqlUtils? db;
     try {
-      db = await MysqlConfiguration.connect();
-      final results = await db.query(scheduleQuerySql);
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final results = await db.query(scheduleQuerySql);
 
-      final items = results.rowsAssoc.map((data) {
-        return _mapRowToDao(data.assoc());
-      }).toList();
+        final items = results.rowsAssoc.map((data) {
+          return _mapRowToDao(data.assoc());
+        }).toList();
 
-      return Result.success(items);
+        return Result.success(items);
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -133,25 +139,24 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
 
   @override
   Future<Result<List<OutputScheduleDao>>> getById(String classId) async {
-    MysqlUtils? db;
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final result = await db.query(
+          "$scheduleQuerySql WHERE classm.class_id = ? ORDER BY s.start_date_timestamp ASC",
+          isStmt: true,
+          whereValues: [classId],
+        );
 
-      final result = await db.query(
-        "$scheduleQuerySql WHERE classm.class_id = ? ORDER BY s.start_date_timestamp ASC",
-        isStmt: true,
-        whereValues: [classId],
-      );
+        if (result.numOfRows <= 0) {
+          return Result.success([]);
+        }
 
-      if (result.numOfRows <= 0) {
-        return Result.success([]);
-      }
+        final list = result.rowsAssoc
+            .map((row) => _mapRowToDao(row.assoc()))
+            .toList();
 
-      final list = result.rowsAssoc
-          .map((row) => _mapRowToDao(row.assoc()))
-          .toList();
-
-      return Result.success(list);
+        return Result.success(list);
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -166,17 +171,17 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
   Future<Result<OutputScheduleDao>> _getSingleScheduleById(
     String scheduleId,
   ) async {
-    MysqlUtils? db;
     try {
-      db = await MysqlConfiguration.connect();
-      final result = await db.query(
-        "$scheduleQuerySql WHERE s.schedule_id = ?",
-        isStmt: true,
-        whereValues: [scheduleId],
-      );
-      if (result.numOfRows < 1)
-        return Result.failure(AppError(AppErrorType.notFound, "Not found"));
-      return Result.success(_mapRowToDao(result.rowsAssoc.first.assoc()));
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final result = await db.query(
+          "$scheduleQuerySql WHERE s.schedule_id = ?",
+          isStmt: true,
+          whereValues: [scheduleId],
+        );
+        if (result.numOfRows < 1)
+          return Result.failure(AppError(AppErrorType.notFound, "Not found"));
+        return Result.success(_mapRowToDao(result.rowsAssoc.first.assoc()));
+      });
     } catch (e) {
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
@@ -186,9 +191,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
   Future<Result<OutputScheduleDao>> create(CreateScheduleDto dto) async {
     MysqlUtils? db;
     try {
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
 
-      // 1. Basic Validation (In-memory)
       if (dto.startTime.isAfter(dto.endTime) ||
           dto.startTime.isAtSameMomentAs(dto.endTime)) {
         return Result.failure(
@@ -199,7 +203,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         );
       }
 
-      // 2. Check existing trainer conflict for this module (Single Query)
       final trainerCheckSql =
           "SELECT DISTINCT trainer_id FROM schedules WHERE class_module_id = ? LIMIT 1";
       final trainerResult = await db.query(
@@ -221,7 +224,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         }
       }
 
-      // 3. Fetch Availability Slots (Single Query)
       final availabilitySql = """
         SELECT rs.start_time, rs.end_time, a.availability_id, a.is_booked
         FROM availabilities a
@@ -246,7 +248,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         );
       }
 
-      // 4. Process Slots In-Memory
       List<String> availabilitiesToBook = [];
 
       for (var row in availResults.rowsAssoc) {
@@ -256,14 +257,12 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         final sStart = _combineDateAndTime(dto.startTime, data['start_time']);
         final sEnd = _combineDateAndTime(dto.startTime, data['end_time']);
 
-        // Check intersection: Slot Start < Request End AND Slot End > Request Start
         if (sStart.isBefore(dto.endTime) && sEnd.isAfter(dto.startTime)) {
-          if (isBooked) continue; // Skip booked slots
+          if (isBooked) continue;
           availabilitiesToBook.add(data['availability_id'].toString());
         }
       }
 
-      // 5. Check Availability Logic (Likely heavy logic, keep as is or optimize separately)
       final isAvailable = await checkTrainerAvailability(
         db,
         dto.trainerId,
@@ -280,7 +279,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         );
       }
 
-      // 6. Check Conflicts (Optimized queries already)
       final conflictTrainer = await db.query(
         """
         SELECT schedule_id FROM schedules 
@@ -294,12 +292,12 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       """,
         whereValues: [
           dto.trainerId,
-          dto.endTime.toIso8601String(),
-          dto.startTime.toIso8601String(),
-          dto.endTime.toIso8601String(),
-          dto.startTime.toIso8601String(),
-          dto.startTime.toIso8601String(),
-          dto.endTime.toIso8601String(),
+          _toSqlDate(dto.endTime),
+          _toSqlDate(dto.startTime),
+          _toSqlDate(dto.endTime),
+          _toSqlDate(dto.startTime),
+          _toSqlDate(dto.startTime),
+          _toSqlDate(dto.endTime),
         ],
         isStmt: true,
       );
@@ -313,7 +311,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         );
       }
 
-      // Get class_id first
       final classInfo = await db.getOne(
         table: 'classes_modules',
         where: {'classes_modules_id': dto.classModuleId},
@@ -334,12 +331,12 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       """,
         whereValues: [
           classId,
-          dto.endTime.toIso8601String(),
-          dto.startTime.toIso8601String(),
-          dto.endTime.toIso8601String(),
-          dto.startTime.toIso8601String(),
-          dto.startTime.toIso8601String(),
-          dto.endTime.toIso8601String(),
+          _toSqlDate(dto.endTime),
+          _toSqlDate(dto.startTime),
+          _toSqlDate(dto.endTime),
+          _toSqlDate(dto.startTime),
+          _toSqlDate(dto.startTime),
+          _toSqlDate(dto.endTime),
         ],
         isStmt: true,
       );
@@ -353,12 +350,10 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         );
       }
 
-      // 7. Perform Writes in Transaction (OPTIMIZED)
       final scheduleId = Uuid().v4();
       final duration = dto.endTime.difference(dto.startTime).inMinutes / 60.0;
 
       await db.transaction((txn) async {
-        // A. Insert Schedule
         await txn.insert(
           table: 'schedules',
           insertData: {
@@ -375,13 +370,10 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         );
 
         if (availabilitiesToBook.isNotEmpty) {
-          // B. Batch Insert Slots
-          // Construct multi-value insert: INSERT INTO x VALUES (...), (...), (...)
           final slotsValues = <String>[];
           for (final availId in availabilitiesToBook) {
             final slotId = Uuid().v4();
             slotsValues.add("('$slotId', '$scheduleId', '$availId', 1)");
-            // Assuming slot_status is int, wrap strings in quotes
           }
 
           if (slotsValues.isNotEmpty) {
@@ -390,15 +382,12 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
             );
           }
 
-          // C. Batch Update Availabilities
-          // UPDATE availabilities SET is_booked = 1 WHERE availability_id IN ('id1', 'id2', ...)
           final idsList = availabilitiesToBook.map((id) => "'$id'").join(',');
           await txn.query(
             "UPDATE availabilities SET is_booked = 1 WHERE availability_id IN ($idsList)",
           );
         }
 
-        // D. Update Module Duration
         await txn.query(
           "UPDATE classes_modules SET current_duration = current_duration + ? WHERE classes_modules_id = ?",
           whereValues: [duration, dto.classModuleId],
@@ -411,6 +400,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       print("Schedule Create Error: $e");
       print(s);
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -427,7 +418,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       final currentResult = await _getSingleScheduleById(id);
       if (currentResult.isFailure) return currentResult;
 
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
       final rawCurrent = await db.getOne(
         table: schedulesTable,
         where: {'schedule_id': id},
@@ -560,30 +551,31 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
           details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
   @override
   Future<Result<List<OutputScheduleDao>>> getByUser(String userId) async {
-    MysqlUtils? db;
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final result = await db.query(
+          "$scheduleQuerySql WHERE u.id = ? ORDER BY s.start_date_timestamp ASC",
+          isStmt: true,
+          whereValues: [userId],
+        );
 
-      final result = await db.query(
-        "$scheduleQuerySql WHERE u.id = ? ORDER BY s.start_date_timestamp ASC",
-        isStmt: true,
-        whereValues: [userId],
-      );
+        if (result.numOfRows <= 0) {
+          return Result.success([]);
+        }
 
-      if (result.numOfRows <= 0) {
-        return Result.success([]);
-      }
+        final list = result.rowsAssoc
+            .map((row) => _mapRowToDao(row.assoc()))
+            .toList();
 
-      final list = result.rowsAssoc
-          .map((row) => _mapRowToDao(row.assoc()))
-          .toList();
-
-      return Result.success(list);
+        return Result.success(list);
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -605,7 +597,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
 
       final scheduleData = existingResult.data!;
 
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
       final rawData = await db.getOne(
         table: schedulesTable,
         where: {'schedule_id': id},
@@ -648,6 +640,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
           details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 

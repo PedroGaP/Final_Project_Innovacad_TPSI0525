@@ -15,6 +15,7 @@ const createEmptyCourse = (): Course =>
   ({
     identifier: "",
     name: "",
+    area: "",
     modules: [],
   }) as unknown as Course;
 
@@ -25,6 +26,7 @@ const validateCourse = (
   if (!String(course.identifier || "").trim())
     errors.push("Identifier is required");
   if (!String(course.name || "").trim()) errors.push("Name is required");
+  if (!String(course.area || "").trim()) errors.push("Area is required");
   return { valid: errors.length === 0, errors };
 };
 
@@ -65,6 +67,7 @@ const CoursesPage = () => {
         if (course.identifier !== original.identifier)
           changedFields.identifier = course.identifier;
         if (course.name !== original.name) changedFields.name = course.name;
+        if (course.area !== original.area) changedFields.area = course.area;
 
         const originalModules = original.modules || [];
         const currentModules = course.modules || [];
@@ -130,6 +133,7 @@ const CoursesPage = () => {
         const newCourseObj = {
           identifier: course.identifier,
           name: course.name,
+          area: course.area,
           add_modules_ids: (course.modules || []).map((m) => ({
             module_id: m.module_id,
             sequence_course_module_id: m.sequence_course_module_id || null,
@@ -310,6 +314,7 @@ const CoursesPage = () => {
   const formFieldsConfig = createMemo<ModalFieldDefinition<Course>[]>(() => [
     { label: "Identifier", name: "identifier", required: true, type: "text" },
     { label: "Course Name", name: "name", required: true, type: "text" },
+    { label: "Area", name: "area", required: true, type: "text" },
   ]);
 
   return (
@@ -326,13 +331,15 @@ const CoursesPage = () => {
         const s = search.toLowerCase();
         return (
           (e.identifier?.toLowerCase().includes(s) ||
-            e.name?.toLowerCase().includes(s)) ??
+            e.name?.toLowerCase().includes(s) ||
+            e.area?.toLowerCase().includes(s)) ??
           false
         );
       }}
       fields={[
         { formattedName: "Identifier", fieldName: "identifier", bigger: true },
         { formattedName: "Name", fieldName: "name" },
+        { formattedName: "Area", fieldName: "area" },
         {
           formattedName: "Modules",
           fieldName: "modules",

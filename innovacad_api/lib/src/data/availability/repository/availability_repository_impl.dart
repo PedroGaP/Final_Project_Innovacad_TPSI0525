@@ -11,18 +11,16 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
 
   @override
   Future<Result<List<OutputAvailabilityDao>>> getAll() async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final results = await db.getAll(table: table);
 
-      final results = await db.getAll(table: table);
+        final items = results.map((data) {
+          return OutputAvailabilityDao.fromJson(data);
+        }).toList();
 
-      final items = results.map((data) {
-        return OutputAvailabilityDao.fromJson(data);
-      }).toList();
-
-      return Result.success(items);
+        return Result.success(items);
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -36,20 +34,19 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
 
   @override
   Future<Result<OutputAvailabilityDao>> getById(String id) async {
-    MysqlUtils? db;
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final result =
+            await db.getOne(table: table, where: {"availability_id": id})
+                as Map<String, dynamic>;
 
-      final result =
-          await db.getOne(table: table, where: {"availability_id": id})
-              as Map<String, dynamic>;
+        if (result.isEmpty)
+          return Result.failure(
+            AppError(AppErrorType.notFound, "Availability not found"),
+          );
 
-      if (result.isEmpty)
-        return Result.failure(
-          AppError(AppErrorType.notFound, "Availability not found"),
-        );
-
-      return Result.success(OutputAvailabilityDao.fromJson(result));
+        return Result.success(OutputAvailabilityDao.fromJson(result));
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -67,7 +64,7 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
   ) async {
     MysqlUtils? db;
     try {
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
 
       await db.startTrans();
 
@@ -113,6 +110,7 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
         ),
       );
     } catch (e, s) {
+      if (db != null) await db.rollback();
       return Result.failure(
         AppError(
           AppErrorType.internal,
@@ -120,6 +118,8 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
           details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -131,12 +131,12 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
     MysqlUtils? db;
 
     try {
-      db = await MysqlConfiguration.connect();
-
       final existingAvailability = await getById(id);
 
       if (existingAvailability.isFailure || existingAvailability.data == null)
         return existingAvailability;
+
+      db = await MysqlConfiguration.getConnection();
 
       final updateData = <String, dynamic>{};
 
@@ -173,6 +173,8 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
           details: {"error": e.toString(), "stacktrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -186,7 +188,7 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
       if (existingAvailability.isFailure || existingAvailability.data == null)
         return existingAvailability;
 
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
 
       await db.delete(table: table, where: {"availability_id": id});
 
@@ -199,23 +201,23 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
           details: {"error": e.toString(), "stacktrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
   @override
   Future<Result<List<SlotsOutputDao>>> getAllSlots() async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final results = await db.getAll(table: "ref_slots");
 
-      final results = await db.getAll(table: "ref_slots");
+        final items = results.map((data) {
+          return SlotsOutputDao.fromJson(data);
+        }).toList();
 
-      final items = results.map((data) {
-        return SlotsOutputDao.fromJson(data);
-      }).toList();
-
-      return Result.success(items);
+        return Result.success(items);
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(

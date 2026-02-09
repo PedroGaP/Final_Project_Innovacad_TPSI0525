@@ -53,4 +53,20 @@ class RoomController {
   @Delete('/<id>')
   Future<Response> delete(@Param("id") String id) async =>
       resultToResponse(await _service.delete(id));
+
+  @ApiOperation(
+    summary: 'Check room availability',
+    description: 'Returns the booked schedules for a specific room on a given date',
+  )
+  @ApiParam(name: 'id', description: 'The room ID', required: true)
+  @Get('/<id>/availability')
+  Future<Response> checkAvailability(
+    @Param("id") String id,
+    @Param("date") String date,
+  ) async {
+    if (date.isEmpty) {
+      return Response.badRequest(body: {"error": "Date parameter is required (YYYY-MM-DD)"});
+    }
+    return resultToResponse(await _service.checkAvailability(id, date));
+  }
 }

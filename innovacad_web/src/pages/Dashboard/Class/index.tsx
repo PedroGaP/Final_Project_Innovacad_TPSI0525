@@ -176,7 +176,6 @@ const ClassesPage = () => {
         );
         toast.success(`Class updated successfully`);
       } else {
-        // --- Lógica de CREATE ---
         const classObj = {
           course_id: String(klass.course_id),
           location: String(klass.location),
@@ -186,7 +185,7 @@ const ClassesPage = () => {
             String(klass.start_date_timestamp),
           ),
           end_date_timestamp: epochToDateTime(String(klass.end_date_timestamp)),
-          modules: modulesDto, // Envia a lista com courseModuleId e trainerId
+          modules: modulesDto,
         };
 
         const newClass = await api.createClass(classObj);
@@ -209,9 +208,7 @@ const ClassesPage = () => {
     );
   };
 
-  // 5. Componente Customizado: Gestor de Módulos com Seleção de Formador
   const renderModulesManager = (formData: Class, setFormData: any) => {
-    // Calcula módulos disponíveis com base no Curso selecionado
     const availableModules = createMemo(() => {
       const allCourses = courses();
       if (!allCourses || !formData.course_id) return [];
@@ -222,7 +219,6 @@ const ClassesPage = () => {
       return selectedCourse?.modules || [];
     });
 
-    // Função para adicionar/remover módulo da lista
     const toggleModule = (courseModuleId: string) => {
       const currentModules = formData.modules || [];
       const exists = currentModules.some(
@@ -241,7 +237,6 @@ const ClassesPage = () => {
           ...prev,
           modules: [
             ...prev.modules,
-            // Adiciona novo módulo sem formador inicial
             {
               courses_modules_id: courseModuleId,
               current_duration: 0,
@@ -252,13 +247,12 @@ const ClassesPage = () => {
       }
     };
 
-    // Função para atualizar o formador de um módulo específico
     const updateModuleTrainer = (courseModuleId: string, trainerId: string) => {
       setFormData((prev: Class) => ({
         ...prev,
         modules: prev.modules.map((m) =>
           m.courses_modules_id === courseModuleId
-            ? { ...m, trainer_id: trainerId || null } // Atualiza o trainer_id
+            ? { ...m, trainer_id: trainerId || null }
             : m,
         ),
       }));
@@ -296,7 +290,6 @@ const ClassesPage = () => {
               }
             >
               {(mod) => {
-                // Verificar se este módulo está selecionado na turma
                 const selectedModule = formData.modules?.find(
                   (m) => m.courses_modules_id === mod.courses_modules_id,
                 );
@@ -306,7 +299,6 @@ const ClassesPage = () => {
                   <div
                     class={`p-3 rounded-lg border transition-all duration-200 ${isChecked ? "bg-base-200 border-primary shadow-sm" : "border-base-300"}`}
                   >
-                    {/* Linha 1: Checkbox e Nome do Módulo */}
                     <div class="flex items-center justify-between">
                       <label class="flex items-center gap-3 cursor-pointer flex-1">
                         <input
@@ -326,7 +318,6 @@ const ClassesPage = () => {
                       </label>
                     </div>
 
-                    {/* Linha 2: Dropdown de Formador (Só aparece se selecionado) */}
                     <Show when={isChecked}>
                       <div class="pl-8 mt-3 animate-fadeIn">
                         <div class="flex flex-col gap-1">

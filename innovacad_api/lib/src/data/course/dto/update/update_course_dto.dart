@@ -13,6 +13,9 @@ class UpdateCourseDto {
   @annotation.JsonKey(name: 'name')
   final String? name;
 
+  @annotation.JsonKey(name: 'area')
+  final String? area;
+
   @annotation.JsonKey(name: 'add_modules_ids')
   @JsonKey('add_modules_ids')
   final List<LinkModuleDto>? addCoursesModules;
@@ -24,6 +27,7 @@ class UpdateCourseDto {
   UpdateCourseDto({
     this.identifier,
     this.name,
+    this.area,
     this.addCoursesModules,
     this.removeCoursesModules,
   });

@@ -128,19 +128,9 @@ GROUP BY t.trainer_id, u.name
 ORDER BY total_hours_taught DESC
 LIMIT 10;
 
-select *
-from schedule_slots;
-select *
-from documents;
-select *
-from user;
+ALTER TABLE courses_modules ADD INDEX idx_courses_modules_id (courses_modules_id);
 
-insert into document_types
-values ('PROFILE_PIC', 'PROFILE PICTURE');
-
-select *
-from trainers
-where user_id = '6a3qQS4s44S1dRPa9qoPF4sCctpkwH49';
-select *
-from availabilities;
-
+INSERT INTO availabilities (availability_id, trainer_id, date_day, slot_number, is_booked)
+VALUES
+(UUID(), 'bd4f8ba4-9b4a-4803-abc6-1033caee7708', '2026-02-09 00:00:00', 7, 0),
+(UUID(), 'bd4f8ba4-9b4a-4803-abc6-1033caee7708', '2026-02-09 00:00:00', 8, 0);

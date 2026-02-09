@@ -36,7 +36,7 @@ class CreateClassDto {
   final DateTime endDateTimestamp;
 
   @annotation.JsonKey(name: 'modules')
-  @v.JsonKey('modules_ids')
+  @v.JsonKey('modules')
   final List<LinkClassModuleDto>? modules;
 
   CreateClassDto({

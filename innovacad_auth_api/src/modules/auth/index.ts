@@ -18,6 +18,14 @@ const pool = createPool({
   user: API.MYSQL.USERNAME,
   database: API.MYSQL.DATABASE,
   password: API.MYSQL.PASSWORD,
+  connectionLimit: 10,
+  connectTimeout: 10000,
+  acquireTimeout: 10000,
+  timeout: 60000,
+  waitForConnections: true,
+  queueLimit: 0,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
 });
 
 async function getUserExtras(userId: string, role: string) {

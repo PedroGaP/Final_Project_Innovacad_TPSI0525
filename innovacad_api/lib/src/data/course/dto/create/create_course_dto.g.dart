@@ -10,6 +10,7 @@ CreateCourseDto _$CreateCourseDtoFromJson(Map<String, dynamic> json) =>
     CreateCourseDto(
       identifier: json['identifier'] as String,
       name: json['name'] as String,
+      area: json['area'] as String,
       addModulesIds: (json['add_courses_modules'] as List<dynamic>?)
           ?.map((e) => LinkModuleDto.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -25,4 +26,5 @@ Map<String, dynamic> _$CreateCourseDtoToJson(CreateCourseDto instance) =>
       'name': instance.name,
       'add_courses_modules': instance.addModulesIds,
       'remove_courses_modules': instance.removeCoursesModulesIds,
+      'area': instance.area,
     };

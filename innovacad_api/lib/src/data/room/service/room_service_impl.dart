@@ -1,5 +1,6 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
+import 'package:innovacad_api/src/data/room/dao/output/output_room_busy_dao.dart';
 import 'package:innovacad_api/src/domain/domain.dart';
 import 'package:vaden/vaden.dart';
 
@@ -28,4 +29,26 @@ class RoomServiceImpl implements IRoomService {
   @override
   Future<Result<OutputRoomDao>> delete(String id) async =>
       await _repository.delete(id);
+
+  @override
+  Future<Result<List<OutputRoomBusyDao>>> checkAvailability(
+    String roomId,
+    String dateStr,
+  ) async {
+    try {
+      final date = DateTime.tryParse(dateStr);
+      if (date == null) {
+        return Result.failure(
+          AppError(
+            AppErrorType.badRequest,
+            "Invalid date format. Use YYYY-MM-DD",
+          ),
+        );
+      }
+
+      return await _repository.checkAvailability(roomId, date);
+    } catch (e) {
+      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    }
+  }
 }

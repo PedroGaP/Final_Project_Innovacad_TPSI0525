@@ -74,7 +74,6 @@ export default function UserDocumentsManager(props: Props) {
       <div class="space-y-3">
         <For each={DOCUMENT_TYPES}>
           {(docType) => {
-            // Verificar se este tipo já existe na lista de documentos do user
             const existingDoc = () =>
               documents()?.find((d) => d.type_code === docType.code);
 
@@ -122,7 +121,6 @@ export default function UserDocumentsManager(props: Props) {
                       </div>
                     }
                   >
-                    {/* Ações quando o ficheiro existe */}
                     <button
                       class="btn btn-sm btn-ghost btn-square text-info"
                       onClick={() => openFile(existingDoc()!.file_path)}

@@ -32,50 +32,49 @@ class TrainerRepositoryImpl implements ITrainerRepository {
 
   @override
   Future<Result<List<OutputTrainerDao>>> getAll() async {
-    MysqlUtils? db;
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final query = """
+          SELECT t.trainer_id, t.user_id, t.birthday_date, t.is_coordinator,
+                 u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt, u.emailVerified 
+          FROM `trainers` t 
+          JOIN `user` u ON t.user_id = u.id
+        """;
+        final results = await db.query(query);
+        final List<OutputTrainerDao> daos = [];
 
-      final query = """
-        SELECT t.trainer_id, t.user_id, t.birthday_date, t.is_coordinator,
-               u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt, u.emailVerified 
-        FROM `trainers` t 
-        JOIN `user` u ON t.user_id = u.id
-      """;
-      final results = await db.query(query);
-      final List<OutputTrainerDao> daos = [];
-
-      for (var row in results.rows) {
-        final skillQuery =
-            "SELECT module_id, competence_level FROM trainer_skills WHERE trainer_id = ?";
-        final skillResults = await db.query(
-          skillQuery,
-          whereValues: [row['trainer_id']],
-          isStmt: true,
-        );
-        row['skills'] = skillResults.rows;
-
-        final isCoordinator = _parseBool(row['is_coordinator']);
-        print("COORDENAODR? $isCoordinator");
-        row['is_coordinator'] = isCoordinator;
-
-        if (isCoordinator) {
-          final classResults = await db.query(
-            "SELECT class_id FROM trainers_classes_coordinator WHERE trainer_id = ?",
+        for (var row in results.rows) {
+          final skillQuery =
+              "SELECT module_id, competence_level FROM trainer_skills WHERE trainer_id = ?";
+          final skillResults = await db.query(
+            skillQuery,
             whereValues: [row['trainer_id']],
             isStmt: true,
           );
-          row['coordinated_class_ids'] = classResults.rows
-              .map((c) => c['class_id'].toString())
-              .toList();
-        } else {
-          row['coordinated_class_ids'] = [];
+          row['skills'] = skillResults.rows;
+
+          final isCoordinator = _parseBool(row['is_coordinator']);
+          print("COORDENAODR? $isCoordinator");
+          row['is_coordinator'] = isCoordinator;
+
+          if (isCoordinator) {
+            final classResults = await db.query(
+              "SELECT class_id FROM trainers_classes_coordinator WHERE trainer_id = ?",
+              whereValues: [row['trainer_id']],
+              isStmt: true,
+            );
+            row['coordinated_class_ids'] = classResults.rows
+                .map((c) => c['class_id'].toString())
+                .toList();
+          } else {
+            row['coordinated_class_ids'] = [];
+          }
+
+          daos.add(OutputTrainerDao.fromJson(row));
         }
 
-        daos.add(OutputTrainerDao.fromJson(row));
-      }
-
-      return Result.success(daos);
+        return Result.success(daos);
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -89,47 +88,47 @@ class TrainerRepositoryImpl implements ITrainerRepository {
 
   @override
   Future<Result<OutputTrainerDao>> getById(String trainerId) async {
-    MysqlUtils? db;
     try {
-      db = await MysqlConfiguration.connect();
-      final results = await db.query(
-        "SELECT t.trainer_id, t.user_id, t.birthday_date, t.is_coordinator, u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt, u.emailVerified "
-        "FROM `trainers` t JOIN `user` u ON t.user_id = u.id WHERE t.trainer_id = ? LIMIT 1",
-        whereValues: [trainerId],
-        isStmt: true,
-      );
-
-      if (results.rows.isEmpty)
-        return Result.failure(
-          AppError(AppErrorType.notFound, "Trainer not found"),
-        );
-
-      final trainerMap = Map<String, dynamic>.from(results.rows[0]);
-
-      final isCoordinator = _parseBool(trainerMap['is_coordinator']);
-      trainerMap['is_coordinator'] = isCoordinator;
-
-      final skillResults = await db.query(
-        "SELECT module_id, competence_level FROM trainer_skills WHERE trainer_id = ?",
-        whereValues: [trainerId],
-        isStmt: true,
-      );
-      trainerMap['skills'] = skillResults.rows;
-
-      if (isCoordinator) {
-        final classResults = await db.query(
-          "SELECT class_id FROM trainers_classes_coordinator WHERE trainer_id = ?",
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final results = await db.query(
+          "SELECT t.trainer_id, t.user_id, t.birthday_date, t.is_coordinator, u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt, u.emailVerified "
+          "FROM `trainers` t JOIN `user` u ON t.user_id = u.id WHERE t.trainer_id = ? LIMIT 1",
           whereValues: [trainerId],
           isStmt: true,
         );
-        trainerMap['coordinated_class_ids'] = classResults.rows
-            .map((c) => c['class_id'].toString())
-            .toList();
-      } else {
-        trainerMap['coordinated_class_ids'] = [];
-      }
 
-      return Result.success(OutputTrainerDao.fromJson(trainerMap));
+        if (results.rows.isEmpty)
+          return Result.failure(
+            AppError(AppErrorType.notFound, "Trainer not found"),
+          );
+
+        final trainerMap = Map<String, dynamic>.from(results.rows[0]);
+
+        final isCoordinator = _parseBool(trainerMap['is_coordinator']);
+        trainerMap['is_coordinator'] = isCoordinator;
+
+        final skillResults = await db.query(
+          "SELECT module_id, competence_level FROM trainer_skills WHERE trainer_id = ?",
+          whereValues: [trainerId],
+          isStmt: true,
+        );
+        trainerMap['skills'] = skillResults.rows;
+
+        if (isCoordinator) {
+          final classResults = await db.query(
+            "SELECT class_id FROM trainers_classes_coordinator WHERE trainer_id = ?",
+            whereValues: [trainerId],
+            isStmt: true,
+          );
+          trainerMap['coordinated_class_ids'] = classResults.rows
+              .map((c) => c['class_id'].toString())
+              .toList();
+        } else {
+          trainerMap['coordinated_class_ids'] = [];
+        }
+
+        return Result.success(OutputTrainerDao.fromJson(trainerMap));
+      });
     } catch (e) {
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
@@ -150,16 +149,37 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       final userData = responseUser.data as Map<String, dynamic>;
       createdUserId = userData["id"];
 
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
       await db.startTrans();
 
       final userRole = (dto.isCoordinator == true) ? "coordinator" : "trainer";
 
-      await db.update(
-        table: "user",
-        updateData: {"username": dto.username, "role": userRole},
-        where: {"id": createdUserId},
+      final userCheck = await db.query(
+        "SELECT id FROM user WHERE id = ?",
+        whereValues: [createdUserId],
+        isStmt: true,
       );
+
+      if (userCheck.numOfRows == 0) {
+        await db.insert(
+          table: "user",
+          insertData: {
+            "id": createdUserId,
+            "username": dto.username,
+            "name": dto.name,
+            "email": dto.email,
+            "role": userRole,
+            "createdAt": DateTime.now().toIso8601String(),
+            "emailVerified": 0,
+          },
+        );
+      } else {
+        await db.update(
+          table: "user",
+          updateData: {"username": dto.username, "role": userRole},
+          where: {"id": createdUserId},
+        );
+      }
 
       final trainerId = Uuid().v4();
 
@@ -189,7 +209,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       if (dto.isCoordinator == true && dto.classIds != null) {
         for (var classId in dto.classIds!) {
           await db.query(
-            "INSERT INTO trainer_class_coordinator (trainer_id, class_id) VALUES (?, ?)",
+            "INSERT INTO trainers_classes_coordinator (trainer_id, class_id) VALUES (?, ?)",
             whereValues: [trainerId, classId],
             isStmt: true,
           );
@@ -197,12 +217,18 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       }
 
       await db.commit();
+
       return await getById(trainerId);
     } catch (e) {
       if (db != null) await db.rollback();
-      if (createdUserId != null)
+
+      if (createdUserId != null) {
         await _remoteUserService.deleteUserAsAdmin(createdUserId);
+      }
+
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -218,7 +244,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
 
       await _remoteUserService.updateUser(res.data!.id, dto);
 
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
       await db.startTrans();
 
       final updateData = <String, dynamic>{};
@@ -311,6 +337,8 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       if (db != null) await db.rollback();
       print("🔥 [Update Error]: $e");
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -323,7 +351,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
 
       await _remoteUserService.deleteUserAsAdmin(existingRes.data!.id);
 
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
       await db.startTrans();
 
       await db.delete(table: "user", where: {"id": existingRes.data!.id});
@@ -333,6 +361,8 @@ class TrainerRepositoryImpl implements ITrainerRepository {
     } catch (e) {
       if (db != null) await db.rollback();
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 

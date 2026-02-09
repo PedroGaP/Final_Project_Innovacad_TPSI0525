@@ -11,18 +11,16 @@ class ModuleRepositoryImpl implements IModuleRepository {
 
   @override
   Future<Result<List<OutputModuleDao>>> getAll() async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final results = await db.getAll(table: table);
 
-      final results = await db.getAll(table: table);
+        final modules = results.map((data) {
+          return OutputModuleDao.fromJson(data);
+        }).toList();
 
-      final modules = results.map((data) {
-        return OutputModuleDao.fromJson(data);
-      }).toList();
-
-      return Result.success(modules);
+        return Result.success(modules);
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -36,24 +34,22 @@ class ModuleRepositoryImpl implements IModuleRepository {
 
   @override
   Future<Result<OutputModuleDao>> getById(String id) async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final result =
+            await db.getOne(table: table, where: {"module_id": id})
+                as Map<String, dynamic>;
 
-      final result =
-          await db.getOne(table: table, where: {"module_id": id})
-              as Map<String, dynamic>;
+        if (result.isEmpty)
+          return Result.failure(
+            AppError(
+              AppErrorType.notFound,
+              "Something went wrong while fetching the module",
+            ),
+          );
 
-      if (result.isEmpty)
-        return Result.failure(
-          AppError(
-            AppErrorType.notFound,
-            "Something went wrong while fetching the module",
-          ),
-        );
-
-      return Result.success(OutputModuleDao.fromJson(result));
+        return Result.success(OutputModuleDao.fromJson(result));
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -70,7 +66,7 @@ class ModuleRepositoryImpl implements IModuleRepository {
     MysqlUtils? db;
 
     try {
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
 
       await db.startTrans();
 
@@ -106,6 +102,7 @@ class ModuleRepositoryImpl implements IModuleRepository {
         ),
       );
     } catch (e, s) {
+      if (db != null) await db.rollback();
       return Result.failure(
         AppError(
           AppErrorType.internal,
@@ -113,54 +110,55 @@ class ModuleRepositoryImpl implements IModuleRepository {
           details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
   @override
   Future<Result<OutputModuleDao>> update(String id, UpdateModuleDto dto) async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final existingModule = await getById(id);
 
-      final existingModule = await getById(id);
+        if (existingModule.isFailure || existingModule.data == null)
+          return existingModule;
 
-      if (existingModule.isFailure || existingModule.data == null)
-        return existingModule;
+        final updateData = <String, dynamic>{};
 
-      final updateData = <String, dynamic>{};
+        if (dto.name != null && existingModule.data!.name != dto.name)
+          updateData["name"] = dto.name;
 
-      if (dto.name != null && existingModule.data!.name != dto.name)
-        updateData["name"] = dto.name;
+        if (dto.duration != null &&
+            existingModule.data!.duration != dto.duration)
+          updateData["duration"] = dto.duration;
 
-      if (dto.duration != null && existingModule.data!.duration != dto.duration)
-        updateData["duration"] = dto.duration;
+        if (dto.hasComputers != null &&
+            existingModule.data!.hasComputers != dto.hasComputers)
+          updateData["has_computers"] = dto.hasComputers;
 
-      if (dto.hasComputers != null &&
-          existingModule.data!.hasComputers != dto.hasComputers)
-        updateData["has_computers"] = dto.hasComputers;
+        if (dto.hasProjector != null &&
+            existingModule.data!.hasProjector != dto.hasProjector)
+          updateData["has_projector"] = dto.hasProjector;
 
-      if (dto.hasProjector != null &&
-          existingModule.data!.hasProjector != dto.hasProjector)
-        updateData["has_projector"] = dto.hasProjector;
+        if (dto.hasWhiteboard != null &&
+            existingModule.data!.hasWhiteboard != dto.hasWhiteboard)
+          updateData["has_whiteboard"] = dto.hasWhiteboard;
 
-      if (dto.hasWhiteboard != null &&
-          existingModule.data!.hasWhiteboard != dto.hasWhiteboard)
-        updateData["has_whiteboard"] = dto.hasWhiteboard;
+        if (dto.hasSmartboard != null &&
+            existingModule.data!.hasSmartboard != dto.hasSmartboard)
+          updateData["has_smartboard"] = dto.hasSmartboard;
 
-      if (dto.hasSmartboard != null &&
-          existingModule.data!.hasSmartboard != dto.hasSmartboard)
-        updateData["has_smartboard"] = dto.hasSmartboard;
+        if (updateData.isEmpty) return existingModule;
 
-      if (updateData.isEmpty) return existingModule;
+        await db.update(
+          table: table,
+          updateData: updateData,
+          where: {"module_id": id},
+        );
 
-      await db.update(
-        table: table,
-        updateData: updateData,
-        where: {"module_id": id},
-      );
-
-      return await getById(id);
+        return await getById(id);
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -174,19 +172,17 @@ class ModuleRepositoryImpl implements IModuleRepository {
 
   @override
   Future<Result<OutputModuleDao>> delete(String id) async {
-    MysqlUtils? db;
-
     try {
-      final existingModule = await getById(id);
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final existingModule = await getById(id);
 
-      if (existingModule.isFailure || existingModule.data == null)
+        if (existingModule.isFailure || existingModule.data == null)
+          return existingModule;
+
+        await db.delete(table: table, where: {"module_id": id});
+
         return existingModule;
-
-      db = await MysqlConfiguration.connect();
-
-      await db.delete(table: table, where: {"module_id": id});
-
-      return existingModule;
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(

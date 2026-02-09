@@ -3,7 +3,6 @@ import type { ModalFieldDefinition } from "@/components/Modal/Edit";
 import { useApi } from "@/hooks/useApi";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import { Availability } from "@/types/availability";
-// REMOVIDO: import type { Trainer } ... (Erro 6133)
 import { createEffect, createMemo, createResource, Show } from "solid-js";
 import toast from "solid-toast";
 
@@ -11,18 +10,15 @@ const SLOT_OPTIONS = [
   { label: "Slot 1 (08:00 - 09:00)", value: 1 },
   { label: "Slot 2 (09:00 - 10:00)", value: 2 },
   { label: "Slot 3 (10:00 - 11:00)", value: 3 },
-  { label: "Slot 4 (11:00 - 12:00)", value: 4 },
-  { label: "Slot 5 (12:00 - 13:00)", value: 5 },
-  { label: "Slot 6 (13:00 - 14:00)", value: 6 },
-  { label: "Slot 7 (14:00 - 15:00)", value: 7 },
-  { label: "Slot 8 (15:00 - 16:00)", value: 8 },
-  { label: "Slot 9 (16:00 - 17:00)", value: 9 },
-  { label: "Slot 10 (17:00 - 18:00)", value: 10 },
-  { label: "Slot 11 (18:00 - 19:00)", value: 11 },
-  { label: "Slot 12 (19:00 - 20:00)", value: 12 },
-  { label: "Slot 13 (20:00 - 21:00)", value: 13 },
-  { label: "Slot 14 (21:00 - 22:00)", value: 14 },
-  { label: "Slot 15 (22:00 - 23:00)", value: 15 },
+  { label: "Slot 4 (12:00 - 13:00)", value: 4 },
+  { label: "Slot 5 (13:00 - 14:00)", value: 5 },
+  { label: "Slot 6 (14:00 - 15:00)", value: 6 },
+  { label: "Slot 7 (16:00 - 17:00)", value: 7 },
+  { label: "Slot 8 (17:00 - 18:00)", value: 8 },
+  { label: "Slot 9 (18:00 - 19:00)", value: 9 },
+  { label: "Slot 10 (20:00 - 21:00)", value: 10 },
+  { label: "Slot 11 (21:00 - 22:00)", value: 11 },
+  { label: "Slot 12 (22:00 - 23:00)", value: 12 },
 ];
 
 const normalizeId = (id: string | undefined | null) => {
@@ -31,7 +27,6 @@ const normalizeId = (id: string | undefined | null) => {
     .toLowerCase();
 };
 
-// Helper robusto para obter o ID do trainer da sessão
 const getTrainerId = (u: any): string => {
   if (!u) return "";
   const id = u.trainer_id || u.trainerId || u.id;
@@ -67,13 +62,11 @@ const AvailabilitiesPage = () => {
   const api = useApi();
   const { user } = useUserDetails();
 
-  // --- Data Fetching ---
   const [availabilitiesData, { mutate }] = createResource<Availability[]>(
     api.fetchAvailabilities,
   );
   const [trainersData] = createResource(api.fetchTrainers);
 
-  // --- Debug Effect ---
   createEffect(() => {
     const u = user();
     if (u) {
@@ -82,14 +75,11 @@ const AvailabilitiesPage = () => {
     }
   });
 
-  // --- Helpers de Permissões ---
   const isStrictTrainer = createMemo(() => {
     const u = user();
-    // CORREÇÃO (Erro 2367): Simplificado. Se é trainer, não é admin.
     return u?.role === "trainer";
   });
 
-  // --- Filtragem de Dados (Visualização) ---
   const filteredAvailabilities = createMemo(() => {
     const list = availabilitiesData();
     if (!list) return [];
@@ -99,10 +89,8 @@ const AvailabilitiesPage = () => {
 
     const role = u.role as string;
 
-    // Se for Admin, mostra tudo
     if (role === "admin" || role === "coordinator") return list;
 
-    // Se for Trainer
     const myId = getTrainerId(u);
     if (!myId) return [];
 
@@ -112,15 +100,12 @@ const AvailabilitiesPage = () => {
 
     const results = list.filter((a) => {
       const isMatch = normalizeId(a.trainer_id) === normalizeId(myId);
-      // Descomenta a linha abaixo se quiseres ver cada comparação (pode encher a consola)
-      // if (isMatch) console.log(">> Found Record:", a);
       return isMatch;
     });
 
     console.log(`DEBUG: Found ${results.length} matches.`);
     return results;
   });
-  // --- Configuração do Formulário ---
   const trainerOptions = createMemo(() => {
     const allTrainers = trainersData();
     const u = user();
@@ -138,7 +123,6 @@ const AvailabilitiesPage = () => {
 
     return allTrainers.map((t) => ({
       label: `${t.name} (${t.email})`,
-      // CORREÇÃO (Erro 2322): Adicionado || "" para garantir que nunca é undefined
       value: getTrainerId(t) || t.id || "",
     }));
   });
@@ -175,8 +159,6 @@ const AvailabilitiesPage = () => {
       },
     ],
   );
-
-  // --- Actions ---
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -253,6 +235,18 @@ const AvailabilitiesPage = () => {
     return empty;
   };
 
+  const trainersMap = createMemo(() => {
+    const map = new Map();
+    const list = trainersData();
+    if (list) {
+      list.forEach((t) => {
+        map.set(normalizeId(t.id), t);
+        if (t.trainer_id) map.set(normalizeId(t.trainer_id), t);
+      });
+    }
+    return map;
+  });
+
   return (
     <EntityTable<Availability>
       title="Manage Availabilities"
@@ -290,11 +284,7 @@ const AvailabilitiesPage = () => {
               >
                 {(trainers) => {
                   const avTrainerId = normalizeId(e.trainer_id);
-                  const trainer = trainers().find(
-                    (t) =>
-                      normalizeId(getTrainerId(t)) === avTrainerId ||
-                      normalizeId(t.id) === avTrainerId,
-                  );
+                  const trainer = trainersMap().get(avTrainerId);
 
                   const name =
                     trainer?.name || trainer?.username || "Unknown Trainer";

@@ -11,18 +11,16 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
 
   @override
   Future<Result<List<OutputClassModuleDao>>> getAll() async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final results = await db.getAll(table: table);
 
-      final results = await db.getAll(table: table);
+        final items = results.map((data) {
+          return OutputClassModuleDao.fromJson(data);
+        }).toList();
 
-      final items = results.map((data) {
-        return OutputClassModuleDao.fromJson(data);
-      }).toList();
-
-      return Result.success(items);
+        return Result.success(items);
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -36,21 +34,19 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
 
   @override
   Future<Result<OutputClassModuleDao>> getById(String id) async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final result =
+            await db.getOne(table: table, where: {"classes_modules_id": id})
+                as Map<String, dynamic>;
 
-      final result =
-          await db.getOne(table: table, where: {"classes_modules_id": id})
-              as Map<String, dynamic>;
+        if (result.isEmpty)
+          return Result.failure(
+            AppError(AppErrorType.notFound, "ClassModule not found..."),
+          );
 
-      if (result.isEmpty)
-        return Result.failure(
-          AppError(AppErrorType.notFound, "ClassModule not found..."),
-        );
-
-      return Result.success(OutputClassModuleDao.fromJson(result));
+        return Result.success(OutputClassModuleDao.fromJson(result));
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -67,7 +63,7 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
     MysqlUtils? db;
 
     try {
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
 
       await db.insert(
         table: table,
@@ -84,7 +80,7 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
                 where: {
                   "class_id": dto.classId,
                   "courses_modules_id": dto.coursesModulesId,
-                  "current_duration": dto.currentDuration,
+                  " current_duration": dto.currentDuration,
                 },
               )
               as Map<String, dynamic>;
@@ -106,6 +102,8 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
           details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -117,12 +115,12 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
     MysqlUtils? db;
 
     try {
-      db = await MysqlConfiguration.connect();
-
       final existingClassModule = await getById(id);
 
       if (existingClassModule.isFailure || existingClassModule.data == null)
         return existingClassModule;
+
+      db = await MysqlConfiguration.getConnection();
 
       final updateData = <String, dynamic>{};
 
@@ -155,6 +153,8 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
           details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -167,7 +167,7 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
       if (existingClassModule.isFailure || existingClassModule.data == null)
         return existingClassModule;
 
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
 
       await db.delete(table: table, where: {"classes_modules_id": id});
 
@@ -180,6 +180,8 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
           details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 }

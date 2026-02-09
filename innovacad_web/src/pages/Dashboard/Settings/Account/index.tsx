@@ -21,6 +21,8 @@ const AccountSettingsPage = () => {
     updateTrainee,
   } = useApi();
 
+  const [imageKey, setImageKey] = createSignal(Date.now());
+
   const [accounts] = createResource(async () => listAccounts());
 
   const getOwnerId = () => {
@@ -111,7 +113,7 @@ const AccountSettingsPage = () => {
     try {
       await uploadDocument(u.id!, formData);
 
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 1000));
       const updatedDocs = await fetchDocuments(u.id!);
       const newPic = updatedDocs.find((d) => d.type_code === "PROFILE_PIC");
 
@@ -126,10 +128,6 @@ const AccountSettingsPage = () => {
       if (u.role === "trainer" || u.role === "coordinator") {
         const trainerUser = u as Trainer;
         const trainerId = trainerUser.trainerId;
-        console.log("trainerId", trainerId);
-        console.log("imagePath", imagePath);
-        console.log("trainerUser", trainerUser);
-        console.log("u", u);
         await updateTrainer(trainerId!, { image: imagePath } as any);
       } else if (u.role === "trainee") {
         const traineeUser = u as Trainee;
@@ -144,6 +142,7 @@ const AccountSettingsPage = () => {
       updatedUser.image = imagePath;
 
       setUser(updatedUser);
+      setImageKey(Date.now());
 
       toast.success("Profile picture updated!", { id: toastId });
       refetchDocs();
@@ -225,7 +224,7 @@ const AccountSettingsPage = () => {
                     onError={(e: any) => {
                       e.target.src = `https://ui-avatars.com/api/?name=${user()?.name}&background=random`;
                     }}
-                    src={`${API_ENDPOINTS.BASE}/${user()?.image}`}
+                    src={`${API_ENDPOINTS.BASE}/${user()?.image}?t=${imageKey()}`}
                     alt="Avatar"
                   />
                 </div>
