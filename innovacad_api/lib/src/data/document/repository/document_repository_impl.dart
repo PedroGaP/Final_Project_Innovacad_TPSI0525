@@ -19,14 +19,13 @@ class DocumentRepositoryImpl {
     MysqlUtils? db;
     try {
       db = await MysqlConfiguration.getConnection();
-      final uuid = Uuid().v4();
 
       await db.startTrans();
 
       await db.insert(
         table: 'documents',
         insertData: {
-          'document_id': uuid,
+          'document_id': Uuid().v4(),
           'file_name': originalName,
           'file_path': filePath,
           'mime_type': mimeType,
@@ -36,27 +35,12 @@ class DocumentRepositoryImpl {
         },
       );
 
-      if (typeCode == 'PROFILE_PIC') {
-        String userImagePath = filePath;
-        if (userImagePath.startsWith('public/')) {
-          userImagePath = userImagePath.substring(7);
-        } else if (userImagePath.startsWith('public\\')) {
-          userImagePath = userImagePath.substring(7);
-        }
-
-        await db.query(
-          "UPDATE user SET image = ? WHERE id = ?",
-          whereValues: [userImagePath, userId],
-          isStmt: true,
-        );
-      }
-
       await db.commit();
 
-      return Result.success(uuid);
+      return Result.success("Upload successful");
     } catch (e, s) {
       if (db != null) await db.rollback();
-
+      print("Upload Error: $e");
       return Result.failure(
         AppError(
           AppErrorType.internal,

@@ -31,9 +31,9 @@ class MysqlConfiguration {
   }
 
   static Future<void> closeConnection(MysqlUtils? db) async {
-    if (db != null) {
-      db.close();
-    }
+    //if (db != null && (await db.isConnectionAlive())) {
+    //  db.close();
+    //}
   }
 
   static Future<T> executeWithConnection<T>(
