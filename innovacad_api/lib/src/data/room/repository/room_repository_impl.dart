@@ -197,21 +197,22 @@ class RoomRepositoryImpl implements IRoomRepository {
         final dateSql = date.toIso8601String().split('T')[0];
 
         final query = """
-          SELECT 
+          SELECT
+            s.room_id,
             s.schedule_id, 
-            s.start_date_timestamp, 
-            s.end_date_timestamp,
-            m.name as module_name
+            s.start_date_timestamp AS start_time,
+            s.end_date_timestamp AS end_time,
+            m.name AS module_name
           FROM schedules s
           LEFT JOIN classes_modules cm ON s.class_module_id = cm.classes_modules_id
           LEFT JOIN courses_modules crm ON cm.courses_modules_id = crm.courses_modules_id
           LEFT JOIN modules m ON crm.module_id = m.module_id
-          WHERE s.room_id = ? 
+          WHERE s.room_id = ?
           AND (
-            DATE(s.start_date_timestamp) = ? 
-            OR DATE(s.end_date_timestamp) = ?
+            DATE(s.start_date_timestamp) = DATE(?)
+            OR DATE(s.end_date_timestamp) = DATE(?)
           )
-          ORDER BY s.start_date_timestamp ASC
+          ORDER BY s.start_date_timestamp
         """;
 
         final results = await db.query(
@@ -220,13 +221,9 @@ class RoomRepositoryImpl implements IRoomRepository {
           isStmt: true,
         );
 
-        final List<OutputRoomBusyDao> busySlots = [];
-
-        for (var row in results.rowsAssoc) {
-          final data = row.assoc();
-
-          busySlots.add(OutputRoomBusyDao.fromJson(data));
-        }
+        final busySlots = results.rowsAssoc
+            .map((row) => OutputRoomBusyDao.fromJson(row.assoc()))
+            .toList();
 
         return Result.success(busySlots);
       });
