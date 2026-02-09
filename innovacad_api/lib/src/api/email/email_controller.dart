@@ -2,6 +2,7 @@ import 'package:dotenv/dotenv.dart';
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server/gmail.dart';
+import 'package:mailer/smtp_server/sendgrid.dart';
 import 'package:vaden/vaden.dart';
 
 @DTO()

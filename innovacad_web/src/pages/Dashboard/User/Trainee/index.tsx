@@ -6,8 +6,6 @@ import { newPasswordEmail } from "@/components/NewPasswordEmail";
 import EntityTable from "@/components/EntityTable";
 import UserDocumentsManager from "@/components/DocumentManager";
 
-// --- Funções Auxiliares ---
-
 const createEmptyTrainee = (): Trainee =>
   ({
     id: "",
@@ -34,7 +32,6 @@ const epochToDateTime = (epoch: number | string): string => {
   const mm = pad(date.getMonth() + 1);
   const dd = pad(date.getDate());
 
-  // Retorna YYYY-MM-DD para compatibilidade com input type="date"
   return `${yyyy}-${mm}-${dd}`;
 };
 
@@ -96,14 +93,12 @@ const getChangedFields = (
   return changes;
 };
 
-// --- Componente Principal ---
 
 const TraineePage = () => {
   const api = useApi();
 
   const [usersData, { mutate }] = createResource<Trainee[]>(api.fetchTrainees);
 
-  // Lógica de Criar/Editar
   const handleSaveTrainee = async (
     trainee: Trainee,
     original: Trainee | null,
@@ -116,7 +111,6 @@ const TraineePage = () => {
       }
 
       if (original) {
-        // --- UPDATE ---
         const changedFields = getChangedFields(original, trainee);
         if (Object.keys(changedFields).length === 0) return;
 
@@ -131,7 +125,6 @@ const TraineePage = () => {
 
         toast.success(`Trainee updated successfully`);
       } else {
-        // --- CREATE ---
         const traineeObj = {
           name: String(trainee.name),
           email: String(trainee.email),
@@ -169,7 +162,6 @@ const TraineePage = () => {
     }
   };
 
-  // Lógica de Apagar
   const confirmDelete = async (userToDelete: Trainee) => {
     await api.deleteTrainee(String(userToDelete.traineeId));
     mutate(
@@ -179,7 +171,6 @@ const TraineePage = () => {
     toast.success("Trainee deleted");
   };
 
-  // Lógica de Exportar PDF
   const handleExport = async (trainee: Trainee) => {
     try {
       toast.loading("Generating PDF...", { id: "export-loading" });
@@ -202,17 +193,14 @@ const TraineePage = () => {
     <EntityTable<Trainee>
       title="Manage Trainees"
       data={usersData}
-      // Ações Principais
       handleExportClick={handleExport}
       handleAddClick={() => createEmptyTrainee()}
       confirmDelete={confirmDelete}
       handleSave={handleSaveTrainee}
-      // Preparação de dados para edição
       handleEditClick={(user) => ({
         ...user,
         birthdayDate: epochToDateTime(user.birthdayDate!),
       })}
-      // Filtro de pesquisa
       filter={(e: Trainee, search: string) => {
         const s = search.toLowerCase();
         return (
@@ -222,7 +210,6 @@ const TraineePage = () => {
           false
         );
       }}
-      // Configuração das Colunas
       fields={[
         {
           formattedName: "ID",
@@ -258,7 +245,6 @@ const TraineePage = () => {
           smaller: true,
         },
       ]}
-      // Configuração do Formulário
       formFields={[
         {
           label: "Name",
@@ -285,7 +271,6 @@ const TraineePage = () => {
           type: "date",
         },
       ]}
-      // Injeção da Gestão de Documentos no Modal
       renderCustomFields={(formData) => (
         <Show
           when={formData.id}
@@ -295,7 +280,6 @@ const TraineePage = () => {
             </div>
           }
         >
-          {/* Passamos o ID do User (formData.id) para a gestão de ficheiros */}
           <UserDocumentsManager userId={String(formData.id)} />
         </Show>
       )}

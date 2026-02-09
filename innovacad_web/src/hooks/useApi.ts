@@ -997,6 +997,7 @@ export const useApi = () => {
       name?: string | undefined;
       add_modules_ids?: string[] | undefined;
       remove_modules_ids?: string[] | undefined;
+      area?: string | undefined;
     },
   ): Promise<Course> => {
     const updateData: Record<string, any> = {};
@@ -1007,6 +1008,7 @@ export const useApi = () => {
       updateData.add_modules_ids = data.add_modules_ids;
     if (data.remove_modules_ids !== undefined)
       updateData.remove_modules_ids = data.remove_modules_ids;
+    if (data.area !== undefined) updateData.area = data.area;
 
     const res = await fetchApi<CourseResponseData>(
       `${API_ENDPOINTS.ENTITY.COURSE}/${courseId}`,

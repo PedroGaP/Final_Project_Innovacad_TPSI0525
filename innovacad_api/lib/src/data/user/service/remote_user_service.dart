@@ -68,8 +68,7 @@ class RemoteUserService {
         userData['skills'] = skillsResult.rowsAssoc
             .map((row) => row.assoc())
             .toList();
-      }else {
-
+      } else {
         final traineeRow = await db.getOne(
           table: 'trainees',
           where: {'user_id': userId},
@@ -203,13 +202,31 @@ class RemoteUserService {
           ),
         );
 
-      final token = TokenUtils.getUserToken(response.headers["set-cookie"]![1]);
-      if (token == null)
+      final cookies = response.headers["set-cookie"];
+      if (cookies == null || cookies.isEmpty) {
         return Result.failure(
-          AppError(AppErrorType.external, "Failed to fetch user token"),
+          AppError(AppErrorType.external, "No cookies returned"),
         );
+      }
 
-      final userData = response.data["user"] as Map<String, dynamic>;
+      final rawCookie = cookies.length > 1 ? cookies[1] : cookies[0];
+
+      final token = TokenUtils.getUserToken(rawCookie);
+
+      if (response.data["user"] == null) {
+        return Result.failure(
+          AppError(AppErrorType.external, "API returned no user object"),
+        );
+      }
+
+      final userData = Map<String, dynamic>.from(response.data["user"] as Map);
+
+      if (userData["id"] == null) {
+        return Result.failure(
+          AppError(AppErrorType.external, "API returned user without ID"),
+        );
+      }
+
       userData["token"] = token;
 
       return Result.success(userData);

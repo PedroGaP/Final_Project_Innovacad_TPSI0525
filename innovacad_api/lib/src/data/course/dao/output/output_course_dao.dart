@@ -16,6 +16,9 @@ class OutputCourseDao {
   @annotation.JsonKey(name: 'name')
   final String name;
 
+  @annotation.JsonKey(name: 'area')
+  final String area;
+
   @annotation.JsonKey(name: 'modules')
   final List<OutputCourseModuleDao>? coursesModules;
 
@@ -23,6 +26,7 @@ class OutputCourseDao {
     required this.courseId,
     required this.identifier,
     required this.name,
+    required this.area,
     this.coursesModules,
   });
 

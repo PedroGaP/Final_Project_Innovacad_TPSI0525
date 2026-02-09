@@ -5,7 +5,6 @@ import { useTheme } from "@/providers/ThemeProvider";
 import { useLocation } from "@solidjs/router";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
-import capitalize from "@/utils/capitalize";
 import { API_ENDPOINTS } from "@/hooks/useApi";
 
 const DashboardLayout = (props: any) => {
@@ -13,6 +12,8 @@ const DashboardLayout = (props: any) => {
   const { theme, toggleTheme } = useTheme();
   const [isCollapsed, setIsCollapsed] = createSignal(false);
   const location = useLocation();
+
+  const imageCacheKey = createMemo(() => user()?.image || "");
 
   const currentPathArray = createMemo((): string[] => {
     const path = location.pathname.replace("/dashboard/", "");
@@ -187,7 +188,7 @@ const DashboardLayout = (props: any) => {
                             onError={(e: any) => {
                               e.target.src = `https://ui-avatars.com/api/?name=${user()?.name}&background=random`;
                             }}
-                            src={`${API_ENDPOINTS.BASE}/${user()?.image}`}
+                            src={`${API_ENDPOINTS.BASE}/${user()?.image}?t=${imageCacheKey()}`}
                             alt="Avatar"
                           />
                         </div>

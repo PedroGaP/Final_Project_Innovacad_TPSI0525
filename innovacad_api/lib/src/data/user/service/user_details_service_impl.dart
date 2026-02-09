@@ -1,5 +1,4 @@
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
-import 'package:mysql_utils/mysql_utils.dart';
 import 'package:vaden/vaden.dart';
 import 'package:vaden_security/vaden_security.dart';
 
@@ -20,32 +19,30 @@ class UserDetailsServiceImpl implements UserDetailsService {
 
   @override
   Future<ExtendedUserDetails?> loadUserByUsername(String userId) async {
-    MysqlUtils? db;
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final user = (await db.getOne(
+          table: table,
+          where: {'id': userId},
+        )).cast<String, dynamic>();
 
-      final user = (await db.getOne(
-        table: table,
-        where: {'id': userId},
-      )).cast<String, dynamic>();
+        if (user.isEmpty) {
+          return null;
+        }
 
-      if (user.isEmpty) {
-        return null;
-      }
+        final details = ExtendedUserDetails(
+          username: user["username"],
+          password: "",
+          roles: [user["role"]],
+          token: "",
+        );
 
-      final details = ExtendedUserDetails(
-        username: user["username"],
-        password: "",
-        roles: [user["role"]],
-        token: "",
-      );
-
-      return details;
+        return details;
+      });
     } catch (e, s) {
       print(e);
       print(s);
+      return null;
     }
-
-    return null;
   }
 }

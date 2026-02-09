@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS courses
 (
     course_id  VARCHAR(36) DEFAULT (UUID()) PRIMARY KEY,
     identifier VARCHAR(8)  NOT NULL,
-    name       VARCHAR(64) NOT NULL,
+    name       VARCHAR(128) NOT NULL,
     area       varchar(64) not null,
     UNIQUE (identifier, name)
 );
@@ -228,3 +228,5 @@ CREATE INDEX idx_avail_lookup ON availabilities (date_day, slot_number, is_booke
 CREATE INDEX idx_sched_room_lookup ON schedules (room_id);
 
 CREATE INDEX idx_slots_sched_avail ON schedule_slots (schedule_id, availability_id);
+
+CREATE INDEX idx_courses_modules_id ON courses_modules (courses_modules_id);

@@ -1,6 +1,7 @@
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
+import 'package:innovacad_api/src/data/room/dao/output/output_room_busy_dao.dart';
 import 'package:innovacad_api/src/domain/domain.dart';
 import 'package:mysql_utils/mysql_utils.dart';
 import 'package:vaden/vaden.dart';
@@ -11,18 +12,16 @@ class RoomRepositoryImpl implements IRoomRepository {
 
   @override
   Future<Result<List<OutputRoomDao>>> getAll() async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final results = await db.getAll(table: table);
 
-      final results = await db.getAll(table: table);
+        final rooms = results.map((data) {
+          return OutputRoomDao.fromJson(data);
+        }).toList();
 
-      final rooms = results.map((data) {
-        return OutputRoomDao.fromJson(data);
-      }).toList();
-
-      return Result.success(rooms);
+        return Result.success(rooms);
+      });
     } catch (e, stackTrace) {
       return Result.failure(
         AppError(
@@ -36,21 +35,19 @@ class RoomRepositoryImpl implements IRoomRepository {
 
   @override
   Future<Result<OutputRoomDao>> getById(String id) async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final result =
+            await db.getOne(table: table, where: {"room_id": id})
+                as Map<String, dynamic>;
 
-      final result =
-          await db.getOne(table: table, where: {"room_id": id})
-              as Map<String, dynamic>;
+        if (result.isEmpty)
+          return Result.failure(
+            AppError(AppErrorType.notFound, "Room not found..."),
+          );
 
-      if (result.isEmpty)
-        return Result.failure(
-          AppError(AppErrorType.notFound, "Room not found..."),
-        );
-
-      return Result.success(OutputRoomDao.fromJson(result));
+        return Result.success(OutputRoomDao.fromJson(result));
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -67,7 +64,7 @@ class RoomRepositoryImpl implements IRoomRepository {
     MysqlUtils? db;
 
     try {
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
 
       await db.startTrans();
 
@@ -99,6 +96,7 @@ class RoomRepositoryImpl implements IRoomRepository {
 
       return Result.success(OutputRoomDao.fromJson(created));
     } catch (e, s) {
+      if (db != null) await db.rollback();
       return Result.failure(
         AppError(
           AppErrorType.internal,
@@ -106,53 +104,54 @@ class RoomRepositoryImpl implements IRoomRepository {
           details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
   @override
   Future<Result<OutputRoomDao>> update(String id, UpdateRoomDto dto) async {
-    MysqlUtils? db;
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final existingRoom = await getById(id);
 
-      final existingRoom = await getById(id);
+        if (existingRoom.isFailure || existingRoom.data == null)
+          return existingRoom;
 
-      if (existingRoom.isFailure || existingRoom.data == null)
-        return existingRoom;
+        final updateData = <String, dynamic>{};
 
-      final updateData = <String, dynamic>{};
+        if (dto.roomName != null && existingRoom.data!.roomName != dto.roomName)
+          updateData["room_name"] = dto.roomName;
 
-      if (dto.roomName != null && existingRoom.data!.roomName != dto.roomName)
-        updateData["room_name"] = dto.roomName;
+        if (dto.capacity != null && existingRoom.data!.capacity != dto.capacity)
+          updateData["capacity"] = dto.capacity;
 
-      if (dto.capacity != null && existingRoom.data!.capacity != dto.capacity)
-        updateData["capacity"] = dto.capacity;
+        if (dto.hasComputers != null &&
+            existingRoom.data!.hasComputers != dto.hasComputers)
+          updateData["has_computers"] = dto.hasComputers;
 
-      if (dto.hasComputers != null &&
-          existingRoom.data!.hasComputers != dto.hasComputers)
-        updateData["has_computers"] = dto.hasComputers;
+        if (dto.hasProjector != null &&
+            existingRoom.data!.hasProjector != dto.hasProjector)
+          updateData["has_projector"] = dto.hasProjector;
 
-      if (dto.hasProjector != null &&
-          existingRoom.data!.hasProjector != dto.hasProjector)
-        updateData["has_projector"] = dto.hasProjector;
+        if (dto.hasWhiteboard != null &&
+            existingRoom.data!.hasWhiteboard != dto.hasWhiteboard)
+          updateData["has_whiteboard"] = dto.hasWhiteboard;
 
-      if (dto.hasWhiteboard != null &&
-          existingRoom.data!.hasWhiteboard != dto.hasWhiteboard)
-        updateData["has_whiteboard"] = dto.hasWhiteboard;
+        if (dto.hasSmartboard != null &&
+            existingRoom.data!.hasSmartboard != dto.hasSmartboard)
+          updateData["has_smartboard"] = dto.hasSmartboard;
 
-      if (dto.hasSmartboard != null &&
-          existingRoom.data!.hasSmartboard != dto.hasSmartboard)
-        updateData["has_smartboard"] = dto.hasSmartboard;
+        if (updateData.isEmpty) return existingRoom;
 
-      if (updateData.isEmpty) return existingRoom;
+        await db.update(
+          table: table,
+          updateData: updateData,
+          where: {"room_id": id},
+        );
 
-      await db.update(
-        table: table,
-        updateData: updateData,
-        where: {"room_id": id},
-      );
-
-      return await getById(id);
+        return await getById(id);
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -166,25 +165,77 @@ class RoomRepositoryImpl implements IRoomRepository {
 
   @override
   Future<Result<OutputRoomDao>> delete(String id) async {
-    MysqlUtils? db;
-
     try {
-      final existingRoom = await getById(id);
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final existingRoom = await getById(id);
 
-      if (existingRoom.isFailure || existingRoom.data == null)
+        if (existingRoom.isFailure || existingRoom.data == null)
+          return existingRoom;
+
+        await db.delete(table: table, where: {"room_id": id});
+
         return existingRoom;
-
-      db = await MysqlConfiguration.connect();
-
-      await db.delete(table: table, where: {"room_id": id});
-
-      return existingRoom;
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
           AppErrorType.internal,
           "Something went wrong while deleting the room...",
           details: {"error": e.toString(), "stackTrace": s.toString()},
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Result<List<OutputRoomBusyDao>>> checkAvailability(
+    String roomId,
+    DateTime date,
+  ) async {
+    try {
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final dateSql = date.toIso8601String().split('T')[0];
+
+        final query = """
+          SELECT 
+            s.schedule_id, 
+            s.start_date_timestamp, 
+            s.end_date_timestamp,
+            m.name as module_name
+          FROM schedules s
+          LEFT JOIN classes_modules cm ON s.class_module_id = cm.classes_modules_id
+          LEFT JOIN courses_modules crm ON cm.courses_modules_id = crm.courses_modules_id
+          LEFT JOIN modules m ON crm.module_id = m.module_id
+          WHERE s.room_id = ? 
+          AND (
+            DATE(s.start_date_timestamp) = ? 
+            OR DATE(s.end_date_timestamp) = ?
+          )
+          ORDER BY s.start_date_timestamp ASC
+        """;
+
+        final results = await db.query(
+          query,
+          whereValues: [roomId, dateSql, dateSql],
+          isStmt: true,
+        );
+
+        final List<OutputRoomBusyDao> busySlots = [];
+
+        for (var row in results.rowsAssoc) {
+          final data = row.assoc();
+
+          busySlots.add(OutputRoomBusyDao.fromJson(data));
+        }
+
+        return Result.success(busySlots);
+      });
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Error checking room availability",
+          details: {"error": e.toString(), "stack": s.toString()},
         ),
       );
     }

@@ -22,21 +22,19 @@ class TraineeRepositoryImpl implements ITraineeRepository {
 
   @override
   Future<Result<List<OutputTraineeDao>>> getAll() async {
-    MysqlUtils? db;
-
     final List<OutputTraineeDao> daos = [];
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final query =
+            "SELECT $relationFields FROM `trainees` t JOIN `user` u ON t.user_id = u.id";
+        final results = await db.query(query);
 
-      final query =
-          "SELECT $relationFields FROM `trainees` t JOIN `user` u ON t.user_id = u.id";
-      final results = await db.query(query);
+        for (var row in results.rows) {
+          daos.add(OutputTraineeDao.fromJson(row));
+        }
 
-      for (var row in results.rows) {
-        daos.add(OutputTraineeDao.fromJson(row));
-      }
-
-      return Result.success(daos);
+        return Result.success(daos);
+      });
     } catch (e) {
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
@@ -44,25 +42,23 @@ class TraineeRepositoryImpl implements ITraineeRepository {
 
   @override
   Future<Result<OutputTraineeDao>> getById(String id) async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
-
-      final results = await db.query(
-        "SELECT $relationFields "
-        "FROM `trainees` t JOIN `user` u ON t.user_id = u.id WHERE t.trainee_id = ? LIMIT 1",
-        whereValues: [id],
-        isStmt: true,
-      );
-
-      if (results.rows.length == 0) {
-        return Result.failure(
-          AppError(AppErrorType.notFound, "Trainee not found"),
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final results = await db.query(
+          "SELECT $relationFields "
+          "FROM `trainees` t JOIN `user` u ON t.user_id = u.id WHERE t.trainee_id = ? LIMIT 1",
+          whereValues: [id],
+          isStmt: true,
         );
-      }
 
-      return Result.success(OutputTraineeDao.fromJson(results.rows[0]));
+        if (results.rows.length == 0) {
+          return Result.failure(
+            AppError(AppErrorType.notFound, "Trainee not found"),
+          );
+        }
+
+        return Result.success(OutputTraineeDao.fromJson(results.rows[0]));
+      });
     } catch (e) {
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
@@ -74,7 +70,7 @@ class TraineeRepositoryImpl implements ITraineeRepository {
     String? createdUserId;
 
     try {
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
 
       final checkExists = await db.query(
         "SELECT id FROM user WHERE email = ? OR username = ? LIMIT 1",
@@ -147,6 +143,8 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       }
 
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -182,7 +180,7 @@ class TraineeRepositoryImpl implements ITraineeRepository {
           ),
         );
 
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
       await db.startTrans();
 
       final traineeData = <String, dynamic>{};
@@ -207,6 +205,8 @@ class TraineeRepositoryImpl implements ITraineeRepository {
         } catch (_) {}
       }
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -225,7 +225,7 @@ class TraineeRepositoryImpl implements ITraineeRepository {
 
       if (deleteAuthRes.isFailure) return Result.failure(deleteAuthRes.error!);
 
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
 
       await db.startTrans();
 
@@ -239,6 +239,8 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       if (db != null) await db.rollback();
 
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 

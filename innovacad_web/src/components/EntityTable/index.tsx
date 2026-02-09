@@ -43,7 +43,6 @@ interface Props<T> {
 }
 
 export default function EntityTable<T>(props: Props<T>) {
-  // --- CORREÇÃO AQUI: Página começa sempre em 1 ---
   const [page, setPage] = createSignal(1);
   const [search, setSearch] = createSignal("");
   const [editingEntity, setEditingEntity] = createSignal<T | null>(null);
@@ -59,19 +58,15 @@ export default function EntityTable<T>(props: Props<T>) {
 
   const totalPages = createMemo(() => {
     const total = Math.ceil(filteredEntity().length / PAGE_SIZE);
-    return total === 0 ? 1 : total; // Garante que há sempre pelo menos "Página 1"
+    return total === 0 ? 1 : total;
   });
 
-  // --- NOVO: Reseta a página quando a pesquisa muda ---
   createEffect(() => {
-    // Apenas acede ao search() para criar dependência
     search();
     setPage(1);
   });
-  // ----------------------------------------------------
 
   const paginatedEntity = createMemo(() => {
-    // Se a página atual for maior que o total (ex: apagaste itens), volta à última
     if (page() > totalPages()) {
       setPage(totalPages());
     }
@@ -137,7 +132,6 @@ export default function EntityTable<T>(props: Props<T>) {
             <button
               class="btn btn-primary btn-sm"
               onClick={() => {
-                // Passa função para garantir valor atualizado
                 const newItem = props.handleAddClick(null as any);
                 setEditingEntity(() => newItem);
                 setOriginalEntity(null);
@@ -248,7 +242,6 @@ export default function EntityTable<T>(props: Props<T>) {
                 «
               </button>
 
-              {/* Paginação Simplificada para evitar excesso de botões */}
               <button class="join-item btn btn-sm btn-active">{page()}</button>
 
               <button

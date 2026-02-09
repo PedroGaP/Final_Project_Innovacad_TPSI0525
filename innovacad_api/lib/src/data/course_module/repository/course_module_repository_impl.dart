@@ -11,18 +11,16 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
 
   @override
   Future<Result<List<OutputCourseModuleDao>>> getAll() async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final results = await db.getAll(table: table);
 
-      final results = await db.getAll(table: table);
+        final items = results.map((data) {
+          return OutputCourseModuleDao.fromJson(data);
+        }).toList();
 
-      final items = results.map((data) {
-        return OutputCourseModuleDao.fromJson(data);
-      }).toList();
-
-      return Result.success(items);
+        return Result.success(items);
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -36,21 +34,19 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
 
   @override
   Future<Result<OutputCourseModuleDao>> getById(String id) async {
-    MysqlUtils? db;
-
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final result =
+            await db.getOne(table: table, where: {"courses_modules_id": id})
+                as Map<String, dynamic>;
 
-      final result =
-          await db.getOne(table: table, where: {"courses_modules_id": id})
-              as Map<String, dynamic>;
+        if (result.isEmpty)
+          return Result.failure(
+            AppError(AppErrorType.notFound, "CourseModule not found"),
+          );
 
-      if (result.isEmpty)
-        return Result.failure(
-          AppError(AppErrorType.notFound, "CourseModule not found"),
-        );
-
-      return Result.success(OutputCourseModuleDao.fromJson(result));
+        return Result.success(OutputCourseModuleDao.fromJson(result));
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -69,7 +65,7 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
     MysqlUtils? db;
 
     try {
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
 
       await db.startTrans();
 
@@ -99,6 +95,7 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
 
       return Result.success(OutputCourseModuleDao.fromJson(created));
     } catch (e, s) {
+      if (db != null) await db.rollback();
       return Result.failure(
         AppError(
           AppErrorType.internal,
@@ -106,6 +103,8 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
           details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -117,12 +116,12 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
     MysqlUtils? db;
 
     try {
-      db = await MysqlConfiguration.connect();
-
       final existingCourseModule = await getById(id);
 
       if (existingCourseModule.isFailure || existingCourseModule.data == null)
         return existingCourseModule;
+
+      db = await MysqlConfiguration.getConnection();
 
       final updateData = <String, dynamic>{};
 
@@ -156,6 +155,8 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
           details: {"error": e.toString(), "stacktrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -168,9 +169,9 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
       if (existingCourseModule.isFailure || existingCourseModule.data == null)
         return existingCourseModule;
 
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
 
-      await db.delete(table: table, where: {"courses_modules_idid": id});
+      await db.delete(table: table, where: {"courses_modules_id": id});
 
       return existingCourseModule;
     } catch (e, s) {
@@ -181,6 +182,8 @@ class CourseModuleRepositoryImpl implements ICourseModuleRepository {
           details: {"error": e.toString(), "stacktrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 }

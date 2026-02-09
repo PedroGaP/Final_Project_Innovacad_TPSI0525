@@ -47,7 +47,6 @@ const Calendar = () => {
   const [selectedClass, setSelectedClass] = createSignal<Class | null>(null);
   const [canEdit, setCanEdit] = createSignal(false);
 
-  // --- PERMISSÕES ---
   createEffect(() => {
     const u = user();
     const c = selectedClass();
@@ -62,7 +61,6 @@ const Calendar = () => {
     }
   });
 
-  // --- MEMOS DE OPÇÕES ---
   const trainerOptions = createMemo(
     () =>
       allTrainers()?.map((t) => ({
@@ -170,7 +168,6 @@ const Calendar = () => {
     any
   > | null>(null);
 
-  // --- MEMO DO MÓDULO SELECIONADO ---
   const currentSelectedModuleDef = createMemo(() => {
     const modId = formData().moduleId;
     const cls = selectedClass();
@@ -184,12 +181,8 @@ const Calendar = () => {
     });
   });
 
-  // --- INTERCEPTOR: Lógica de atualização do Form ---
-  // Substitui o createEffect problemático
   const handleFormChange = (newData: ScheduleFormData) => {
-    // Se o Módulo mudou, aplicamos a lógica de auto-select
     if (modalMode() === "create" && newData.moduleId !== formData().moduleId) {
-      // Procurar formador default para o NOVO módulo
       const cls = selectedClass();
       let defaultTrainerId = "";
 
@@ -209,7 +202,7 @@ const Calendar = () => {
       setFormData({
         ...newData,
         trainerId: defaultTrainerId,
-        force: false, // Reset override
+        force: false,
       });
     } else {
       const cls = selectedClass();
@@ -282,7 +275,6 @@ const Calendar = () => {
     setCurrentScheduleId(event.id);
     const props = event.extendedProps;
 
-    // Fallback IDs logic
     let resolvedModuleId = props.classModuleId || "";
     if (!resolvedModuleId && props.moduleName && selectedClass()?.modules) {
       const foundMod: any = selectedClass()!.modules.find(
@@ -364,7 +356,6 @@ const Calendar = () => {
     }
   };
 
-  // --- CAMPOS DINÂMICOS ---
   const dynamicFields = createMemo<ModalFieldDefinition<ScheduleFormData>[]>(
     () => {
       const selectedMod: any = currentSelectedModuleDef();
@@ -490,7 +481,6 @@ const Calendar = () => {
           <ModalEdit<ScheduleFormData>
             title={modalMode() === "create" ? "New Session" : "Edit Session"}
             value={formData()}
-            // AQUI ESTÁ A CORREÇÃO FINAL: Usar o handler intercetor
             setValue={handleFormChange}
             onSave={handleSave}
             onCancel={() => setIsEditModalOpen(false)}

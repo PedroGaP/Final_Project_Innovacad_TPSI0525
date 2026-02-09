@@ -11,6 +11,7 @@ OutputCourseDao _$OutputCourseDaoFromJson(Map<String, dynamic> json) =>
       courseId: json['course_id'] as String,
       identifier: json['identifier'] as String,
       name: json['name'] as String,
+      area: json['area'] as String,
       coursesModules: (json['modules'] as List<dynamic>?)
           ?.map(
             (e) => OutputCourseModuleDao.fromJson(e as Map<String, dynamic>),
@@ -23,5 +24,6 @@ Map<String, dynamic> _$OutputCourseDaoToJson(OutputCourseDao instance) =>
       'course_id': instance.courseId,
       'identifier': instance.identifier,
       'name': instance.name,
+      'area': instance.area,
       'modules': instance.coursesModules,
     };

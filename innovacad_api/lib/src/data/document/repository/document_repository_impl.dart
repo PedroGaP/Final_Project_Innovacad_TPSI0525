@@ -18,7 +18,7 @@ class DocumentRepositoryImpl {
   }) async {
     MysqlUtils? db;
     try {
-      db = await MysqlConfiguration.connect();
+      db = await MysqlConfiguration.getConnection();
       final uuid = Uuid().v4();
 
       await db.startTrans();
@@ -34,7 +34,6 @@ class DocumentRepositoryImpl {
           'type_code': typeCode,
           'user_id': userId,
         },
-        // debug: true,
       );
 
       if (typeCode == 'PROFILE_PIC') {
@@ -66,42 +65,45 @@ class DocumentRepositoryImpl {
         ),
       );
     } finally {
-      // await db?.close();
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
   Future<Result<List<OutputDocumentDao>>> getDocumentsByOwner(
     String ownerId,
   ) async {
-    MysqlUtils? db;
     try {
-      db = await MysqlConfiguration.connect();
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final sql = """
+          SELECT 
+            document_id, 
+            file_name, 
+            file_path, 
+            mime_type, 
+            file_size_bytes, 
+            type_code, 
+            created_at 
+          FROM documents 
+          WHERE user_id = ?
+          ORDER BY created_at DESC
+        """;
 
-      final sql = """
-        SELECT 
-          document_id, 
-          file_name, 
-          file_path, 
-          mime_type, 
-          file_size_bytes, 
-          type_code, 
-          created_at 
-        FROM documents 
-        WHERE user_id = ?
-        ORDER BY created_at DESC
-      """;
+        final result = await db.query(
+          sql,
+          whereValues: [ownerId],
+          isStmt: true,
+        );
 
-      final result = await db.query(sql, whereValues: [ownerId], isStmt: true);
+        if (result.numOfRows == 0) {
+          return Result.success([]);
+        }
 
-      if (result.numOfRows == 0) {
-        return Result.success([]);
-      }
+        final list = result.rowsAssoc
+            .map((row) => OutputDocumentDao.fromJson(row.assoc()))
+            .toList();
 
-      final list = result.rowsAssoc
-          .map((row) => OutputDocumentDao.fromJson(row.assoc()))
-          .toList();
-
-      return Result.success(list);
+        return Result.success(list);
+      });
     } catch (e, s) {
       print("Error fetching documents: $e");
       return Result.failure(
@@ -111,37 +113,34 @@ class DocumentRepositoryImpl {
           details: {"error": e.toString(), "stack": s.toString()},
         ),
       );
-    } finally {
-      // await db?.close();
     }
   }
 
   Future<Result<void>> deleteDocument(String docId) async {
-    MysqlUtils? db;
     try {
-      db = await MysqlConfiguration.connect();
-
-      final docResult = await db.getOne(
-        table: 'documents',
-        where: {'document_id': docId},
-      );
-
-      if (docResult.isEmpty) {
-        return Result.failure(
-          AppError(AppErrorType.notFound, "Document not found"),
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final docResult = await db.getOne(
+          table: 'documents',
+          where: {'document_id': docId},
         );
-      }
 
-      final String filePath = docResult['file_path'];
+        if (docResult.isEmpty) {
+          return Result.failure(
+            AppError(AppErrorType.notFound, "Document not found"),
+          );
+        }
 
-      await db.delete(table: 'documents', where: {'document_id': docId});
+        final String filePath = docResult['file_path'];
 
-      final file = File(filePath);
-      if (await file.exists()) {
-        await file.delete();
-      }
+        await db.delete(table: 'documents', where: {'document_id': docId});
 
-      return Result.success(null);
+        final file = File(filePath);
+        if (await file.exists()) {
+          await file.delete();
+        }
+
+        return Result.success(null);
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
@@ -150,8 +149,6 @@ class DocumentRepositoryImpl {
           details: {"error": e.toString(), "stack": s.toString()},
         ),
       );
-    } finally {
-      // await db?.close();
     }
   }
 }
