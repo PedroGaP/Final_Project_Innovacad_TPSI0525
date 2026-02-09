@@ -14,12 +14,14 @@ import 'package:pdf/widgets.dart' as pw;
 class TrainerRepositoryImpl implements ITrainerRepository {
   final RemoteUserService _remoteUserService;
   final IModuleRepository _moduleRepository;
+  final IClassRepository _classRepository;
   final Dio dio;
   final String table = "trainers";
 
   TrainerRepositoryImpl(
     this._remoteUserService,
     this._moduleRepository,
+    this._classRepository,
     this.dio,
   );
 
@@ -675,6 +677,40 @@ class TrainerRepositoryImpl implements ITrainerRepository {
         AppError(
           AppErrorType.internal,
           "Failed to fetch trainer skills!",
+          details: {"error": e.toString()},
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Result<List<String>>> getCoordinatedClasses(String id) async {
+    try {
+      final trainer = await getById(id);
+
+      if (trainer.isFailure || trainer.data?.coordinatedClassIds == null)
+        return Result.failure(
+          AppError(AppErrorType.notFound, "Trainer not found!"),
+        );
+
+      List<String> classes = [];
+
+      if (trainer.data?.coordinatedClassIds != null) {
+        for (var id in trainer.data!.coordinatedClassIds!) {
+          final klass = await _classRepository.getById(id);
+
+          if (klass.isSuccess) {
+            classes.add("${klass.data?.identifier} - ${klass.data?.location}");
+          }
+        }
+      }
+
+      return Result.success(classes);
+    } catch (e) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Failed to fetch class skills!",
           details: {"error": e.toString()},
         ),
       );

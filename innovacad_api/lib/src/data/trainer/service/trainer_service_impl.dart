@@ -51,4 +51,8 @@ class TrainerServiceImpl implements ITrainerService {
   @override
   Future<Result<List<SkillOutputDao>>> getSkills(String id) async =>
       await _repository.getSkills(id);
+
+  @override
+  Future<Result<List<String>>> getCoordinatedClasses(String id) async =>
+      await _repository.getCoordinatedClasses(id);
 }
