@@ -26,6 +26,10 @@ OutputScheduleDao _$OutputScheduleDaoFromJson(Map<String, dynamic> json) =>
       ),
       regimeType: json['regime_type'] as String?,
       roomName: json['room_name'] as String?,
+      trainerId: json['trainer_id'] as String?,
+      className: json['class_name'] as String?,
+      currentDuration: (json['current_duration'] as num?)?.toDouble(),
+      totalDuration: (json['total_duration'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$OutputScheduleDaoToJson(OutputScheduleDao instance) =>
@@ -34,6 +38,7 @@ Map<String, dynamic> _$OutputScheduleDaoToJson(OutputScheduleDao instance) =>
       'regime_type': instance.regimeType,
       'module_name': instance.moduleName,
       'trainer_name': instance.trainerName,
+      'trainer_id': instance.trainerId,
       'date_day': _$JsonConverterToJson<Object, DateTime>(
         instance.dateDay,
         const DateTimeConverter().toJson,
@@ -48,6 +53,9 @@ Map<String, dynamic> _$OutputScheduleDaoToJson(OutputScheduleDao instance) =>
       ),
       'is_online': instance.isOnline,
       'room_name': instance.roomName,
+      'class_name': instance.className,
+      'current_duration': instance.currentDuration,
+      'total_duration': instance.totalDuration,
     };
 
 Value? _$JsonConverterFromJson<Json, Value>(

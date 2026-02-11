@@ -16,6 +16,9 @@ export type ScheduleResponseData = {
 
   start_date_timestamp?: string;
   end_date_timestamp?: string;
+  class_name: string | undefined;
+  total_duration: number | undefined;
+  current_duration: number | undefined;
 };
 
 export class Schedule {
@@ -32,6 +35,9 @@ export class Schedule {
   class_module_id: string | undefined;
   trainer_id: string | undefined;
   room_id: number | undefined;
+  class_name: string | undefined;
+  total_duration: number | undefined;
+  current_duration: number | undefined;
 
   constructor(data: ScheduleResponseData) {
     this.schedule_id = data.schedule_id;
@@ -44,12 +50,14 @@ export class Schedule {
     this.class_module_id = data.class_module_id;
     this.trainer_id = data.trainer_id;
     this.room_id = data.room_id;
+    this.class_name = data.class_name;
+    this.total_duration = data.total_duration;
+    this.current_duration = data.current_duration;
 
     if (data.start_date_timestamp && data.end_date_timestamp) {
       this.start = new Date(data.start_date_timestamp);
       this.end = new Date(data.end_date_timestamp);
-    }
-    else if (data.date_day && data.start_time && data.end_time) {
+    } else if (data.date_day && data.start_time && data.end_time) {
       try {
         const timestamp = parseInt(data.date_day, 10);
 
@@ -69,7 +77,6 @@ export class Schedule {
 
           this.start = startDate;
           this.end = endDate;
-
         }
       } catch (e) {
         console.error("[Schedule Error] Parsing failed:", e);
