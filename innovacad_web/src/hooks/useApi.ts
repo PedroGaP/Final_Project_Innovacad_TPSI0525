@@ -1456,9 +1456,7 @@ export const useApi = () => {
     if (res.isError || !res.data) {
       throw new Error(`Fetch availabilities failed: ${res.error?.message}`);
     }
-    const availabilities = res.data.map((item) => new Availability(item));
-    console.log(availabilities);
-    return availabilities;
+    return res.data.map((item) => new Availability(item));
   };
 
   /**
@@ -1572,7 +1570,7 @@ export const useApi = () => {
       try {
         const err = await res.json();
         errorMessage = err.message || errorMessage;
-      } catch {}
+      } catch { }
 
       throw new Error(errorMessage);
     }

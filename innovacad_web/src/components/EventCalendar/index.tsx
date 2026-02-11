@@ -197,11 +197,44 @@ export const EventCalendar = (props: Props) => {
     <>
       <style>
         {`
-            .fc .fc-toolbar-title { font-size: 1.25rem; font-weight: 700; color: var(--fallback-bc, oklch(var(--bc))); }
+            .fc .fc-toolbar-title { font-size: 1.25rem; font-weight: 700; color: var(--color-base-content); }
             .fc-event { border: none; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-            .fc th { border-color: var(--fallback-b3, oklch(var(--b3))); }
-            .fc-timegrid-slot { border-color: var(--fallback-b3, oklch(var(--b3) / 0.5)); }
-            .fc .fc-button-primary { background-color: var(--fallback-p, oklch(var(--p))); border: none; }
+            .fc th { border-color: var(--color-base-300); }
+            .fc-timegrid-slot { border-color: var(--color-base-300); }
+            
+            .fc .fc-button {
+                border-radius: var(--rounded-btn, 0.5rem);
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                font-size: 0.75rem;
+                padding: 0 0.75rem;
+                height: 2.25rem;
+                min-height: 2.25rem;
+                transition: 0.2s;
+                border: none;
+                opacity: 1;
+                box-shadow: none;
+            }
+            .fc .fc-button:focus { box-shadow: none !important; }
+            .fc .fc-button-primary { 
+                background-color: var(--color-primary); 
+                color: var(--color-primary-content); 
+            }
+            .fc .fc-button-primary:hover { 
+                background-color: var(--color-primary); 
+                opacity: 0.8; 
+            }
+            .fc .fc-button-primary:not(:disabled).fc-button-active,
+            .fc .fc-button-primary:not(:disabled):active {
+                background-color: var(--color-primary-focus, var(--color-primary));
+                opacity: 1;
+            }
+            .fc .fc-button:disabled {
+                background-color: var(--color-neutral);
+                color: var(--color-neutral-content);
+                opacity: 0.5;
+            }
         `}
       </style>
 
