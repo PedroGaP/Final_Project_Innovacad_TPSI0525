@@ -15,6 +15,7 @@ UpdateGradeDto _$UpdateGradeDtoFromJson(Map<String, dynamic> json) =>
         const DoubleConverter().fromJson,
       ),
       gradeType: json['grade_type'] as String?,
+      status: json['status'] as String?,
     );
 
 Map<String, dynamic> _$UpdateGradeDtoToJson(UpdateGradeDto instance) =>
@@ -26,6 +27,7 @@ Map<String, dynamic> _$UpdateGradeDtoToJson(UpdateGradeDto instance) =>
         const DoubleConverter().toJson,
       ),
       'grade_type': instance.gradeType,
+      'status': instance.status,
     };
 
 Value? _$JsonConverterFromJson<Json, Value>(

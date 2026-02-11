@@ -1,16 +1,38 @@
 import EntityTable from "@/components/EntityTable";
-import type { ModalFieldDefinition } from "@/components/Modal/Edit";
 import { useApi } from "@/hooks/useApi";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import type { Class } from "@/types/class";
-import type { Enrollment } from "@/types/enrollment";
-import { GradeTypeEnum, type Grade } from "@/types/grade";
-import type { Trainee } from "@/types/user";
-import { createMemo, createResource } from "solid-js";
+import { GradeStatusEnum, GradeTypeEnum } from "@/types/grade";
+import {
+  createEffect,
+  createMemo,
+  createResource,
+  createSignal,
+  For,
+  Show,
+} from "solid-js";
 import toast from "solid-toast";
+import { BookOpen, Crown, Lock, Save, X } from "lucide-solid";
 
-interface GradeForm extends Grade {
-  class_id?: string;
+interface ModuleRow {
+  unique_id: string;
+  class_id: string;
+  class_identifier: string;
+  class_location: string;
+  module_id: string;
+  module_name: string;
+  trainer_id: string;
+}
+
+interface StudentGradeRow {
+  trainee_id: string;
+  trainee_name: string;
+  attendance: number;
+  behavior: number;
+  work: number;
+  test: number;
+  final: number;
+  status: GradeStatusEnum;
 }
 
 const normalizeId = (id: any) =>
@@ -18,410 +40,475 @@ const normalizeId = (id: any) =>
     .trim()
     .toLowerCase();
 
-const getMyTrainerId = (u: any): string => {
-  if (!u) return "";
-  return normalizeId(u.trainer_id || u.trainerId || u.id);
+const calculateFinal = (r: StudentGradeRow) => {
+  return r.attendance * 0.05 + r.behavior * 0.05 + r.work * 0.3 + r.test * 0.6;
 };
 
-const createEmptyGrade = (): GradeForm =>
-  ({
-    grade_id: "",
-    class_module_id: "",
-    trainee_id: "",
-    grade: 0,
-    start_date_timestamp: "",
-    grade_type: GradeTypeEnum.ASSESSMENT,
-    class_id: "",
-  }) as unknown as GradeForm;
+const GradeSheetModal = (props: {
+  isOpen: boolean;
+  onClose: () => void;
+  classModuleId: string;
+  className: string;
+  moduleName: string;
+  canFinalize: boolean;
+  classId: string;
+}) => {
+  const api = useApi();
+  const [loading, setLoading] = createSignal(false);
+  const [rows, setRows] = createSignal<StudentGradeRow[]>([]);
 
-const validateGrade = (grade: Grade): { valid: boolean; errors: string[] } => {
-  const errors: string[] = [];
-  if (!String(grade.class_module_id || "").trim())
-    errors.push("Class Module is required");
-  if (!String(grade.trainee_id || "").trim())
-    errors.push("Trainee is required");
-  if (
-    grade.grade === undefined ||
-    grade.grade === null ||
-    isNaN(Number(grade.grade))
-  ) {
-    errors.push("Grade is required and must be a number");
-  } else if (Number(grade.grade) < 0 || Number(grade.grade) > 20) {
-    errors.push("Grade must be between 0 and 20");
-  }
-  if (!String(grade.grade_type || "").trim())
-    errors.push("Grade Type is required");
-  return { valid: errors.length === 0, errors };
-};
+  const [isFinalized, setIsFinalized] = createSignal(false);
 
-const getChangedFields = (oldGrade: Grade, newGrade: Grade) => {
-  const changes: any = {};
-  if (String(oldGrade.class_module_id) !== String(newGrade.class_module_id))
-    changes.class_module_id = String(newGrade.class_module_id);
-  if (String(oldGrade.trainee_id) !== String(newGrade.trainee_id))
-    changes.trainee_id = String(newGrade.trainee_id);
-  if (String(oldGrade.grade) !== String(newGrade.grade))
-    changes.grade = String(newGrade.grade);
-  if (String(oldGrade.grade_type) !== String(newGrade.grade_type))
-    changes.grade_type = String(newGrade.grade_type);
-  return changes;
+  const loadData = async () => {
+    if (!props.classModuleId || !props.classId) return;
+
+    setLoading(true);
+    try {
+      const [existingGradesRes, allEnrollmentsRes, allTraineesRes] =
+        await Promise.all([
+          api.fetchGradesByModule(props.classModuleId).catch(() => []),
+          api.fetchEnrollments().catch(() => []),
+          api.fetchTrainees().catch(() => []),
+        ]);
+
+      const classEnrollments = allEnrollmentsRes.filter(
+        (e) => normalizeId(e.class_id) === normalizeId(props.classId),
+      );
+
+      const traineeMap = new Map<string, StudentGradeRow>();
+
+      classEnrollments.forEach((e) => {
+        const trainee = allTraineesRes.find(
+          (t) => normalizeId(t.traineeId) === normalizeId(e.trainee_id),
+        );
+        const name = trainee ? trainee.name : "Unknown Trainee";
+
+        traineeMap.set(normalizeId(e.trainee_id), {
+          trainee_id: String(e.trainee_id),
+          trainee_name: name!,
+          attendance: 0,
+          behavior: 0,
+          work: 0,
+          test: 0,
+          final: 0,
+          status: GradeStatusEnum.DRAFT,
+        });
+      });
+
+      let foundFinalized = false;
+
+      existingGradesRes.forEach((g) => {
+        const tId = normalizeId(g.trainee_id);
+        if (traineeMap.has(tId)) {
+          const row = traineeMap.get(tId)!;
+          if (g.grade_type === GradeTypeEnum.ATTENDANCE)
+            row.attendance = Number(g.grade);
+          if (g.grade_type === GradeTypeEnum.BEHAVIOR)
+            row.behavior = Number(g.grade);
+          if (g.grade_type === GradeTypeEnum.WORK) row.work = Number(g.grade);
+          if (g.grade_type === GradeTypeEnum.TEST) row.test = Number(g.grade);
+
+          if (g.status === GradeStatusEnum.FINALIZED) {
+            row.status = GradeStatusEnum.FINALIZED;
+            foundFinalized = true;
+          }
+
+          row.final = calculateFinal(row);
+        }
+      });
+
+      setIsFinalized(foundFinalized); // Atualiza o estado
+      setRows(Array.from(traineeMap.values()));
+    } catch (e: any) {
+      toast.error("Failed to load data: " + e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  createEffect(() => {
+    if (props.isOpen && props.classModuleId && props.classId) {
+      loadData();
+    }
+  });
+
+  const handleInputChange = (
+    traineeId: string,
+    field: keyof StudentGradeRow,
+    value: string,
+  ) => {
+    const numValue = Math.min(20, Math.max(0, Number(value)));
+    setRows((prev) =>
+      prev.map((row) => {
+        if (row.trainee_id === traineeId) {
+          const updated = { ...row, [field]: numValue };
+          updated.final = calculateFinal(updated);
+          return updated;
+        }
+        return row;
+      }),
+    );
+  };
+
+  const handleSave = async () => {
+    const gradesToSave: any[] = [];
+    rows().forEach((row) => {
+      const types = [
+        { type: GradeTypeEnum.ATTENDANCE, val: row.attendance },
+        { type: GradeTypeEnum.BEHAVIOR, val: row.behavior },
+        { type: GradeTypeEnum.WORK, val: row.work },
+        { type: GradeTypeEnum.TEST, val: row.test },
+        { type: GradeTypeEnum.FINAL, val: row.final },
+      ];
+
+      types.forEach((t) => {
+        gradesToSave.push({
+          trainee_id: row.trainee_id,
+          grade: t.val,
+          grade_type: t.type,
+        });
+      });
+    });
+
+    try {
+      await api.batchUpsertGrades({
+        class_module_id: props.classModuleId,
+        grades: gradesToSave,
+      });
+      toast.success("Grades saved successfully!");
+      props.onClose();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const handleFinalize = async () => {
+    if (!confirm("Are you sure? This will LOCK the grades definitively."))
+      return;
+    try {
+      await handleSave();
+      await api.finalizeGrades(props.classModuleId);
+      toast.success("Module grades finalized.");
+      setIsFinalized(true); // Bloqueia a UI imediatamente
+      props.onClose();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  return (
+    <Show when={props.isOpen}>
+      <div class="modal modal-open">
+        <div class="modal-box w-11/12 max-w-6xl">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-lg">
+              Grade Sheet: <span class="text-primary">{props.className}</span> -{" "}
+              {props.moduleName}
+            </h3>
+            <button
+              class="btn btn-sm btn-circle btn-ghost"
+              onClick={props.onClose}
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <div class="overflow-x-auto min-h-75">
+            <Show
+              when={!loading()}
+              fallback={
+                <div class="flex justify-center p-10">
+                  <span class="loading loading-spinner loading-lg"></span>
+                </div>
+              }
+            >
+              <table class="table table-xs md:table-sm">
+                <thead>
+                  <tr>
+                    <th class="w-48">Trainee</th>
+                    <th class="w-24 text-center">Assiduity (5%)</th>
+                    <th class="w-24 text-center">Behavior (5%)</th>
+                    <th class="w-24 text-center">Work (30%)</th>
+                    <th class="w-24 text-center">Test (60%)</th>
+                    <th class="w-24 text-center font-bold">Final</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <For each={rows()}>
+                    {(row) => (
+                      <tr class="hover">
+                        <td class="font-medium">{row.trainee_name}</td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            max="20"
+                            class="input input-bordered input-xs w-full text-center"
+                            value={row.attendance}
+                            onInput={(e) =>
+                              handleInputChange(
+                                row.trainee_id,
+                                "attendance",
+                                e.currentTarget.value,
+                              )
+                            }
+                            disabled={isFinalized()}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            max="20"
+                            class="input input-bordered input-xs w-full text-center"
+                            value={row.behavior}
+                            onInput={(e) =>
+                              handleInputChange(
+                                row.trainee_id,
+                                "behavior",
+                                e.currentTarget.value,
+                              )
+                            }
+                            disabled={isFinalized()}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            max="20"
+                            class="input input-bordered input-xs w-full text-center"
+                            value={row.work}
+                            onInput={(e) =>
+                              handleInputChange(
+                                row.trainee_id,
+                                "work",
+                                e.currentTarget.value,
+                              )
+                            }
+                            disabled={isFinalized()}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            max="20"
+                            class="input input-bordered input-xs w-full text-center"
+                            value={row.test}
+                            onInput={(e) =>
+                              handleInputChange(
+                                row.trainee_id,
+                                "test",
+                                e.currentTarget.value,
+                              )
+                            }
+                            disabled={isFinalized()}
+                          />
+                        </td>
+                        <td class="text-center font-bold">
+                          <div
+                            class={`badge ${row.final >= 9.5 ? "badge-success" : "badge-error"} badge-sm`}
+                          >
+                            {row.final.toFixed(2)}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </For>
+                </tbody>
+              </table>
+            </Show>
+          </div>
+
+          <div class="modal-action flex justify-between items-center">
+            <div class="text-xs opacity-50">
+              {isFinalized()
+                ? "Grade sheet LOCKED."
+                : "Remember to save changes."}
+            </div>
+            <div class="flex gap-2">
+              <Show when={props.canFinalize && !isFinalized()}>
+                <button
+                  class="btn btn-error btn-sm text-white"
+                  onClick={handleFinalize}
+                >
+                  <Lock size={16} /> Finalize Grades
+                </button>
+              </Show>
+              <Show when={!isFinalized()}>
+                <button class="btn btn-primary btn-sm" onClick={handleSave}>
+                  <Save size={16} /> Save
+                </button>
+              </Show>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Show>
+  );
 };
 
 const GradesPage = () => {
   const api = useApi();
   const { user } = useUserDetails();
 
-  const [gradesData, { mutate }] = createResource<Grade[]>(api.fetchGrades);
-  const [trainees] = createResource<Trainee[]>(api.fetchTrainees);
   const [classes] = createResource<Class[]>(api.fetchClasses);
-  const [enrollments] = createResource<Enrollment[]>(api.fetchEnrollments);
+  const [isModalOpen, setIsModalOpen] = createSignal(false);
+  const [selectedModule, setSelectedModule] = createSignal<ModuleRow | null>(
+    null,
+  );
 
-  const myAllowedModuleIds = createMemo(() => {
-    const u = user();
-    if (!u) return [];
-    if (u.role === "admin" || u.role === "coordinator") return null;
-
+  const modulesList = createMemo(() => {
+    const list: ModuleRow[] = [];
     const allClasses = classes();
     if (!allClasses) return [];
 
-    const myId = getMyTrainerId(u);
-    const allowedIds: string[] = [];
+    const u = user();
+    if (!u) return [];
+
+    let myId = normalizeId(u.id);
+    if ("trainer_id" in u) {
+      myId = normalizeId((u as any).trainer_id);
+    }
+
+    const role = u.role;
+    const coordinatedClassIds = ((u as any).coordinated_class_ids || []).map(
+      (id: any) => normalizeId(id),
+    );
 
     allClasses.forEach((cls) => {
+      const classId = normalizeId(cls.class_id);
+      const isCoordOfThisClass =
+        role === "coordinator" && coordinatedClassIds.includes(classId);
+
       cls.modules?.forEach((mod: any) => {
-        const tId = normalizeId(mod.trainer_id || mod.trainerId);
-        if (tId === myId) {
-          const mId =
-            mod.classes_modules_id ||
-            mod.classesModulesId ||
-            mod.courses_modules_id;
-          if (mId) allowedIds.push(normalizeId(mId));
+        const modTrainerId = normalizeId(mod.trainer_id || mod.trainerId);
+        const amITheTrainer = modTrainerId === myId;
+
+        let canView = false;
+        if (role === "admin") {
+          canView = true;
+        } else if (role === "coordinator") {
+          if (isCoordOfThisClass || amITheTrainer) canView = true;
+        } else {
+          if (amITheTrainer) canView = true;
+        }
+
+        if (canView) {
+          list.push({
+            unique_id: `${cls.class_id}_${mod.classes_modules_id || mod.courses_modules_id}`,
+            class_id: String(cls.class_id),
+            class_identifier: cls.identifier || "N/A",
+            class_location: cls.location || "N/A",
+            module_id: String(mod.classes_modules_id || mod.courses_modules_id),
+            module_name: mod.module_name,
+            trainer_id: modTrainerId,
+          });
         }
       });
     });
 
-    return [...new Set(allowedIds)];
+    return list;
   });
 
-  const getTraineeName = (id: string | undefined) => {
-    if (!id || !trainees()) return id;
-    const found = trainees()?.find((t) => t.traineeId === id);
-    return found ? found.name : id;
+  const handleOpenPauta = (row: ModuleRow) => {
+    setSelectedModule(row);
+    setIsModalOpen(true);
   };
 
-  const getClassModuleName = (id: string | undefined) => {
-    if (!id || !classes()) return id;
-    const target = normalizeId(id);
-    for (const cls of classes()!) {
-      const foundMod = cls.modules?.find(
-        (m: any) =>
-          normalizeId(m.classes_modules_id || m.courses_modules_id) === target,
+  const isCoordinatorOf = (classId: string) => {
+    const u = user();
+    if (u?.role === "admin") return true;
+    if (u?.role === "coordinator") {
+      const coordinatedIds = ((u as any).coordinated_class_ids || []).map(
+        (id: any) => normalizeId(id),
       );
-      if (foundMod) return `${cls.identifier} - ${foundMod.module_name}`;
+      return coordinatedIds.includes(normalizeId(classId));
     }
-    return id;
-  };
-
-  const findClassIdByModuleId = (modId: string): string => {
-    const list = classes();
-    if (!list || !modId) return "";
-    const target = normalizeId(modId);
-    for (const cls of list) {
-      const found = cls.modules?.some(
-        (m: any) =>
-          normalizeId(m.classes_modules_id || m.courses_modules_id) === target,
-      );
-      if (found) return String(cls.class_id);
-    }
-    return "";
-  };
-
-  const filteredGradesData = createMemo(() => {
-    const list = gradesData();
-    const allowed = myAllowedModuleIds();
-    if (!list) return [];
-    if (allowed === null) return list;
-    return list.filter((g) => allowed.includes(normalizeId(g.class_module_id)));
-  });
-
-  const simpleFields = createMemo<ModalFieldDefinition<GradeForm>[]>(() => [
-    {
-      name: "grade",
-      label: "Grade (0-20)",
-      type: "number",
-      required: true,
-    },
-    {
-      name: "grade_type",
-      label: "Grade Type",
-      type: "select",
-      options: Object.values(GradeTypeEnum).map((value) => ({
-        label: value,
-        value: value,
-      })),
-      required: true,
-    },
-  ]);
-
-  const handleSaveGrade = async (grade: GradeForm, original: Grade | null) => {
-    const { class_id, ...payload } = grade;
-
-    try {
-      const validation = validateGrade(payload);
-      if (!validation.valid) {
-        validation.errors.forEach((error) => toast.error(error));
-        throw new Error("Validation failed");
-      }
-
-      if (original) {
-        const changedFields = getChangedFields(original, payload);
-        if (Object.keys(changedFields).length === 0) return;
-        await api.updateGrade(String(grade.grade_id), changedFields);
-        mutate(
-          (prev) =>
-            prev?.map((u) => (u.grade_id === grade.grade_id ? payload : u)) ||
-            [],
-        );
-        toast.success(`Grade updated successfully`);
-      } else {
-        const gradeObj = {
-          class_module_id: String(payload.class_module_id),
-          trainee_id: String(payload.trainee_id),
-          grade: String(payload.grade),
-          grade_type: String(payload.grade_type),
-        };
-        const newGrade = await api.createGrade(gradeObj);
-        mutate((prev) => [...(prev || []), newGrade]);
-        toast.success("Grade created successfully.");
-      }
-    } catch (error) {
-      if (error instanceof Error && error.message !== "Validation failed") {
-        toast.error(error.message || "Failed to save grade");
-      }
-      throw error;
-    }
-  };
-
-  const confirmDelete = async (gradeToDelete: Grade) => {
-    await api.deleteGrade(String(gradeToDelete.grade_id));
-    mutate(
-      (prev) =>
-        prev?.filter((c) => c.grade_id !== gradeToDelete.grade_id) || [],
-    );
-    toast.success("Grade deleted");
+    return false;
   };
 
   return (
-    <EntityTable<GradeForm>
-      title="Manage Grades"
-      data={filteredGradesData}
-      handleEditClick={(grade) => ({
-        ...grade,
-        class_id: findClassIdByModuleId(grade.class_module_id!),
-      })}
-      handleAddClick={() => createEmptyGrade()}
-      confirmDelete={confirmDelete}
-      handleSave={handleSaveGrade}
-      formFields={simpleFields()}
-      renderCustomFields={(formData, setFormData) => {
-        const allowedModules = myAllowedModuleIds();
-
-        const classOptions = (() => {
-          const all = classes() || [];
-          if (allowedModules === null) return all;
-
-          return all.filter((c) =>
-            c.modules?.some((m: any) => {
-              const id = normalizeId(
-                m.classes_modules_id ||
-                  m.classesModulesId ||
-                  m.courses_modules_id,
-              );
-              return allowedModules.includes(id);
-            }),
+    <>
+      <EntityTable<ModuleRow>
+        title="Grade Sheets"
+        data={modulesList}
+        handleAddClick={undefined}
+        confirmDelete={undefined}
+        handleSave={async () => {}}
+        handleEditClick={(row) => {
+          handleOpenPauta(row);
+          return undefined;
+        }}
+        formFields={[]}
+        filter={(row, search) => {
+          const s = search.toLowerCase();
+          return (
+            row.module_name.toLowerCase().includes(s) ||
+            row.class_identifier.toLowerCase().includes(s)
           );
-        })();
-
-        const moduleOptions = (() => {
-          if (!formData.class_id) return [];
-          const selectedClass = classes()?.find(
-            (c) => normalizeId(c.class_id) === normalizeId(formData.class_id),
-          );
-          if (!selectedClass || !selectedClass.modules) return [];
-
-          return selectedClass.modules
-            .filter((m: any) => {
-              const id = normalizeId(
-                m.classes_modules_id ||
-                  m.classesModulesId ||
-                  m.courses_modules_id,
+        }}
+        fields={[
+          {
+            formattedName: "Role",
+            fieldName: "class_id",
+            smaller: true,
+            customGeneration: (r) => {
+              const isCoord = isCoordinatorOf(r.class_id);
+              return (
+                <div
+                  class={`badge gap-1 ${isCoord ? "badge-primary" : "badge-ghost"}`}
+                >
+                  {isCoord ? <Crown size={12} /> : <BookOpen size={12} />}
+                  {isCoord ? "Coordinator" : "Trainer"}
+                </div>
               );
-              return allowedModules === null || allowedModules.includes(id);
-            })
-            .map((m: any) => ({
-              label: m.module_name,
-              value: m.classes_modules_id || m.courses_modules_id,
-            }));
-        })();
-
-        const traineeOptions = (() => {
-          if (!formData.class_id) return [];
-          const enrols = enrollments() || [];
-          const studs = trainees() || [];
-
-          return enrols
-            .filter(
-              (e) => normalizeId(e.class_id) === normalizeId(formData.class_id),
-            )
-            .map((e) => {
-              const t = studs.find(
-                (s) => normalizeId(s.traineeId) === normalizeId(e.trainee_id),
+            },
+          },
+          {
+            formattedName: "Class",
+            fieldName: "class_identifier",
+            customGeneration: (r) => (
+              <div class="flex flex-col">
+                <span class="font-bold">{r.class_identifier}</span>
+                <span class="text-xs opacity-60">({r.class_location})</span>
+              </div>
+            ),
+          },
+          { formattedName: "Module", fieldName: "module_name" },
+          {
+            formattedName: "Action",
+            fieldName: "module_id",
+            customGeneration: (r) => {
+              const isCoord = isCoordinatorOf(r.class_id);
+              return (
+                <button
+                  class={`btn btn-sm btn-outline ${isCoord ? "btn-primary" : "btn-ghost"}`}
+                  onClick={() => handleOpenPauta(r)}
+                >
+                  {isCoord ? "Manage Grades" : "Enter Grades"}
+                </button>
               );
-              return t
-                ? { label: `${t.name} (${t.email})`, value: t.traineeId! }
-                : null;
-            })
-            .filter(Boolean) as { label: string; value: string }[];
-        })();
+            },
+          },
+        ]}
+      />
 
-        const isClassSelected = !!formData.class_id && formData.class_id !== "";
-
-        return (
-          <>
-            <div class="form-control w-full">
-              <label class="label">
-                <span class="label-text font-bold">Class</span>
-              </label>
-              <select
-                class="select select-bordered w-full"
-                value={formData.class_id || ""}
-                onChange={(e) => {
-                  const newVal = e.currentTarget.value;
-                  setFormData((prev) => ({
-                    ...prev,
-                    class_id: newVal,
-                    class_module_id: "",
-                    trainee_id: "",
-                  }));
-                }}
-              >
-                <option value="" disabled>
-                  Select Class
-                </option>
-                {classOptions.map((c) => (
-                  <option value={String(c.class_id)}>
-                    {c.identifier} ({c.location})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div class="form-control w-full">
-              <label class="label">
-                <span class="label-text font-bold">Module</span>
-              </label>
-              <select
-                class="select select-bordered w-full"
-                value={formData.class_module_id || ""}
-                disabled={!isClassSelected}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    class_module_id: e.currentTarget.value,
-                  }))
-                }
-              >
-                <option value="" disabled>
-                  Select Module
-                </option>
-                {moduleOptions.map((m) => (
-                  <option value={String(m.value)}>{m.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div class="form-control w-full">
-              <label class="label">
-                <span class="label-text font-bold">Trainee</span>
-              </label>
-              <select
-                class="select select-bordered w-full"
-                value={formData.trainee_id || ""}
-                disabled={!isClassSelected}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    trainee_id: e.currentTarget.value,
-                  }))
-                }
-              >
-                <option value="" disabled>
-                  Select Trainee
-                </option>
-                {traineeOptions.map((t) => (
-                  <option value={String(t.value)}>{t.label}</option>
-                ))}
-              </select>
-            </div>
-          </>
-        );
-      }}
-      filter={(e: Grade, search: string) => {
-        const s = search.toLowerCase();
-        const traineeName = getTraineeName(e.trainee_id)?.toLowerCase() || "";
-        const moduleName =
-          getClassModuleName(e.class_module_id)?.toLowerCase() || "";
-        return (
-          (String(e.grade).includes(s) ||
-            traineeName.includes(s) ||
-            moduleName.includes(s)) ??
-          false
-        );
-      }}
-      fields={[
-        {
-          formattedName: "ID",
-          fieldName: "grade_id",
-          canCopy: true,
-          smaller: true,
-        },
-        {
-          formattedName: "Class Module",
-          fieldName: "class_module_id",
-          customGeneration: (e) => (
-            <span class="font-mono text-xs">
-              {getClassModuleName(e.class_module_id)}
-            </span>
-          ),
-        },
-        {
-          formattedName: "Trainee",
-          fieldName: "trainee_id",
-          customGeneration: (e) => (
-            <div class="flex flex-col">
-              <span class="font-medium">{getTraineeName(e.trainee_id)}</span>
-            </div>
-          ),
-        },
-        {
-          formattedName: "Grade",
-          fieldName: "grade",
-          customGeneration: (e) => (
-            <div
-              class={`badge ${Number(e.grade) >= 10 ? "badge-success" : "badge-error"} badge-outline font-bold`}
-            >
-              {Number(e.grade).toFixed(1)}
-            </div>
-          ),
-        },
-        {
-          formattedName: "Type",
-          fieldName: "grade_type",
-          capitalizeValue: true,
-          smaller: true,
-        },
-      ]}
-    />
+      <Show when={selectedModule() && isModalOpen()}>
+        <GradeSheetModal
+          isOpen={isModalOpen()}
+          onClose={() => {
+            setIsModalOpen(false);
+          }}
+          classModuleId={selectedModule()?.module_id!}
+          className={selectedModule()?.class_identifier!}
+          moduleName={selectedModule()?.module_name!}
+          classId={selectedModule()?.class_id!}
+          canFinalize={isCoordinatorOf(selectedModule()?.class_id!)}
+        />
+      </Show>
+    </>
   );
 };
 

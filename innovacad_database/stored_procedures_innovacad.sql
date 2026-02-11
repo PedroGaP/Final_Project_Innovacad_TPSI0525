@@ -60,22 +60,19 @@ BEGIN
     SET v_start_timestamp = CONCAT(p_target_date, ' ', v_start_time);
     SET v_end_timestamp = CONCAT(p_target_date, ' ', v_end_time);
 
-    -- Verificar se a TURMA já tem aula neste horário (CRÍTICO PARA EVITAR SOBREPOSIÇÃO)
     IF EXISTS (
         SELECT 1
         FROM schedules s
         JOIN schedule_slots ss ON s.schedule_id = ss.schedule_id
         JOIN availabilities av ON ss.availability_id = av.availability_id
         JOIN classes_modules cm ON s.class_module_id = cm.classes_modules_id
-        WHERE cm.class_id = p_class_id -- Mesma Turma
+        WHERE cm.class_id = p_class_id
         AND av.date_day = p_target_date
         AND av.slot_number = p_slot_number
-        -- Ignora se for o próprio agendamento que estamos a estender
         AND (p_extend_schedule_id IS NULL OR s.schedule_id != p_extend_schedule_id)
     ) THEN
         SET p_success = FALSE;
     ELSE
-        -- Se a turma estiver livre, prosseguir com a lógica normal
 
         IF p_extend_schedule_id IS NOT NULL AND p_extend_schedule_id != 'NULL' THEN
             SELECT trainer_id, room_id INTO v_forced_trainer_id, v_forced_room_id

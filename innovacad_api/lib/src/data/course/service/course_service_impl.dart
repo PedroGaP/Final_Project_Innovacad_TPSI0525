@@ -11,8 +11,10 @@ class CourseServiceImpl implements ICourseService {
   CourseServiceImpl(this._repository);
 
   @override
-  Future<Result<List<OutputCourseDao>>> getAll() async =>
-      await _repository.getAll();
+  Future<Result<List<OutputCourseDao>>> getAll() async {
+    print("Controlador");
+    return await _repository.getAll();
+  }
 
   @override
   Future<Result<OutputCourseDao>> getById(String id) async =>

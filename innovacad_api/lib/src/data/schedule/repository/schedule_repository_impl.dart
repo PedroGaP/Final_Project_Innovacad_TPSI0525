@@ -179,7 +179,12 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
           whereValues: [scheduleId],
         );
         if (result.numOfRows < 1)
-          return Result.failure(AppError(AppErrorType.notFound, "Not found"));
+          return Result.failure(
+            AppError(
+              AppErrorType.notFound,
+              "Schedule with id '$scheduleId' not found",
+            ),
+          );
         return Result.success(_mapRowToDao(result.rowsAssoc.first.assoc()));
       });
     } catch (e) {
@@ -198,7 +203,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         return Result.failure(
           AppError(
             AppErrorType.badRequest,
-            "A hora de fim deve ser superior à de início.",
+            "End time must be after start time.",
           ),
         );
       }
@@ -218,42 +223,83 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
           return Result.failure(
             AppError(
               AppErrorType.conflict,
-              "Módulo já iniciado por outro formador. Use 'Substituição' para forçar.",
+              "Module started by another trainer. Use override.",
             ),
           );
         }
       }
 
+      final conflictTrainer = await db.query(
+        """SELECT schedule_id FROM schedules WHERE trainer_id = ? AND (
+            (start_date_timestamp < ? AND end_date_timestamp > ?) OR 
+            (start_date_timestamp < ? AND end_date_timestamp > ?) OR 
+            (start_date_timestamp >= ? AND end_date_timestamp <= ?)
+        ) LIMIT 1""",
+        whereValues: [
+          dto.trainerId,
+          _toSqlDate(dto.endTime),
+          _toSqlDate(dto.startTime),
+          _toSqlDate(dto.endTime),
+          _toSqlDate(dto.startTime),
+          _toSqlDate(dto.startTime),
+          _toSqlDate(dto.endTime),
+        ],
+        isStmt: true,
+      );
+      if (conflictTrainer.numOfRows > 0)
+        return Result.failure(
+          AppError(AppErrorType.conflict, "Trainer has a conflict."),
+        );
+
+      final classInfo = await db.getOne(
+        table: 'classes_modules',
+        where: {'classes_modules_id': dto.classModuleId},
+      );
+      final classId = classInfo['class_id'];
+
+      final conflictClass = await db.query(
+        """SELECT s.schedule_id FROM schedules s JOIN classes_modules cm ON s.class_module_id = cm.classes_modules_id
+        WHERE cm.class_id = ? AND (
+            (s.start_date_timestamp < ? AND s.end_date_timestamp > ?) OR
+            (s.start_date_timestamp < ? AND s.end_date_timestamp > ?) OR
+            (s.start_date_timestamp >= ? AND s.end_date_timestamp <= ?)
+        ) LIMIT 1""",
+        whereValues: [
+          classId,
+          _toSqlDate(dto.endTime),
+          _toSqlDate(dto.startTime),
+          _toSqlDate(dto.endTime),
+          _toSqlDate(dto.startTime),
+          _toSqlDate(dto.startTime),
+          _toSqlDate(dto.endTime),
+        ],
+        isStmt: true,
+      );
+      if (conflictClass.numOfRows > 0)
+        return Result.failure(
+          AppError(AppErrorType.conflict, "Class has a conflict."),
+        );
+
       final availabilitySql = """
         SELECT rs.start_time, rs.end_time, a.availability_id, a.is_booked
-        FROM availabilities a
-        JOIN ref_slots rs ON a.slot_number = rs.slot_number
-        WHERE a.trainer_id = ? 
-        AND DATE(a.date_day) = DATE(?) 
-        ORDER BY rs.start_time ASC
+        FROM availabilities a JOIN ref_slots rs ON a.slot_number = rs.slot_number
+        WHERE a.trainer_id = ? AND DATE(a.date_day) = DATE(?) ORDER BY rs.start_time ASC
       """;
-
       final availResults = await db.query(
         availabilitySql,
         whereValues: [dto.trainerId, dto.startTime],
         isStmt: true,
       );
 
-      if (availResults.numOfRows < 1) {
+      if (availResults.numOfRows < 1)
         return Result.failure(
-          AppError(
-            AppErrorType.conflict,
-            "Formador sem disponibilidade definida para este dia.",
-          ),
+          AppError(AppErrorType.conflict, "No availability found."),
         );
-      }
 
       List<String> availabilitiesToBook = [];
-
       for (var row in availResults.rowsAssoc) {
         final data = row.assoc();
         final isBooked = (data['is_booked'] == 1 || data['is_booked'] == true);
-
         final sStart = _combineDateAndTime(dto.startTime, data['start_time']);
         final sEnd = _combineDateAndTime(dto.startTime, data['end_time']);
 
@@ -269,104 +315,39 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         dto.startTime,
         dto.endTime,
       );
-
       if (!isAvailable && dto.forceTrainerChange != true) {
         return Result.failure(
-          AppError(
-            AppErrorType.conflict,
-            "Horário fora da disponibilidade do formador ou ocupado.",
-          ),
-        );
-      }
-
-      final conflictTrainer = await db.query(
-        """
-        SELECT schedule_id FROM schedules 
-        WHERE trainer_id = ? 
-        AND (
-            (start_date_timestamp < ? AND end_date_timestamp > ?) OR 
-            (start_date_timestamp < ? AND end_date_timestamp > ?) OR 
-            (start_date_timestamp >= ? AND end_date_timestamp <= ?)
-        )
-        LIMIT 1
-      """,
-        whereValues: [
-          dto.trainerId,
-          _toSqlDate(dto.endTime),
-          _toSqlDate(dto.startTime),
-          _toSqlDate(dto.endTime),
-          _toSqlDate(dto.startTime),
-          _toSqlDate(dto.startTime),
-          _toSqlDate(dto.endTime),
-        ],
-        isStmt: true,
-      );
-
-      if (conflictTrainer.numOfRows > 0) {
-        return Result.failure(
-          AppError(
-            AppErrorType.conflict,
-            "O Formador já tem aula marcada neste horário.",
-          ),
-        );
-      }
-
-      final classInfo = await db.getOne(
-        table: 'classes_modules',
-        where: {'classes_modules_id': dto.classModuleId},
-      );
-      final classId = classInfo['class_id'];
-
-      final conflictClass = await db.query(
-        """
-        SELECT s.schedule_id FROM schedules s
-        JOIN classes_modules cm ON s.class_module_id = cm.classes_modules_id
-        WHERE cm.class_id = ?
-        AND (
-            (s.start_date_timestamp < ? AND s.end_date_timestamp > ?) OR
-            (s.start_date_timestamp < ? AND s.end_date_timestamp > ?) OR
-            (s.start_date_timestamp >= ? AND s.end_date_timestamp <= ?)
-        )
-        LIMIT 1
-      """,
-        whereValues: [
-          classId,
-          _toSqlDate(dto.endTime),
-          _toSqlDate(dto.startTime),
-          _toSqlDate(dto.endTime),
-          _toSqlDate(dto.startTime),
-          _toSqlDate(dto.startTime),
-          _toSqlDate(dto.endTime),
-        ],
-        isStmt: true,
-      );
-
-      if (conflictClass.numOfRows > 0) {
-        return Result.failure(
-          AppError(
-            AppErrorType.conflict,
-            "A Turma já tem aula marcada neste horário.",
-          ),
+          AppError(AppErrorType.conflict, "Trainer unavailable or booked."),
         );
       }
 
       final scheduleId = Uuid().v4();
       final duration = dto.endTime.difference(dto.startTime).inMinutes / 60.0;
 
+      availabilitiesToBook.sort();
+
       await db.transaction((txn) async {
-        await txn.insert(
-          table: 'schedules',
-          insertData: {
-            'schedule_id': scheduleId,
-            'class_module_id': dto.classModuleId,
-            'trainer_id': dto.trainerId,
-            'room_id': dto.roomId,
-            'start_date_timestamp': _toSqlDate(dto.startTime),
-            'end_date_timestamp': _toSqlDate(dto.endTime),
-            'total_hours': duration,
-            'regime_type': 0,
-            'is_online': 0,
-          },
+        await txn.query(
+          """INSERT INTO schedules (schedule_id, class_module_id, trainer_id, room_id, start_date_timestamp, end_date_timestamp, total_hours, regime_type, is_online)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+          whereValues: [
+            scheduleId,
+            dto.classModuleId,
+            dto.trainerId,
+            dto.roomId,
+            _toSqlDate(dto.startTime),
+            _toSqlDate(dto.endTime),
+            duration,
+            0,
+            0,
+          ],
+          isStmt: true,
+        );
+
+        await txn.query(
+          "UPDATE classes_modules SET current_duration = current_duration + ? WHERE classes_modules_id = ?",
+          whereValues: [duration, dto.classModuleId],
+          isStmt: true,
         );
 
         if (availabilitiesToBook.isNotEmpty) {
@@ -376,32 +357,29 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
             slotsValues.add("('$slotId', '$scheduleId', '$availId', 1)");
           }
 
-          if (slotsValues.isNotEmpty) {
-            await txn.query(
-              "INSERT INTO schedule_slots (slot_id, schedule_id, availability_id, slot_status) VALUES ${slotsValues.join(',')}",
-            );
-          }
+          await txn.query(
+            "INSERT INTO schedule_slots (slot_id, schedule_id, availability_id, slot_status) VALUES ${slotsValues.join(',')}",
+          );
 
           final idsList = availabilitiesToBook.map((id) => "'$id'").join(',');
           await txn.query(
             "UPDATE availabilities SET is_booked = 1 WHERE availability_id IN ($idsList)",
           );
         }
-
-        await txn.query(
-          "UPDATE classes_modules SET current_duration = current_duration + ? WHERE classes_modules_id = ?",
-          whereValues: [duration, dto.classModuleId],
-          isStmt: true,
-        );
       });
 
       return await _getSingleScheduleById(scheduleId);
     } catch (e, s) {
-      print("Schedule Create Error: $e");
-      print(s);
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+      print("CRITICAL DB ERROR: $e");
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          e.toString(),
+          details: {"stackTrace": s.toString()},
+        ),
+      );
     } finally {
-      await MysqlConfiguration.closeConnection(db);
+      if (db != null) await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -711,7 +689,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         JOIN courses_modules crm ON cm.courses_modules_id = crm.courses_modules_id
         JOIN modules m ON crm.module_id = m.module_id
         WHERE cm.class_id = ?
-        ORDER BY crm.sequence_course_module_id ASC -- Tenta ordenar por dependência
+        ORDER BY crm.sequence_course_module_id ASC
       """;
 
       final allModulesResult = await db.query(

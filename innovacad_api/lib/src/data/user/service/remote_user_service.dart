@@ -917,6 +917,12 @@ class RemoteUserService {
         ),
       );
 
+      print(response.data);
+      print(response.statusCode);
+      print(response.headers);
+      print(response.requestOptions.data);
+      print(response.requestOptions.headers);
+
       if (response.statusCode != HttpStatus.ok)
         return Result.failure(
           AppError(

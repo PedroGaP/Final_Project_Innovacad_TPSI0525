@@ -11,6 +11,7 @@ OutputClassModuleDao _$OutputClassModuleDaoFromJson(
 ) => OutputClassModuleDao(
   coursesModulesId: json['courses_modules_id'] as String,
   classesModulesId: json['classes_modules_id'] as String?,
+  classId: json['class_id'] as String,
   currentDuration: const NumberConverter().fromJson(
     json['current_duration'] as Object,
   ),
@@ -27,6 +28,7 @@ Map<String, dynamic> _$OutputClassModuleDaoToJson(
 ) => <String, dynamic>{
   'courses_modules_id': instance.coursesModulesId,
   'classes_modules_id': instance.classesModulesId,
+  'class_id': instance.classId,
   'trainer_id': instance.trainerId,
   'trainer_name': instance.trainerName,
   'total_duration': const NumberConverter().toJson(instance.totalDuration),

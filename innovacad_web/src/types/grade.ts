@@ -1,30 +1,44 @@
 export enum GradeTypeEnum {
+  ATTENDANCE = "attendance",
+  BEHAVIOR = "behavior",
+  WORK = "work",
+  TEST = "test",
   FINAL = "final",
-  ASSESSMENT = "assessment",
 }
 
-export type GradeResponseData = {
-  grade_id: string | undefined;
-  class_module_id: string | undefined;
-  trainee_id: string | undefined;
-  grade: string | undefined;
-  grade_type: GradeTypeEnum | undefined;
-};
+export enum GradeStatusEnum {
+  DRAFT = "draft",
+  FINALIZED = "finalized",
+}
+
+export interface GradeResponseData {
+  grade_id: string;
+  class_module_id: string;
+  trainee_id: string;
+  trainee_name?: string;
+  grade: number;
+  grade_type: string;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export class Grade {
-  grade_id: string | undefined;
-  class_module_id: string | undefined;
-  trainee_id: string | undefined;
-  grade: string | undefined;
-  grade_type: GradeTypeEnum | undefined;
+  grade_id: string;
+  class_module_id: string;
+  trainee_id: string;
+  trainee_name?: string;
+  grade: number;
+  grade_type: GradeTypeEnum;
+  status: GradeStatusEnum;
 
   constructor(data: GradeResponseData) {
     this.grade_id = data.grade_id;
     this.class_module_id = data.class_module_id;
     this.trainee_id = data.trainee_id;
-    this.grade = data.grade;
-    this.grade_type = data.grade_type;
+    this.trainee_name = data.trainee_name;
+    this.grade = Number(data.grade);
+    this.grade_type = data.grade_type as GradeTypeEnum;
+    this.status = (data.status as GradeStatusEnum) || GradeStatusEnum.DRAFT;
   }
-
-  toJson = (): string => JSON.stringify(this);
 }

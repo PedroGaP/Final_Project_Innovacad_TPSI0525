@@ -4,3 +4,4 @@
 lib/vaden_application.dart
 .vscode
 public/**
+.env

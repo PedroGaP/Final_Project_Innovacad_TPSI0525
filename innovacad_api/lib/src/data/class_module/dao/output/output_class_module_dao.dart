@@ -13,6 +13,9 @@ class OutputClassModuleDao {
   @annotation.JsonKey(name: 'classes_modules_id')
   final String? classesModulesId;
 
+  @annotation.JsonKey(name: 'class_id')
+  final String classId;
+
   @annotation.JsonKey(name: 'trainer_id')
   final String? trainerId;
 
@@ -33,6 +36,7 @@ class OutputClassModuleDao {
   OutputClassModuleDao({
     required this.coursesModulesId,
     required this.classesModulesId,
+    required this.classId,
     required this.currentDuration,
     required this.moduleName,
     required this.totalDuration,

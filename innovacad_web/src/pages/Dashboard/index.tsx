@@ -13,8 +13,6 @@ const DashboardLayout = (props: any) => {
   const [isCollapsed, setIsCollapsed] = createSignal(false);
   const location = useLocation();
 
-  const imageCacheKey = createMemo(() => user()?.image || "");
-
   const currentPathArray = createMemo((): string[] => {
     const path = location.pathname.replace("/dashboard/", "");
     if (!path || path === "/dashboard") return [];
@@ -104,7 +102,7 @@ const DashboardLayout = (props: any) => {
       size: 22,
       path: "availabilities",
       title: "Availabilities",
-      role: ["admin", "trainer"],
+      role: ["admin", "trainer", "coordinator"],
     },
   ];
 
@@ -115,7 +113,7 @@ const DashboardLayout = (props: any) => {
           <input id="dashboard-drawer" type="checkbox" class="drawer-toggle" />
 
           <div class="drawer-content flex flex-col bg-base-200 h-screen overflow-hidden">
-            <header class="navbar bg-base-100 border-b border-base-300 h-16 min-h-16 px-4 sticky top-0 z-[100] gap-2 flex-none">
+            <header class="navbar bg-base-100 border-b border-base-300 h-16 min-h-16 px-4 sticky top-0 z-100 gap-2 flex-none">
               <div class="flex-none">
                 <label
                   for="dashboard-drawer"
@@ -166,7 +164,7 @@ const DashboardLayout = (props: any) => {
                 </label>
 
                 {/* User Menu */}
-                <div class="dropdown dropdown-end z-[110]">
+                <div class="dropdown dropdown-end z-110">
                   <label
                     tabindex="0"
                     class="btn btn-ghost flex items-center gap-2 px-2 no-animation"
@@ -187,7 +185,7 @@ const DashboardLayout = (props: any) => {
                               onError={(e: any) => {
                                 e.target.src = `https://ui-avatars.com/api/?name=${user()?.name}&background=random`;
                               }}
-                              src={`${API_ENDPOINTS.BASE}/${user()?.image}`}
+                              src={`${API_ENDPOINTS.BASE}/resource/public/${user()?.image}?t=${Date.now()}`}
                               alt="Avatar"
                             />
                           </Show>

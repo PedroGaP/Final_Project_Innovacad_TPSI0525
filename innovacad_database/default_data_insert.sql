@@ -122,7 +122,6 @@ VALUES ('74a05d40-8e0d-4b52-9537-eb41dcb61100',
         NOW(),
         DATE_ADD(NOW(), INTERVAL 1 YEAR));
 
--- A Turma 0525 está a ter o módulo de SQL agora
 INSERT INTO classes_modules (classes_modules_id,
                              class_id,
                              courses_modules_id,
@@ -164,12 +163,33 @@ VALUES ('057e65f7-81ba-4964-8420-593e16a59bac',
         1,
         false, NOW(), DATE_ADD(NOW(), Interval 3 Hour));
 
-INSERT INTO grades (class_module_id, trainee_id, grade, grade_type)
+INSERT INTO grades (class_module_id, trainee_id, grade, grade_type, status)
 VALUES ('ef1fa2f8-e32c-4f6d-8e8f-20efd5710b34',
         'b332fc2c-832a-4d33-8f2f-139d733be9f7',
-        14.50,
-        'assessment'),
-       ('ef1fa2f8-e32c-4f6d-8e8f-20efd5710b34',
+        18.00,
+        'behavior', 'draft');
+
+INSERT INTO grades (class_module_id, trainee_id, grade, grade_type, status)
+VALUES ('ef1fa2f8-e32c-4f6d-8e8f-20efd5710b34',
         'b332fc2c-832a-4d33-8f2f-139d733be9f7',
-        15.00,
-        'final');
+        16.50,
+        'work', 'draft');
+
+INSERT INTO grades (class_module_id, trainee_id, grade, grade_type, status)
+VALUES ('ef1fa2f8-e32c-4f6d-8e8f-20efd5710b34',
+        'b332fc2c-832a-4d33-8f2f-139d733be9f7',
+        14.00,
+        'test', 'finalized');
+
+INSERT INTO grades (class_module_id, trainee_id, grade, grade_type, status)
+VALUES ('ef1fa2f8-e32c-4f6d-8e8f-20efd5710b34',
+        'b332fc2c-832a-4d33-8f2f-139d733be9f7',
+        20.00,
+        'attendance', 'draft');
+
+INSERT INTO trainers_classes_coordinator (trainer_id, class_id)
+VALUES ('28793aef-c6db-413d-9adc-3d1375897cfa', '74a05d40-8e0d-4b52-9537-eb41dcb61100');
+
+UPDATE classes_modules
+SET trainer_id = '60dcc0e4-7935-4472-8c9d-0f739b1ce68e'
+WHERE classes_modules_id = 'ef1fa2f8-e32c-4f6d-8e8f-20efd5710b34';

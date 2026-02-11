@@ -8,7 +8,13 @@ import 'package:vaden/vaden.dart';
 @Api(tag: 'Document', description: 'Document management endpoints')
 @Controller('/documents')
 class DocumentController {
-  final DocumentRepositoryImpl _repository = DocumentRepositoryImpl();
+  final DocumentRepositoryImpl _repository;
+
+  DocumentController(this._repository);
+
+  @Mount('/uploads')
+  ResourceService get staticFiles =>
+      ResourceService(fileSystemPath: 'public', defaultDocument: 'index.html');
 
   @ApiOperation(summary: 'List documents by owner ID')
   @Get('/<ownerId>')
@@ -116,7 +122,10 @@ class DocumentController {
 
   @ApiOperation(summary: 'Delete a document')
   @Delete('/<docId>')
-  Future<Response> deleteDocument(Request request, @Param() String docId) async {
+  Future<Response> deleteDocument(
+    Request request,
+    @Param() String docId,
+  ) async {
     final result = await _repository.deleteDocument(docId);
 
     if (result.isFailure) {

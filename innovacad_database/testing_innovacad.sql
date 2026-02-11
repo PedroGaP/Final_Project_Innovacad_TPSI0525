@@ -1,6 +1,3 @@
--- ======================================================================================
--- 1. LIMPEZA TOTAL (Reset Factory)
--- ======================================================================================
 SET FOREIGN_KEY_CHECKS = 0;
 
 TRUNCATE TABLE schedule_slots;
@@ -25,9 +22,6 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 START TRANSACTION;
 
--- ======================================================================================
--- 2. DADOS ESTÁTICOS (Slots e Salas)
--- ======================================================================================
 INSERT INTO ref_slots (slot_number, start_time, end_time) VALUES
 (1, '08:00:00', '09:00:00'), (2, '09:00:00', '10:00:00'), (3, '10:00:00', '11:00:00'),
 (4, '11:00:00', '12:00:00'), (5, '12:00:00', '13:00:00'), (6, '13:00:00', '14:00:00'),
@@ -40,9 +34,6 @@ INSERT INTO rooms (room_name, capacity, has_computers, has_projector, has_whiteb
 ('Sala 1.2', 30, 0, 1, 1),
 ('Auditório', 100, 0, 1, 0);
 
--- ======================================================================================
--- 3. UTILIZADORES E FORMADORES
--- ======================================================================================
 SET @uid_t1 = UUID();
 SET @uid_t2 = UUID();
 SET @uid_t3 = UUID();
@@ -57,64 +48,46 @@ INSERT INTO trainers (trainer_id, user_id, birthday_date) VALUES
 (UUID(), @uid_t2, '1985-05-20'),
 (UUID(), @uid_t3, '1990-10-10');
 
--- Guardar IDs dos formadores
 SELECT trainer_id INTO @tid1 FROM trainers WHERE user_id = @uid_t1;
 SELECT trainer_id INTO @tid2 FROM trainers WHERE user_id = @uid_t2;
 SELECT trainer_id INTO @tid3 FROM trainers WHERE user_id = @uid_t3;
 
--- ======================================================================================
--- 4. CURSO E MÓDULOS (COM SEQUÊNCIA)
--- ======================================================================================
 INSERT INTO modules (name, duration, has_computers, has_projector) VALUES
 ('SQL', 50, 1, 1),
 ('Java', 60, 1, 1),
 ('Web', 40, 1, 1);
 
--- Recuperar IDs dos módulos
 SELECT module_id INTO @mod_sql FROM modules WHERE name = 'SQL';
 SELECT module_id INTO @mod_java FROM modules WHERE name = 'Java';
 SELECT module_id INTO @mod_web FROM modules WHERE name = 'Web';
 
--- Criar Curso
 SET @course_id = UUID();
 INSERT INTO courses (course_id, identifier, name, area) VALUES (@course_id, 'TPSI0525', 'Programação', 'IT');
 
--- Ligar Módulos ao Curso
 INSERT INTO courses_modules (course_id, module_id) VALUES
 (@course_id, @mod_sql),
 (@course_id, @mod_java),
 (@course_id, @mod_web);
 
--- Recuperar IDs da tabela intermédia para criar as ligações
 SELECT courses_modules_id INTO @cm_sql FROM courses_modules WHERE course_id = @course_id AND module_id = @mod_sql;
 SELECT courses_modules_id INTO @cm_java FROM courses_modules WHERE course_id = @course_id AND module_id = @mod_java;
 SELECT courses_modules_id INTO @cm_web FROM courses_modules WHERE course_id = @course_id AND module_id = @mod_web;
 
--- === APLICAR SEQUÊNCIA (O PONTO CRUCIAL) ===
--- Java depende de SQL
 UPDATE courses_modules SET sequence_course_module_id = @cm_sql WHERE courses_modules_id = @cm_java;
--- Web depende de Java
 UPDATE courses_modules SET sequence_course_module_id = @cm_java WHERE courses_modules_id = @cm_web;
 
--- ======================================================================================
--- 5. SKILLS E TURMA
--- ======================================================================================
 INSERT INTO trainer_skills (trainer_id, module_id, competence_level) VALUES
-(@tid1, @mod_sql, 2), -- Ana dá SQL
-(@tid2, @mod_java, 2), -- Bruno dá Java
-(@tid3, @mod_web, 2); -- Carlos dá Web
+(@tid1, @mod_sql, 2),
+(@tid2, @mod_java, 2),
+(@tid3, @mod_web, 2);
 
 SET @class_id = UUID();
 INSERT INTO classes (class_id, course_id, location, identifier, status, start_date_timestamp, end_date_timestamp) VALUES
 (@class_id, @course_id, 'LX', 'TPSI1', 'ongoing', NOW(), DATE_ADD(NOW(), INTERVAL 6 MONTH));
 
--- Inicializar progresso dos módulos (0 horas feitas)
 INSERT INTO classes_modules (class_id, courses_modules_id, current_duration)
 SELECT @class_id, courses_modules_id, 0 FROM courses_modules WHERE course_id = @course_id;
 
--- ======================================================================================
--- 6. DISPONIBILIDADES (Gerar 90 dias)
--- ======================================================================================
 INSERT INTO availabilities (trainer_id, date_day, slot_number, is_booked)
 SELECT
     t.trainer_id,
@@ -134,9 +107,6 @@ WHERE DAYOFWEEK(DATE_ADD(CURDATE(), INTERVAL seq.n DAY)) NOT IN (1, 7);
 
 COMMIT;
 
--- ======================================================================================
--- 7. RESULTADOS PARA USO NA API
--- ======================================================================================
 SELECT 'Dados gerados com sucesso!' as Status;
 SELECT * FROM classes;
 SELECT CONCAT('ID Turma para Payload: ', @class_id) as Info;

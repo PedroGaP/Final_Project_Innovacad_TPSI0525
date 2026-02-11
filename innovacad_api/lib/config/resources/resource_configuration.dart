@@ -12,6 +12,7 @@ class ResourceConfiguration {
     return ResourceService(
       fileSystemPath: './public',
       defaultDocument: 'index.html',
+      listDirectories: true,
     );
   }
 }

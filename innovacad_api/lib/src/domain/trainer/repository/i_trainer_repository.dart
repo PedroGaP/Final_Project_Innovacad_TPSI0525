@@ -24,12 +24,8 @@ abstract class ITrainerRepository
   @override
   Future<Result<OutputTrainerDao>> getById(String id);
 
-  @override
   Future<Result<List<int>>> generateTrainerPdf(String id);
-
-  @override
   Future<Result<List<SkillOutputDao>>> getSkills(String id);
-
-  @override
   Future<Result<List<String>>> getCoordinatedClasses(String id);
+  Future<bool> isCoordinatorOfClass(String trainerId, String classId);
 }

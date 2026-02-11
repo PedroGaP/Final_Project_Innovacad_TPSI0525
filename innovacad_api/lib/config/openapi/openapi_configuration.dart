@@ -10,18 +10,14 @@ class OpenApiConfiguration {
     return OpenApi(
       version: '3.0.0',
       info: Info(
-        title: 'Vaden API',
+        title: 'INNOVACAD API',
         version: '1.0.0',
-        description: 'Vaden Backend example',
+        description: 'Innovacad Final Project API',
       ),
-      servers: [
-        config.localServer,
-      ],
+      servers: [config.localServer],
       tags: config.tags,
       paths: config.paths,
-      components: Components(
-        schemas: config.schemas,
-      ),
+      components: Components(schemas: config.schemas),
     );
   }
 
@@ -29,12 +25,11 @@ class OpenApiConfiguration {
   SwaggerUI swaggerUI(OpenApi openApi) {
     return SwaggerUI(
       jsonEncode(openApi.toJson()),
-      title: 'api_projeto_final API',
+      title: 'Innovacad API',
       docExpansion: DocExpansion.list,
       deepLink: true,
       persistAuthorization: false,
-      syntaxHighlightTheme: SyntaxHighlightTheme.agate,
+      syntaxHighlightTheme: SyntaxHighlightTheme.obsidian,
     );
   }
 }
-

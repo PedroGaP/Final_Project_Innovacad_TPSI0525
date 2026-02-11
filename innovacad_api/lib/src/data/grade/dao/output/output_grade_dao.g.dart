@@ -16,6 +16,7 @@ OutputGradeDao _$OutputGradeDaoFromJson(
   gradeType: json['grade_type'] as String,
   createdAt: const DateTimeConverter().fromJson(json['created_at'] as Object),
   updatedAt: const DateTimeConverter().fromJson(json['updated_at'] as Object),
+  status: json['status'] as String,
 );
 
 Map<String, dynamic> _$OutputGradeDaoToJson(OutputGradeDao instance) =>
@@ -27,4 +28,5 @@ Map<String, dynamic> _$OutputGradeDaoToJson(OutputGradeDao instance) =>
       'grade_type': instance.gradeType,
       'created_at': const DateTimeConverter().toJson(instance.createdAt),
       'updated_at': const DateTimeConverter().toJson(instance.updatedAt),
+      'status': instance.status,
     };

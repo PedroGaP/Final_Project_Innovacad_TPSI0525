@@ -1,0 +1,147 @@
+import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
+import 'package:innovacad_api/src/core/core.dart';
+import 'package:innovacad_api/src/data/summary/dao/output_summary_grid_dao.dart';
+import 'package:innovacad_api/src/data/summary/dto/save_summary_dto.dart';
+import 'package:innovacad_api/src/domain/summary/repository/i_summary_repository.dart';
+import 'package:mysql_utils/mysql_utils.dart';
+import 'package:uuid/uuid.dart';
+import 'package:vaden/vaden.dart';
+
+@Repository()
+class SummaryRepositoryImpl implements ISummaryRepository {
+  @override
+  Future<Result<OutputSummaryGridDao>> getGridBySchedule(
+    String scheduleId,
+  ) async {
+    try {
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final summaryRes = await db.getOne(
+          table: 'summaries',
+          where: {'schedule_id': scheduleId},
+        );
+
+        final summaryId = summaryRes.isNotEmpty
+            ? summaryRes['summary_id']
+            : null;
+        final contents = summaryRes.isNotEmpty ? summaryRes['contents'] : '';
+
+        final query = """
+          SELECT 
+            t.trainee_id, 
+            u.name, 
+            u.image,
+            COALESCE(att.is_absent, 0) as is_absent
+          FROM schedules s
+          JOIN classes_modules cm ON s.class_module_id = cm.classes_modules_id
+          JOIN enrollments e ON cm.class_id = e.class_id
+          JOIN trainees t ON e.trainee_id = t.trainee_id
+          JOIN user u ON t.user_id = u.id
+          LEFT JOIN summaries sum ON s.schedule_id = sum.schedule_id
+          LEFT JOIN attendances att ON sum.summary_id = att.summary_id AND att.trainee_id = t.trainee_id
+          WHERE s.schedule_id = ?
+          ORDER BY u.name ASC
+        """;
+
+        final studentsRes = await db.query(
+          query,
+          whereValues: [scheduleId],
+          isStmt: true,
+        );
+
+        final students = studentsRes.rowsAssoc.map((row) {
+          final data = row.assoc();
+          return StudentAttendanceDao(
+            traineeId: data['trainee_id'].toString(),
+            name: data['name'].toString(),
+            image: data['image']?.toString(),
+            isAbsent: (data['is_absent'].toString() == '1'),
+          );
+        }).toList();
+
+        return Result.success(
+          OutputSummaryGridDao(
+            scheduleId: scheduleId,
+            summaryId: summaryId?.toString(),
+            contents: contents?.toString(),
+            students: students,
+          ),
+        );
+      });
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          e.toString(),
+          details: {'stack': s.toString()},
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Result<bool>> saveSummary(SaveSummaryDto dto) async {
+    MysqlUtils? db;
+    try {
+      db = await MysqlConfiguration.getConnection();
+      await db.startTrans();
+
+      final existing = await db.getOne(
+        table: 'summaries',
+        where: {'schedule_id': dto.scheduleId},
+      );
+      String summaryId;
+
+      if (existing.isEmpty) {
+        summaryId = Uuid().v4();
+        await db.insert(
+          table: 'summaries',
+          insertData: {
+            'summary_id': summaryId,
+            'schedule_id': dto.scheduleId,
+            'contents': dto.contents,
+          },
+        );
+      } else {
+        summaryId = existing['summary_id'];
+        await db.update(
+          table: 'summaries',
+          updateData: {'contents': dto.contents},
+          where: {'summary_id': summaryId},
+        );
+      }
+
+      for (var att in dto.attendances) {
+        final attId = Uuid().v4();
+        await db.query(
+          """
+          INSERT INTO attendances (attendance_id, summary_id, trainee_id, is_absent)
+          VALUES (?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE is_absent = ?
+          """,
+          whereValues: [
+            attId,
+            summaryId,
+            att.traineeId,
+            att.isAbsent ? 1 : 0,
+            att.isAbsent ? 1 : 0,
+          ],
+          isStmt: true,
+        );
+      }
+
+      await db.commit();
+      return Result.success(true);
+    } catch (e, s) {
+      if (db != null) await db.rollback();
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Failed to save summary",
+          details: {'error': e.toString(), 'stack': s.toString()},
+        ),
+      );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
+    }
+  }
+}

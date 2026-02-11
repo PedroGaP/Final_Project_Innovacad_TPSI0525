@@ -15,7 +15,10 @@ class CourseController {
     description: 'Retrieves a list of all courses',
   )
   @Get('/')
-  Future<Response> getAll() async => resultToResponse(await _service.getAll());
+  Future<Response> getAll() async {
+    print("Controlador");
+    return resultToResponse(await _service.getAll());
+  }
 
   @ApiOperation(
     summary: 'Get course by ID',

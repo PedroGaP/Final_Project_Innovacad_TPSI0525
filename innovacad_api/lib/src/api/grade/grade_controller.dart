@@ -1,5 +1,7 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
+import 'package:innovacad_api/src/data/grade/dto/batch/batch_grade_dto.dart';
+import 'package:innovacad_api/src/data/grade/dto/finalize/finalize_grade_dto.dart';
 import 'package:innovacad_api/src/domain/domain.dart';
 import 'package:vaden/vaden.dart';
 
@@ -9,6 +11,38 @@ class GradeController {
   final IGradeService _service;
 
   GradeController(this._service);
+
+  @ApiOperation(summary: 'Batch create or update grades')
+  @Post('/batch')
+  Future<Response> batchUpsert(
+    Request request,
+    @Body() BatchGradeDto dto,
+    @Context() ExtendedUserDetails user,
+  ) async {
+    print(user.roles.first);
+    return resultToResponse(await _service.batchUpsert(dto, user));
+  }
+
+  @ApiOperation(summary: 'Finalize grades (Coordinator only)')
+  @Post('/finalize')
+  Future<Response> finalizeGrades(
+    Request request,
+    @Body() FinalizeGradeDto dto,
+    @Context() ExtendedUserDetails user,
+  ) async {
+    print(user.roles.first);
+    return resultToResponse(await _service.finalizeGrades(dto, user));
+  }
+
+  @ApiOperation(summary: 'Get grades for a module')
+  @Get('/module/<classModuleId>')
+  Future<Response> getByModule(
+    Request request,
+    @Param('classModuleId') String classModuleId,
+    @Context() ExtendedUserDetails user,
+  ) async {
+    return resultToResponse(await _service.getByClassModule(classModuleId));
+  }
 
   @ApiOperation(
     summary: 'Get all grades',

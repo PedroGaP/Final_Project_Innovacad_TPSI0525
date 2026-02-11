@@ -149,7 +149,7 @@ const AccountSettingsPage = () => {
 
       toast.success("Profile picture updated!", { id: toastId });
 
-      // ex: await refreshSession();
+      // await refreshSession();
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || "Failed to update profile picture", {
@@ -178,7 +178,7 @@ const AccountSettingsPage = () => {
     const toastId = toast.loading(`Downloading ${doc.file_name}...`);
     try {
       const cleanPath = doc.file_path.replace(/^public[\\/]/, "");
-      const fileUrl = `${API_ENDPOINTS.BASE}/${cleanPath}`;
+      const fileUrl = `${API_ENDPOINTS.BASE}/resource/public/${cleanPath}`;
       const response = await fetch(fileUrl);
       if (!response.ok) throw new Error(`File not found`);
       const blob = await response.blob();
@@ -196,6 +196,11 @@ const AccountSettingsPage = () => {
       toast.error("Failed to download file.");
     }
   };
+
+  console.log(
+    `${API_ENDPOINTS.BASE}/resource/public/${user()?.image}?t=${imageKey()}`,
+  );
+  console.log(user()!["image"]);
 
   return (
     <>
@@ -234,7 +239,7 @@ const AccountSettingsPage = () => {
                     }
                   >
                     <img
-                      src={`${API_ENDPOINTS.BASE}/${user()?.image}?t=${imageKey()}`}
+                      src={`${API_ENDPOINTS.BASE}/resource/public/${user()?.image}?t=${imageKey()}`}
                       alt="Avatar"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";

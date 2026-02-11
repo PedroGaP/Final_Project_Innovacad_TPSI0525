@@ -13,10 +13,27 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
   Future<Result<List<OutputClassModuleDao>>> getAll() async {
     try {
       return await MysqlConfiguration.executeWithConnection((db) async {
-        final results = await db.getAll(table: table);
+        final results = await db.query("""
+          SELECT 
+            crm.courses_modules_id as courses_modules_id,
+            cm.classes_modules_id as classes_modules_id,
+            cm.class_id as class_id,
+            t.trainer_id as trainer_id,
+            u.name as trainer_name,
+            m.duration as total_duration,
+            m.name as module_name, 
+            m.module_id as module_id,
+            cm.current_duration as current_duration
+          FROM classes_modules cm
+          LEFT JOIN courses_modules crm ON cm.courses_modules_id = crm.courses_modules_id
+          LEFT JOIN modules m ON crm.module_id = m.module_id
+          LEFT JOIN trainers t ON cm.trainer_id = t.trainer_id
+          LEFT JOIN user u ON t.user_id = u.id
+          WHERE cm.classes_modules_id = ?
+""");
 
-        final items = results.map((data) {
-          return OutputClassModuleDao.fromJson(data);
+        final items = results.rowsAssoc.map((data) {
+          return OutputClassModuleDao.fromJson(data.assoc());
         }).toList();
 
         return Result.success(items);
@@ -36,16 +53,36 @@ class ClassModuleRepositoryImpl implements IClassModuleRepository {
   Future<Result<OutputClassModuleDao>> getById(String id) async {
     try {
       return await MysqlConfiguration.executeWithConnection((db) async {
-        final result =
-            await db.getOne(table: table, where: {"classes_modules_id": id})
-                as Map<String, dynamic>;
+        final query = """
+          SELECT 
+            crm.courses_modules_id as courses_modules_id,
+            cm.classes_modules_id as classes_modules_id,
+            cm.class_id as class_id,
+            t.trainer_id as trainer_id,
+            u.name as trainer_name,
+            m.duration as total_duration,
+            m.name as module_name, 
+            m.module_id as module_id,
+            cm.current_duration as current_duration
+          FROM classes_modules cm
+          LEFT JOIN courses_modules crm ON cm.courses_modules_id = crm.courses_modules_id
+          LEFT JOIN modules m ON crm.module_id = m.module_id
+          LEFT JOIN trainers t ON cm.trainer_id = t.trainer_id
+          LEFT JOIN user u ON t.user_id = u.id
+          WHERE cm.classes_modules_id = ?
+        """;
 
-        if (result.isEmpty)
+        final result = await db.query(query, whereValues: [id], isStmt: true);
+
+        if (result.numOfRows == 0) {
           return Result.failure(
             AppError(AppErrorType.notFound, "ClassModule not found..."),
           );
+        }
 
-        return Result.success(OutputClassModuleDao.fromJson(result));
+        return Result.success(
+          OutputClassModuleDao.fromJson(result.rowsAssoc.first.assoc()),
+        );
       });
     } catch (e, s) {
       return Result.failure(

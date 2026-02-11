@@ -23,6 +23,7 @@ class CourseRepositoryImpl implements ICourseRepository {
 
   @override
   Future<Result<List<OutputCourseDao>>> getAll() async {
+    print("Repositório");
     try {
       return await MysqlConfiguration.executeWithConnection((db) async {
         final coursesResults = await db.getAll(table: 'courses');

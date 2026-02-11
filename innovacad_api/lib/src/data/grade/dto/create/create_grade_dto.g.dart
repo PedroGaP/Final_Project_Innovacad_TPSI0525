@@ -12,6 +12,7 @@ CreateGradeDto _$CreateGradeDtoFromJson(Map<String, dynamic> json) =>
       traineeId: json['trainee_id'] as String,
       grade: json['grade'] as String,
       gradeType: json['grade_type'] as String,
+      status: json['status'] as String? ?? "work",
     );
 
 Map<String, dynamic> _$CreateGradeDtoToJson(CreateGradeDto instance) =>
@@ -20,4 +21,5 @@ Map<String, dynamic> _$CreateGradeDtoToJson(CreateGradeDto instance) =>
       'trainee_id': instance.traineeId,
       'grade': instance.grade,
       'grade_type': instance.gradeType,
+      'status': instance.status,
     };
