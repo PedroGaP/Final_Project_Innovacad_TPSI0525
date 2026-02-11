@@ -9,25 +9,19 @@ part of 'trainer_skill_dto.dart';
 TrainerSkillDto _$TrainerSkillDtoFromJson(Map<String, dynamic> json) =>
     TrainerSkillDto(
       moduleId: json['module_id'] as String,
-      competenceLevel: _$JsonConverterFromJson<Object, int>(
+      competenceLevel: const NumberConverter().fromJson(
         json['competence_level'],
-        const NumberConverter().fromJson,
       ),
     );
 
 Map<String, dynamic> _$TrainerSkillDtoToJson(TrainerSkillDto instance) =>
     <String, dynamic>{
       'module_id': instance.moduleId,
-      'competence_level': _$JsonConverterToJson<Object, int>(
+      'competence_level': _$JsonConverterToJson<Object?, int>(
         instance.competenceLevel,
         const NumberConverter().toJson,
       ),
     };
-
-Value? _$JsonConverterFromJson<Json, Value>(
-  Object? json,
-  Value? Function(Json json) fromJson,
-) => json == null ? null : fromJson(json as Json);
 
 Json? _$JsonConverterToJson<Json, Value>(
   Value? value,

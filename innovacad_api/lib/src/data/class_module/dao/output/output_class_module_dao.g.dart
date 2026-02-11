@@ -12,13 +12,9 @@ OutputClassModuleDao _$OutputClassModuleDaoFromJson(
   coursesModulesId: json['courses_modules_id'] as String,
   classesModulesId: json['classes_modules_id'] as String?,
   classId: json['class_id'] as String,
-  currentDuration: const NumberConverter().fromJson(
-    json['current_duration'] as Object,
-  ),
+  currentDuration: const NumberConverter().fromJson(json['current_duration']),
   moduleName: json['module_name'] as String,
-  totalDuration: const NumberConverter().fromJson(
-    json['total_duration'] as Object,
-  ),
+  totalDuration: const NumberConverter().fromJson(json['total_duration']),
   trainerId: json['trainer_id'] as String?,
   trainerName: json['trainer_name'] as String?,
 );

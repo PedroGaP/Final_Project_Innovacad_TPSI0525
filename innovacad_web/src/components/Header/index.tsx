@@ -1,13 +1,14 @@
 import { BsMoonStarsFill, BsSunFill } from "solid-icons/bs";
 import { FiMenu } from "solid-icons/fi";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useNavigate } from "@solidjs/router";
 export default function Header() {
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
 
   return (
     <header class="sticky top-0 z-50 w-full border-b border-base-200 bg-base-100/80 backdrop-blur-lg">
       <div class="navbar mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
-
         <div class="navbar-start">
           <div class="dropdown">
             <label tabIndex={0} class="btn btn-ghost btn-circle lg:hidden">
@@ -39,26 +40,26 @@ export default function Header() {
         <div class="navbar-center hidden lg:flex">
           <ul class="menu menu-horizontal px-1 font-medium gap-1">
             <li>
-              <a href="sol.html" class="rounded-lg">
-                Solutions
+              <a onClick={() => navigate("courses")} class="rounded-lg">
+                Courses
               </a>
             </li>
+
             <li>
-              <details>
-                <summary class="rounded-lg">Resources</summary>
-                <ul class="p-2 bg-base-100 rounded-lg shadow-lg border border-base-200 min-w-37.5">
-                  <li>
-                    <a href="doc.html">Documentation</a>
-                  </li>
-                  <li>
-                    <a href="comm.html">Community herf="#"</a>
-                  </li>
-                </ul>
-              </details>
+              <a onClick={() => navigate("trainers")} class="rounded-lg">
+                Trainers
+              </a>
             </li>
+
             <li>
-              <a href="princing.html" class=" rounded-lg">
-                Pricing
+              <a onClick={() => navigate("trainees")} class="rounded-lg">
+                Trainees
+              </a>
+            </li>
+
+            <li>
+              <a onClick={() => navigate("classes")} class="rounded-lg">
+                Classes
               </a>
             </li>
           </ul>

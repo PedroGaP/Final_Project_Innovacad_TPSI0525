@@ -29,14 +29,20 @@ class TraineeRepositoryImpl implements ITraineeRepository {
             "SELECT $relationFields FROM `trainees` t JOIN `user` u ON t.user_id = u.id";
         final results = await db.query(query);
 
-        for (var row in results.rows) {
-          daos.add(OutputTraineeDao.fromJson(row));
+        for (var row in results.rowsAssoc) {
+          daos.add(OutputTraineeDao.fromJson(row.assoc()));
         }
 
         return Result.success(daos);
       });
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          e.toString(),
+          details: {"stack": s.toString()},
+        ),
+      );
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:vaden/vaden.dart';
 import 'package:json_annotation/json_annotation.dart' as annotation;
 import "package:innovacad_api/src/core/core.dart";
+
 part 'output_user_dao.g.dart';
 
 @DTO()
@@ -34,13 +35,20 @@ class OutputUserDao {
   @annotation.JsonKey(name: 'session_token')
   final String? sessionToken;
 
-  @annotation.JsonKey(name: 'emailVerified')
-  final bool verified;
+  @annotation.JsonKey(name: 'emailVerified', readValue: convertBoolean)
+  @NumberConverter()
+  final bool? verified;
 
-  @annotation.JsonKey(name: 'twoFactorEnabled', defaultValue: false)
-  final bool twoFactorEnabled;
+  @annotation.JsonKey(
+    name: 'twoFactorEnabled',
+    defaultValue: false,
+    readValue: convertBoolean,
+  )
+  @NumberConverter()
+  final bool? twoFactorEnabled;
 
-  @annotation.JsonKey(name: 'is_coordinator')
+  @annotation.JsonKey(name: 'is_coordinator', readValue: convertBoolean)
+  @NumberConverter()
   final bool? isCoordinator;
 
   @annotation.JsonKey(name: 'coordinated_class_ids')
@@ -61,6 +69,10 @@ class OutputUserDao {
     this.token,
     this.sessionToken,
   });
+
+  static bool convertBoolean(Map map, String s) {
+    return map[s] == 1;
+  }
 
   Map<String, dynamic> toJson() => _$OutputUserDaoToJson(this);
 
