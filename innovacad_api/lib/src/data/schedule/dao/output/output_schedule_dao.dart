@@ -19,6 +19,9 @@ class OutputScheduleDao {
   @annotation.JsonKey(name: 'trainer_name')
   final String? trainerName;
 
+  @annotation.JsonKey(name: 'trainer_id')
+  final String? trainerId;
+
   @annotation.JsonKey(name: 'date_day')
   @DateTimeConverter()
   final DateTime? dateDay;
@@ -43,6 +46,15 @@ class OutputScheduleDao {
   @annotation.JsonKey(name: 'end')
   final String? end;
 
+  @annotation.JsonKey(name: 'class_name')
+  final String? className;
+
+  @annotation.JsonKey(name: 'current_duration')
+  final double? currentDuration;
+
+  @annotation.JsonKey(name: 'total_duration')
+  final double? totalDuration;
+
   OutputScheduleDao({
     this.scheduleId,
     this.moduleName,
@@ -53,8 +65,11 @@ class OutputScheduleDao {
     this.dateDay,
     this.regimeType,
     this.roomName,
-  }) :
-       start = (dateDay != null && startTime != null)
+    this.trainerId,
+    this.className,
+    this.currentDuration,
+    this.totalDuration,
+  }) : start = (dateDay != null && startTime != null)
            ? dateDay.add(startTime).toIso8601String()
            : null,
        end = (dateDay != null && endTime != null)

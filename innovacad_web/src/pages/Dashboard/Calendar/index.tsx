@@ -1,12 +1,12 @@
 import { EventCalendar } from "@/components/EventCalendar";
 import { Icon } from "@/components/Icon";
 import ModalDelete from "@/components/Modal/Delete";
-import type { ModalFieldDefinition } from "@/components/Modal/Edit";
 import ModalEdit from "@/components/Modal/Edit";
 import SummaryModal from "@/components/Modal/Summary";
 import { useApi } from "@/hooks/useApi";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import type { Class } from "@/types/class";
+import type { Schedule } from "@/types/schedule";
 import {
   createEffect,
   createMemo,
@@ -27,6 +27,19 @@ interface ScheduleFormData {
   force?: boolean;
 }
 
+// Interface para os dados do Modal de Sumário
+interface SummaryTargetData {
+  id: string;
+  title: string;
+  moduleName?: string;
+  roomName?: string;
+  dateStr?: string;
+  timeStr?: string;
+  className?: string;
+  totalDuration?: number;
+  currentDuration?: number;
+}
+
 const Calendar = () => {
   const {
     fetchClasses,
@@ -37,8 +50,6 @@ const Calendar = () => {
     deleteSchedule,
     fetchTrainers,
     fetchRooms,
-    fetchSummaryGrid,
-    saveSummary,
   } = useApi();
 
   const { user } = useUserDetails();
@@ -50,27 +61,60 @@ const Calendar = () => {
   const [selectedClass, setSelectedClass] = createSignal<Class | null>(null);
   const [canEdit, setCanEdit] = createSignal(false);
 
+  // States para os Modais
+  const [isEditModalOpen, setIsEditModalOpen] = createSignal(false);
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = createSignal(false);
+  const [summaryTarget, setSummaryTarget] =
+    createSignal<SummaryTargetData | null>(null);
+
+  const [modalMode, setModalMode] = createSignal<"create" | "edit">("create");
+  const [formData, setFormData] = createSignal<ScheduleFormData>({
+    moduleId: "",
+    trainerId: "",
+    roomId: "",
+    start: "",
+    end: "",
+    isOnline: false,
+    force: false,
+  });
+
+  const [currentScheduleId, setCurrentScheduleId] = createSignal<string | null>(
+    null,
+  );
+  const [itemToDelete, setItemToDelete] = createSignal<Record<
+    string,
+    any
+  > | null>(null);
+
   createEffect(() => {
     const u = user();
     const c = selectedClass();
     setCanEdit(false);
     if (!u) return;
+
     if (u.role === "admin") {
       setCanEdit(true);
       return;
     }
+
     if (((u as any).role === "coordinator" || (u as any).is_coordinator) && c) {
-      setCanEdit(true);
+      const coordinatedIds = ((u as any).coordinated_class_ids || []).map(
+        (id: any) => String(id),
+      );
+      if (coordinatedIds.includes(String(c.class_id))) {
+        setCanEdit(true);
+      }
     }
   });
 
   const trainerOptions = createMemo(
     () =>
       allTrainers()?.map((t) => ({
-        label: t.email || "Unknown",
+        label: t.name || "Unknown",
         value: t.trainerId!,
       })) || [],
   );
+
   const roomOptions = createMemo(
     () =>
       allRooms()?.map((r) => ({
@@ -78,6 +122,7 @@ const Calendar = () => {
         value: String(r.room_id),
       })) || [],
   );
+
   const moduleOptions = createMemo(
     () =>
       selectedClass()?.modules?.map((m: any) => ({
@@ -91,13 +136,16 @@ const Calendar = () => {
     const remote = fetchedClasses() || [];
     const u = user();
     if (!u) return [];
+
     if (u.role === "admin") return remote;
+
     if (u.role === "coordinator" || (u as any).is_coordinator) {
       const ids = ((u as any).coordinated_class_ids || []).map((id: any) =>
         String(id),
       );
       return remote.filter((c) => ids.includes(String(c.class_id)));
     }
+
     return remote.filter(
       (c) => String((u as any).class_id) === String(c.class_id),
     );
@@ -111,20 +159,31 @@ const Calendar = () => {
       if (sel?.class_id) return { type: "class", id: sel.class_id };
       return { type: "personal", id: u.id };
     },
-    async (source) =>
-      source.type === "class"
-        ? await fetchSchedules(source.id!)
-        : await fetchUserSchedules(),
+    async (source) => {
+      if (source.type === "class") {
+        return await fetchSchedules(source.id!);
+      } else {
+        return await fetchUserSchedules();
+      }
+    },
   );
 
+  const displaySchedules = createMemo<any[]>((prev) => {
+    const current = schedules();
+    if (schedules.loading && prev) return prev;
+    return current || [];
+  }, []);
+
   const calendarEvents = createMemo(() => {
-    const rawData = schedules();
+    const rawData = displaySchedules();
     if (!rawData || !Array.isArray(rawData)) return [];
+
     return rawData
-      .filter((s: any) => (s.start && s.end) || (s.date_day && s.start_time))
+      .filter((s: any) => (s.start && s.end) || (s.start_time && s.end_time))
       .map((s: any) => {
         let start = s.start;
         let end = s.end;
+
         if (!start && s.date_day && s.start_time) {
           const baseDate = new Date(Number(s.date_day))
             .toISOString()
@@ -132,6 +191,11 @@ const Calendar = () => {
           start = `${baseDate}T${s.start_time}`;
           end = `${baseDate}T${s.end_time}`;
         }
+
+        const trainerId = s.trainer_id || s.trainerId || (s as any).trainerId;
+
+        console.log("SCHEDULE: " + JSON.stringify(s));
+
         return {
           id: s.schedule_id || s.scheduleId,
           title: `${s.module_name || s.moduleName} (${s.trainer_name || s.trainerName})`,
@@ -141,99 +205,19 @@ const Calendar = () => {
           borderColor: s.is_online || s.isOnline ? "#2563eb" : "#059669",
           extendedProps: {
             classModuleId: s.class_module_id || s.classModuleId,
-            trainerId: s.trainer_id || s.trainerId,
+            trainerId: trainerId,
             roomId: s.room_id || s.roomId,
             moduleName: s.module_name || s.moduleName,
             roomName: s.room_name || s.roomName,
             instructor: s.trainer_name || s.trainerName,
             isOnline: s.is_online || s.isOnline,
+            className: s.class_name,
+            totalDuration: s.total_duration,
+            currentDuration: s.current_duration,
           },
         };
       });
   });
-
-  const [isSummaryModalOpen, setIsSummaryModalOpen] = createSignal(false);
-  const [summaryTarget, setSummaryTarget] = createSignal<{
-    id: string;
-    title: string;
-  } | null>(null);
-
-  const [isEditModalOpen, setIsEditModalOpen] = createSignal(false);
-  const [modalMode, setModalMode] = createSignal<"create" | "edit">("create");
-  const [formData, setFormData] = createSignal<ScheduleFormData>({
-    moduleId: "",
-    trainerId: "",
-    roomId: "",
-    start: "",
-    end: "",
-    isOnline: false,
-    force: false,
-  });
-  const [currentScheduleId, setCurrentScheduleId] = createSignal<string | null>(
-    null,
-  );
-  const [itemToDelete, setItemToDelete] = createSignal<Record<
-    string,
-    any
-  > | null>(null);
-
-  const currentSelectedModuleDef = createMemo(() => {
-    const modId = formData().moduleId;
-    const cls = selectedClass();
-    if (!modId || !cls || !cls.modules) return null;
-    const targetId = String(modId);
-    return cls.modules.find((m: any) => {
-      const id1 = m.classes_modules_id ? String(m.classes_modules_id) : "";
-      const id2 = m.classesModulesId ? String(m.classesModulesId) : "";
-      const id3 = m.courses_modules_id ? String(m.courses_modules_id) : "";
-      return id1 === targetId || id2 === targetId || id3 === targetId;
-    });
-  });
-
-  const handleFormChange = (newData: ScheduleFormData) => {
-    if (modalMode() === "create" && newData.moduleId !== formData().moduleId) {
-      const cls = selectedClass();
-      let defaultTrainerId = "";
-
-      if (cls && cls.modules) {
-        const targetId = String(newData.moduleId);
-        const mod = cls.modules.find((m: any) => {
-          const id1 = m.classes_modules_id ? String(m.classes_modules_id) : "";
-          const id2 = m.classesModulesId ? String(m.classesModulesId) : "";
-          const id3 = m.courses_modules_id ? String(m.courses_modules_id) : "";
-          return id1 === targetId || id2 === targetId || id3 === targetId;
-        });
-        defaultTrainerId = mod?.trainer_id || mod?.trainer_id || "";
-      }
-
-      console.log("Module Changed -> Auto-setting trainer:", defaultTrainerId);
-
-      setFormData({
-        ...newData,
-        trainerId: defaultTrainerId,
-        force: false,
-      });
-    } else {
-      const cls = selectedClass();
-      let defaultTrainerId = "";
-
-      if (cls && cls.modules) {
-        const targetId = String(newData.moduleId);
-        const mod = cls.modules.find((m: any) => {
-          const id1 = m.classes_modules_id ? String(m.classes_modules_id) : "";
-          const id2 = m.classesModulesId ? String(m.classesModulesId) : "";
-          const id3 = m.courses_modules_id ? String(m.courses_modules_id) : "";
-          return id1 === targetId || id2 === targetId || id3 === targetId;
-        });
-        defaultTrainerId = mod?.trainer_id || mod?.trainer_id || "";
-      }
-
-      if (newData.trainerId !== defaultTrainerId) {
-        newData.force = true;
-      }
-      setFormData(newData);
-    }
-  };
 
   const formatForInput = (dateInput: string | Date) => {
     const d = new Date(dateInput);
@@ -241,83 +225,74 @@ const Calendar = () => {
     return new Date(d.getTime() - offset).toISOString().slice(0, 16);
   };
 
-  const handleMoveRequest = async (id: string, start: Date, end: Date) => {
-    if (!canEdit()) return;
-    const allEvents = schedules() || [];
-    const originalEvent = allEvents.find(
-      (s: any) => (s.schedule_id || s.scheduleId) === id,
-    );
-    if (!originalEvent) return;
-    try {
-      await updateSchedule(id, {
-        trainer_id: originalEvent.trainer_id,
-        room_id: originalEvent.room_id,
-        is_online: originalEvent.is_online,
-        start_time: start.toISOString(),
-        end_time: end.toISOString(),
-      });
-      refetchSchedules();
-    } catch (e) {
-      toast.error("Update failed");
-    }
-  };
-
-  const handleCreateRequest = (start: string, end: string) => {
-    if (!canEdit()) return;
-    setModalMode("create");
-    setCurrentScheduleId(null);
-    setFormData({
-      moduleId: "",
-      trainerId: "",
-      roomId: "",
-      start: formatForInput(start),
-      end: formatForInput(end),
-      isOnline: false,
-      force: false,
-    });
-    setIsEditModalOpen(true);
-  };
-
   const handleEditRequest = (event: any) => {
-    console.log(selectedClass() ?? "NULO puta");
     const u = user();
-    if (!u) return;
+    const isClassContext = selectedClass() !== null;
 
-    const eventStart = new Date(event.start);
+    const startVal = event.startStr || event.start;
+    const endVal = event.endStr || event.end;
+    const eventStart = new Date(startVal);
+    const eventEnd = endVal
+      ? new Date(endVal)
+      : new Date(eventStart.getTime() + 60 * 60 * 1000); // Fallback 1h
     const now = new Date();
+    const eventTrainerId = String(event.extendedProps?.trainerId || "");
 
-    const hasStarted = now >= eventStart;
+    // CORREÇÃO LÓGICA: Consideramos que a aula "começou" se NOW >= START
+    const hasStarted = now.getTime() >= eventStart.getTime();
 
-    const eventTrainerId = String(event.extendedProps.trainerId || "");
-
-    let isMyClass = false;
-
-    if (u.role === "admin") {
-      isMyClass = true;
-    } else if (u.role === "trainer") {
+    console.log("==== Debug ====");
+    console.log("Event Trainer ID: " + eventTrainerId);
+    console.log(
+      "Current Trainer ID: " +
+        (u && "trainer_id" in u! ? String((u as any).trainer_id) : ""),
+    );
+    console.log("Has Started: " + hasStarted);
+    console.log("EVENT: " + Object.keys(event));
+    console.log("EVENT EXTENDED PROPS: " + Object.keys(event.extendedProps));
+    console.log("===============");
+    // --- LOGICA DE SUMARIOS (Só no My Schedule) ---
+    if (!isClassContext) {
       const myTrainerId =
-        "trainer_id" in u ? String((u as any).trainer_id) : "";
-      isMyClass = myTrainerId === eventTrainerId;
-    } else if (u.role === "coordinator") {
-      const myTrainerId =
-        "trainer_id" in u ? String((u as any).trainer_id) : "";
-      isMyClass = myTrainerId === eventTrainerId;
+        u && "trainer_id" in u ? String((u as any).trainer_id) : "";
+      const isMyClass = u?.role === "admin" || myTrainerId === eventTrainerId;
+
+      if (hasStarted) {
+        if (isMyClass) {
+          // Formatar data e hora para o modal
+          const dateStr = eventStart.toLocaleDateString();
+          const timeStr = `${eventStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${eventEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+
+          setSummaryTarget({
+            id: event.id,
+            title: event.title,
+            moduleName: event.extendedProps?.moduleName,
+            roomName: event.extendedProps?.roomName || "Online",
+            dateStr,
+            timeStr,
+            className: event.extendedProps?.className,
+            totalDuration: event.extendedProps?.totalDuration,
+            currentDuration: event.extendedProps?.currentDuration,
+          });
+          setIsSummaryModalOpen(true);
+          return; // Sai da função para não abrir o Edit Modal
+        } else {
+          toast.error(
+            `Aulas passadas: apenas o formador (${event.extendedProps?.instructor}) pode preencher sumários.`,
+          );
+          return;
+        }
+      }
     }
 
-    if (hasStarted) {
-      if (isMyClass) {
-        setSummaryTarget({
-          id: event.id,
-          title: event.title,
-        });
-        setIsSummaryModalOpen(true);
-      } else {
-        toast.error("Only the assigned trainer can create summaries.");
-      }
+    // --- LOGICA DE EDIÇÃO (Normal para coordenadores nas turmas ou admin) ---
+    if (!canEdit()) {
+      toast.success(
+        `Informação da Aula:\n${event.title}\nSala: ${event.extendedProps?.roomName || "N/A"}`,
+      );
       return;
     }
 
-    if (!canEdit()) return;
     setModalMode("edit");
     setCurrentScheduleId(event.id);
     const props = event.extendedProps;
@@ -330,28 +305,13 @@ const Calendar = () => {
       );
       if (foundMod)
         resolvedModuleId =
-          foundMod.classes_modules_id ||
-          foundMod.classesModulesId ||
-          foundMod.courses_modules_id;
+          foundMod.classes_modules_id || foundMod.courses_modules_id;
     }
-
-    let resolvedRoomId = props.roomId ? String(props.roomId) : "";
-    if (
-      !resolvedRoomId &&
-      props.roomName &&
-      props.roomName.toLowerCase() !== "online" &&
-      allRooms()
-    ) {
-      const foundRoom = allRooms()?.find((r) => r.room_name === props.roomName);
-      if (foundRoom) resolvedRoomId = String(foundRoom.room_id);
-    }
-
-    let resolvedTrainerId = props.trainerId ? String(props.trainerId) : "";
 
     setFormData({
       moduleId: String(resolvedModuleId || ""),
-      trainerId: String(resolvedTrainerId || ""),
-      roomId: String(resolvedRoomId || ""),
+      trainerId: String(props.trainerId || ""),
+      roomId: String(props.roomId || ""),
       start: formatForInput(event.start),
       end: formatForInput(event.end),
       isOnline: Boolean(props.isOnline),
@@ -360,19 +320,27 @@ const Calendar = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleSummaryRequest = (event: any) => {
-    console.log(selectedClass());
-    const scheduleId = String(event.id);
-    const title = event.title;
-    setSummaryTarget({ id: scheduleId, title });
-    setIsSummaryModalOpen(true);
+  const handleFormChange = (newData: ScheduleFormData) => {
+    if (modalMode() === "create" && newData.moduleId !== formData().moduleId) {
+      const cls = selectedClass();
+      let defaultTrainerId = "";
+      if (cls && cls.modules) {
+        const targetId = String(newData.moduleId);
+        const mod = cls.modules.find(
+          (m: any) =>
+            (m.classes_modules_id ||
+              m.classesModulesId ||
+              m.courses_modules_id) === targetId,
+        );
+        defaultTrainerId = mod?.trainer_id || "";
+      }
+      setFormData({ ...newData, trainerId: defaultTrainerId, force: false });
+    } else {
+      setFormData(newData);
+    }
   };
 
   const handleSave = async (data: ScheduleFormData) => {
-    if (!data.moduleId || !data.trainerId) {
-      toast.error("Required fields missing");
-      return;
-    }
     try {
       const payload = {
         trainer_id: data.trainerId,
@@ -381,81 +349,38 @@ const Calendar = () => {
         start_time: new Date(data.start).toISOString(),
         end_time: new Date(data.end).toISOString(),
       };
+
       if (modalMode() === "create") {
         await createSchedule({
           ...payload,
           class_module_id: data.moduleId,
           force_trainer_change: !!data.force,
         });
+        toast.success("Schedule created successfully!");
       } else {
         await updateSchedule(currentScheduleId()!, payload);
-        toast.success("Updated!");
+        toast.success("Schedule updated successfully!");
       }
       setIsEditModalOpen(false);
       refetchSchedules();
     } catch (e: any) {
-      toast.error(e.message || "Failed");
+      toast.error(e.message || "Failed to save schedule");
     }
   };
 
   const handleConfirmDelete = async () => {
     const item = itemToDelete();
     if (item) {
-      await deleteSchedule(item.id);
-      toast.success("Deleted");
-      refetchSchedules();
+      try {
+        await deleteSchedule(item.id);
+        toast.success("Schedule deleted");
+        setItemToDelete(null);
+        refetchSchedules();
+      } catch (e: any) {
+        toast.error(e.message);
+      }
     }
   };
-
-  const dynamicFields = createMemo<ModalFieldDefinition<ScheduleFormData>[]>(
-    () => {
-      const selectedMod: any = currentSelectedModuleDef();
-      const defaultTrainerId =
-        selectedMod?.trainer_id || selectedMod?.trainerId;
-      const hasDefaultTrainer = !!defaultTrainerId;
-      const isTrainerSelectDisabled = hasDefaultTrainer && !formData().force;
-      return [
-        {
-          name: "moduleId",
-          label: "Module",
-          type: "select",
-          required: true,
-          disabled: modalMode() === "edit",
-          options: moduleOptions(),
-        },
-        {
-          name: "trainerId",
-          label: "Trainer",
-          type: "select",
-          required: true,
-          disabled: isTrainerSelectDisabled,
-          placeholder: "Select Trainer",
-          options: trainerOptions(),
-        },
-        {
-          name: "roomId",
-          label: "Room",
-          type: "select",
-          hidden: formData().isOnline,
-          options: roomOptions(),
-        },
-        { name: "isOnline", label: "Online Class?", type: "checkbox" },
-        {
-          name: "start",
-          label: "Start",
-          type: "datetime-local",
-          disabled: true,
-        },
-        { name: "end", label: "End", type: "datetime-local", disabled: true },
-        {
-          name: "force",
-          label: "Override Default Trainer?",
-          type: "checkbox",
-          hidden: modalMode() === "edit" || !hasDefaultTrainer,
-        },
-      ];
-    },
-  );
 
   return (
     <div class="card w-full h-[80vh] bg-base-100 shadow-xl border border-base-300">
@@ -467,10 +392,10 @@ const Calendar = () => {
               value={selectedClass()?.class_id || ""}
               onChange={(e) => {
                 const id = e.currentTarget.value;
-                setSelectedClass(
-                  availableClasses().find((c) => String(c.class_id) === id) ||
-                    null,
+                const found = availableClasses().find(
+                  (c) => String(c.class_id) === id,
                 );
+                setSelectedClass(found || null);
               }}
             >
               <option value="">
@@ -479,33 +404,36 @@ const Calendar = () => {
               <For each={availableClasses()}>
                 {(k) => (
                   <option value={k.class_id}>
-                    {k.identifier} {k.location}
+                    {k.identifier} - {k.location}
                   </option>
                 )}
               </For>
             </select>
-            <Show when={schedules.loading || fetchedClasses.loading}>
+            <Show when={schedules.loading}>
               <span class="loading loading-spinner loading-sm text-primary"></span>
             </Show>
           </div>
+
           <div
-            class="badge gap-2 py-4 px-4 font-bold border transition-all"
-            classList={{
-              "badge-success border-success/20 text-success-content": canEdit(),
-              "badge-ghost": !canEdit(),
-            }}
+            class={`badge gap-2 py-4 px-4 font-bold border transition-all ${
+              canEdit()
+                ? "badge-success border-success/20 text-success-content"
+                : "badge-ghost border-base-300 opacity-70"
+            }`}
           >
             <Show
               when={canEdit()}
               fallback={
                 <>
                   <Icon name="Lock" size={14} />
-                  <span class="uppercase text-[10px]">Read Only</span>
+                  <span class="uppercase text-[10px] tracking-wider">
+                    Read Only Mode
+                  </span>
                 </>
               }
             >
               <Icon name="LockOpen" size={14} />
-              <span class="uppercase text-[10px]">
+              <span class="uppercase text-[10px] tracking-wider">
                 Editing: {selectedClass()?.identifier}
               </span>
             </Show>
@@ -518,16 +446,44 @@ const Calendar = () => {
             events={calendarEvents()}
             isEditable={true}
             loading={schedules.loading}
-            onCreateRequest={handleCreateRequest}
-            onEditRequest={
-              selectedClass() === null
-                ? handleSummaryRequest
-                : handleEditRequest
-            }
-            onMoveRequest={handleMoveRequest}
+            onCreateRequest={(start, end) => {
+              if (!canEdit()) return;
+              setModalMode("create");
+              setFormData({
+                moduleId: "",
+                trainerId: "",
+                roomId: "",
+                start: formatForInput(start),
+                end: formatForInput(end),
+                isOnline: false,
+                force: false,
+              });
+              setIsEditModalOpen(true);
+            }}
+            onEditRequest={handleEditRequest}
+            onMoveRequest={async (id, start, end) => {
+              if (!canEdit()) return;
+              try {
+                const original = displaySchedules().find(
+                  (s: any) => (s.schedule_id || s.scheduleId) === id,
+                );
+                if (!original) return;
+                await updateSchedule(id, {
+                  trainer_id: original.trainer_id || original.trainerId,
+                  room_id: original.room_id || original.roomId,
+                  is_online: original.is_online || original.isOnline,
+                  start_time: start.toISOString(),
+                  end_time: end.toISOString(),
+                });
+                refetchSchedules();
+              } catch (e: any) {
+                toast.error("Failed to move event");
+              }
+            }}
           />
         </div>
 
+        {/* MODAL DE EDIÇÃO DE HORÁRIO */}
         <Show when={isEditModalOpen()}>
           <ModalEdit<ScheduleFormData>
             title={modalMode() === "create" ? "New Session" : "Edit Session"}
@@ -537,29 +493,86 @@ const Calendar = () => {
             onCancel={() => setIsEditModalOpen(false)}
             onDelete={
               modalMode() === "edit"
-                ? () => Promise.resolve(handleConfirmDelete())
+                ? () => {
+                    setItemToDelete({ id: currentScheduleId() });
+                    setIsEditModalOpen(false);
+                    return Promise.resolve();
+                  }
                 : undefined
             }
-            fields={dynamicFields()}
+            fields={[
+              {
+                name: "moduleId",
+                label: "Module",
+                type: "select",
+                required: true,
+                disabled: modalMode() === "edit",
+                options: moduleOptions(),
+              },
+              {
+                name: "trainerId",
+                label: "Trainer",
+                type: "select",
+                required: true,
+                options: trainerOptions(),
+              },
+              {
+                name: "roomId",
+                label: "Room",
+                type: "select",
+                hidden: formData().isOnline,
+                options: roomOptions(),
+              },
+              { name: "isOnline", label: "Online Class?", type: "checkbox" },
+              {
+                name: "start",
+                label: "Start Time",
+                type: "datetime-local",
+                disabled: true,
+              },
+              {
+                name: "end",
+                label: "End Time",
+                type: "datetime-local",
+                disabled: true,
+              },
+              {
+                name: "force",
+                label: "Force Trainer Change?",
+                type: "checkbox",
+                hidden: modalMode() === "edit",
+              },
+            ]}
           />
         </Show>
 
+        {/* MODAL DE SUMÁRIO */}
         <Show when={isSummaryModalOpen() && summaryTarget()}>
           <SummaryModal
             isOpen={isSummaryModalOpen()}
-            onClose={() => setIsSummaryModalOpen(false)}
+            onClose={() => {
+              setIsSummaryModalOpen(false);
+              setSummaryTarget(null);
+            }}
             scheduleId={summaryTarget()!.id}
-            title={`Summary: ${summaryTarget()!.title}`}
+            title={summaryTarget()!.title}
+            moduleName={summaryTarget()!.moduleName}
+            roomName={summaryTarget()!.roomName}
+            dateStr={summaryTarget()!.dateStr}
+            timeStr={summaryTarget()!.timeStr}
+            className={summaryTarget()!.className}
+            totalDuration={summaryTarget()!.totalDuration}
+            currentDuration={summaryTarget()!.currentDuration}
           />
         </Show>
 
         <ModalDelete
+          onCancel={() => {}}
           value={itemToDelete}
           setValue={setItemToDelete}
           onConfirm={handleConfirmDelete}
-          onCancel={() => {}}
-          title="Delete Session"
-          description={`Remove session?`}
+          title="Delete Schedule"
+          description="Are you sure you want to remove this session from the calendar?"
         />
       </div>
     </div>

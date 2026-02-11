@@ -17,16 +17,22 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       IF(s.regime_type = 0, 'daytime', 'post-work') AS regime_type, 
       m.name AS module_name, 
       u.name AS trainer_name, 
+      t.trainer_id as trainer_id,
       s.start_date_timestamp,
       s.end_date_timestamp,
       IF(s.is_online, 'online', r.room_name) AS room_name,
-      s.class_module_id, s.trainer_id, s.room_id, s.is_online, s.regime_type, s.total_hours
+      s.class_module_id, s.trainer_id, s.room_id, s.is_online, s.regime_type, s.total_hours,
+      CONCAT(co.identifier, " ", c.location, " ", c.identifier) AS class_name,
+      classm.current_duration AS current_duration,
+      m.duration AS total_duration
       FROM schedules s
       JOIN classes_modules classm ON s.class_module_id = classm.classes_modules_id
       JOIN courses_modules coursem ON classm.courses_modules_id = coursem.courses_modules_id
       JOIN modules m ON coursem.module_id = m.module_id
       JOIN trainers t ON s.trainer_id = t.trainer_id
       JOIN user u ON t.user_id = u.id
+      JOIN classes c ON classm.class_id = c.class_id
+      JOIN courses co ON c.course_id = co.course_id
       LEFT JOIN rooms r ON s.room_id = r.room_id""";
 
   String _toSqlDate(DateTime dt) {
@@ -636,9 +642,14 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         : startDt.add(Duration(hours: 1));
 
     return OutputScheduleDao(
+      className: row['class_name'].toString(),
+      currentDuration:
+          double.tryParse(row['current_duration'].toString()) ?? 0.0,
+      totalDuration: double.tryParse(row['total_duration'].toString()) ?? 0.0,
       scheduleId: row['schedule_id'].toString(),
       moduleName: row['module_name'].toString(),
       trainerName: row['trainer_name'].toString(),
+      trainerId: row['trainer_id'].toString(),
       roomName: row['room_name']?.toString() ?? 'N/A',
       dateDay: DateTime(startDt.year, startDt.month, startDt.day),
       startTime: Duration(hours: startDt.hour, minutes: startDt.minute),

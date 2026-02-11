@@ -1,5 +1,6 @@
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
 import 'package:innovacad_api/src/core/core.dart';
+import 'package:innovacad_api/src/core/extensions/mysql_utils_extension.dart';
 import 'package:innovacad_api/src/data/summary/dao/output_summary_grid_dao.dart';
 import 'package:innovacad_api/src/data/summary/dto/save_summary_dto.dart';
 import 'package:innovacad_api/src/domain/summary/repository/i_summary_repository.dart';
@@ -83,64 +84,75 @@ class SummaryRepositoryImpl implements ISummaryRepository {
     MysqlUtils? db;
     try {
       db = await MysqlConfiguration.getConnection();
-      await db.startTrans();
 
-      final existing = await db.getOne(
-        table: 'summaries',
-        where: {'schedule_id': dto.scheduleId},
-      );
-      String summaryId;
-
-      if (existing.isEmpty) {
-        summaryId = Uuid().v4();
-        await db.insert(
+      // Transação curta e rápida
+      await db.transaction((txn) async {
+        // 1. Upsert Summary
+        final existing = await txn.getOne(
           table: 'summaries',
-          insertData: {
-            'summary_id': summaryId,
-            'schedule_id': dto.scheduleId,
-            'contents': dto.contents,
-          },
+          where: {'schedule_id': dto.scheduleId},
         );
-      } else {
-        summaryId = existing['summary_id'];
-        await db.update(
-          table: 'summaries',
-          updateData: {'contents': dto.contents},
-          where: {'summary_id': summaryId},
-        );
-      }
+        String summaryId;
 
-      for (var att in dto.attendances) {
-        final attId = Uuid().v4();
-        await db.query(
-          """
-          INSERT INTO attendances (attendance_id, summary_id, trainee_id, is_absent)
-          VALUES (?, ?, ?, ?)
-          ON DUPLICATE KEY UPDATE is_absent = ?
-          """,
-          whereValues: [
-            attId,
-            summaryId,
-            att.traineeId,
-            att.isAbsent ? 1 : 0,
-            att.isAbsent ? 1 : 0,
-          ],
-          isStmt: true,
-        );
-      }
+        if (existing.isEmpty) {
+          summaryId = Uuid().v4();
+          await txn.insert(
+            table: 'summaries',
+            insertData: {
+              'summary_id': summaryId,
+              'schedule_id': dto.scheduleId,
+              'contents': dto.contents,
+            },
+          );
+        } else {
+          summaryId = existing['summary_id'];
+          await txn.update(
+            table: 'summaries',
+            updateData: {'contents': dto.contents},
+            where: {'summary_id': summaryId},
+          );
+        }
 
-      await db.commit();
+        // 2. Batch Upsert Attendances (OTIMIZAÇÃO CRÍTICA)
+        if (dto.attendances.isNotEmpty) {
+          List<String> valueSets = [];
+
+          for (var att in dto.attendances) {
+            // Geramos ID novo, mas se bater na Unique Key (summary_id + trainee_id), faz update
+            final attId = Uuid().v4();
+            final isAbsentVal = att.isAbsent ? 1 : 0;
+            // Construção segura da string de valores
+            valueSets.add(
+              "('$attId', '$summaryId', '${att.traineeId}', $isAbsentVal)",
+            );
+          }
+
+          // Executa TUDO numa única query.
+          // O DB só bloqueia a tabela uma vez, escreve tudo e liberta.
+          final sql =
+              """
+            INSERT INTO attendances (attendance_id, summary_id, trainee_id, is_absent)
+            VALUES ${valueSets.join(',')}
+            ON DUPLICATE KEY UPDATE is_absent = VALUES(is_absent)
+          """;
+
+          await txn.query(sql);
+        }
+      });
+
       return Result.success(true);
     } catch (e, s) {
-      if (db != null) await db.rollback();
+      print("Save Summary Error: $e");
+      // Se der Lock Wait Timeout, o erro será apanhado aqui
       return Result.failure(
         AppError(
           AppErrorType.internal,
-          "Failed to save summary",
-          details: {'error': e.toString(), 'stack': s.toString()},
+          "Failed to save summary: $e",
+          details: {"stack": s.toString()},
         ),
       );
     } finally {
+      // Garante SEMPRE que a conexão fecha, mesmo se houver erro
       await MysqlConfiguration.closeConnection(db);
     }
   }

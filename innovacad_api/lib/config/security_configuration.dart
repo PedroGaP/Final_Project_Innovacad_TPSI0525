@@ -181,7 +181,7 @@ class SecurityConfiguration {
       ).hasAnyRole(["admin", 'coordinator', 'trainer']),
 
       // Courses
-      RequestMatcher('/courses/**', HttpMethod.get).permitAll(),
+      RequestMatcher('/courses/**', HttpMethod.get).authenticated(),
       RequestMatcher(
         '/courses/**',
         HttpMethod.post,
@@ -215,7 +215,7 @@ class SecurityConfiguration {
         HttpMethod.delete,
       ).hasAnyRole(['admin', 'assistant']),
 
-      AnyRequest().permitAll(),
+      AnyRequest().authenticated(),
     ]);
   }
 }
