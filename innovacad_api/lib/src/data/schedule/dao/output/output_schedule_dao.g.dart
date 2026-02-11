@@ -30,6 +30,7 @@ OutputScheduleDao _$OutputScheduleDaoFromJson(Map<String, dynamic> json) =>
       className: json['class_name'] as String?,
       currentDuration: (json['current_duration'] as num?)?.toDouble(),
       totalDuration: (json['total_duration'] as num?)?.toDouble(),
+      trainerEmail: json['trainer_email'] as String?,
     );
 
 Map<String, dynamic> _$OutputScheduleDaoToJson(OutputScheduleDao instance) =>
@@ -39,6 +40,7 @@ Map<String, dynamic> _$OutputScheduleDaoToJson(OutputScheduleDao instance) =>
       'module_name': instance.moduleName,
       'trainer_name': instance.trainerName,
       'trainer_id': instance.trainerId,
+      'trainer_email': instance.trainerEmail,
       'date_day': _$JsonConverterToJson<Object, DateTime>(
         instance.dateDay,
         const DateTimeConverter().toJson,

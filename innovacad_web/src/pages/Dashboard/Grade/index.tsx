@@ -206,7 +206,7 @@ const GradeSheetModal = (props: {
       await handleSave();
       await api.finalizeGrades(props.classModuleId);
       toast.success("Module grades finalized.");
-      setIsFinalized(true); // Bloqueia a UI imediatamente
+      setIsFinalized(true);
       props.onClose();
     } catch (e: any) {
       toast.error(e.message);

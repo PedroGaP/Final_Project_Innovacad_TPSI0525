@@ -18,6 +18,7 @@ interface ScheduleInfoModalProps {
     title: string;
     moduleName: string;
     trainerName: string;
+    trainerEmail: string;
     className: string;
     roomName: string;
     start: string;
@@ -30,7 +31,6 @@ interface ScheduleInfoModalProps {
 const ScheduleInfoModal = (props: ScheduleInfoModalProps) => {
   const { fetchSummaryGrid } = useApi();
 
-  // Procuramos o sumário se a aula já tiver acontecido/começado
   const [summary] = createResource(
     () => (props.isOpen ? props.data.id : null),
     async (id) => {
@@ -72,12 +72,16 @@ const ScheduleInfoModal = (props: ScheduleInfoModalProps) => {
           </div>
 
           <div class="grid grid-cols-1 gap-4">
-            {/* Informações Básicas */}
             <div class="flex items-center gap-3 bg-base-200/50 p-3 rounded-lg">
               <User class="text-primary" size={18} />
               <div>
                 <p class="text-xs opacity-50 uppercase font-bold">Trainer</p>
-                <p class="text-sm">{props.data.trainerName}</p>
+                <p class="text-sm">
+                  {props.data.trainerName}{" "}
+                  <span class="text-sm text-accent">
+                    ({props.data.trainerEmail ?? "N/A"})
+                  </span>
+                </p>
               </div>
             </div>
 
@@ -117,7 +121,6 @@ const ScheduleInfoModal = (props: ScheduleInfoModalProps) => {
               </div>
             </div>
 
-            {/* Progresso do Módulo */}
             <div class="p-3 border border-base-300 rounded-lg">
               <div class="flex justify-between text-xs mb-2">
                 <span class="font-bold uppercase opacity-50">
@@ -134,7 +137,6 @@ const ScheduleInfoModal = (props: ScheduleInfoModalProps) => {
               ></progress>
             </div>
 
-            {/* Sumário */}
             <div class="collapse collapse-arrow bg-base-200">
               <input type="checkbox" />
               <div class="collapse-title text-sm font-bold flex items-center gap-2">

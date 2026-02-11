@@ -7,6 +7,7 @@ import SummaryModal from "@/components/Modal/Summary";
 import { useApi } from "@/hooks/useApi";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import type { Class } from "@/types/class";
+import type { Schedule } from "@/types/schedule";
 import {
   createEffect,
   createMemo,
@@ -27,7 +28,6 @@ interface ScheduleFormData {
   force?: boolean;
 }
 
-// Interface para os dados do Modal de Sumário
 interface SummaryTargetData {
   id: string;
   title: string;
@@ -61,7 +61,6 @@ const Calendar = () => {
   const [selectedClass, setSelectedClass] = createSignal<Class | null>(null);
   const [canEdit, setCanEdit] = createSignal(false);
 
-  // States para os Modais
   const [isEditModalOpen, setIsEditModalOpen] = createSignal(false);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = createSignal(false);
   const [summaryTarget, setSummaryTarget] =
@@ -208,6 +207,7 @@ const Calendar = () => {
           extendedProps: {
             classModuleId: s.class_module_id || s.classModuleId,
             trainerId: trainerId,
+            trainerEmail: s.trainer_email,
             roomId: s.room_id || s.roomId,
             moduleName: s.module_name || s.moduleName,
             roomName: s.room_name || s.roomName,
@@ -249,6 +249,7 @@ const Calendar = () => {
         title: event.title,
         moduleName: props.extendedProps?.moduleName || props.moduleName,
         trainerName: props.instructor,
+        trainerEmail: props.trainerEmail,
         className: props.className || selectedClass()?.identifier,
         roomName:
           props.roomName === "N/A"
@@ -274,7 +275,7 @@ const Calendar = () => {
     console.log("EVENT: " + Object.keys(event));
     console.log("EVENT EXTENDED PROPS: " + Object.keys(event.extendedProps));
     console.log("===============");
-    // --- LOGICA DE SUMARIOS (Só no My Schedule) ---
+
     if (!isClassContext) {
       const myTrainerId =
         u && "trainer_id" in u ? String((u as any).trainer_id) : "";
@@ -282,7 +283,6 @@ const Calendar = () => {
 
       if (hasStarted) {
         if (isMyClass) {
-          // Formatar data e hora para o modal
           const dateStr = eventStart.toLocaleDateString();
           const timeStr = `${eventStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${eventEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 
@@ -298,7 +298,7 @@ const Calendar = () => {
             currentDuration: event.extendedProps?.currentDuration,
           });
           setIsSummaryModalOpen(true);
-          return; // Sai da função para não abrir o Edit Modal
+          return;
         } else {
           toast.error(
             `Aulas passadas: apenas o formador (${event.extendedProps?.instructor}) pode preencher sumários.`,
@@ -308,7 +308,6 @@ const Calendar = () => {
       }
     }
 
-    // --- LOGICA DE EDIÇÃO (Normal para coordenadores nas turmas ou admin) ---
     if (!canEdit()) {
       toast.success(
         `Informação da Aula:\n${event.title}\nSala: ${event.extendedProps?.roomName || "N/A"}`,
@@ -505,7 +504,6 @@ const Calendar = () => {
           />
         </div>
 
-        {/* MODAL DE EDIÇÃO DE HORÁRIO */}
         <Show when={isEditModalOpen()}>
           <ModalEdit<ScheduleFormData>
             title={modalMode() === "create" ? "New Session" : "Edit Session"}
@@ -568,7 +566,6 @@ const Calendar = () => {
           />
         </Show>
 
-        {/* MODAL DE SUMÁRIO */}
         <Show when={isSummaryModalOpen() && summaryTarget()}>
           <SummaryModal
             isOpen={isSummaryModalOpen()}

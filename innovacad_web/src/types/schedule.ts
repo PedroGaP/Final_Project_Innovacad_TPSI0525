@@ -11,6 +11,7 @@ export type ScheduleResponseData = {
 
   class_module_id?: string;
   trainer_id?: string;
+  trainer_email?: string;
   room_id?: number;
   total_hours?: number;
 
@@ -34,6 +35,7 @@ export class Schedule {
 
   class_module_id: string | undefined;
   trainer_id: string | undefined;
+  trainer_email: string | undefined;
   room_id: number | undefined;
   class_name: string | undefined;
   total_duration: number | undefined;
@@ -53,6 +55,7 @@ export class Schedule {
     this.class_name = data.class_name;
     this.total_duration = data.total_duration;
     this.current_duration = data.current_duration;
+    this.trainer_email = data.trainer_email;
 
     if (data.start_date_timestamp && data.end_date_timestamp) {
       this.start = new Date(data.start_date_timestamp);
