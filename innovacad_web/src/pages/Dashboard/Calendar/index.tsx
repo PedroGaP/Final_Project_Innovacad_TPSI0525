@@ -2,11 +2,11 @@ import { EventCalendar } from "@/components/EventCalendar";
 import { Icon } from "@/components/Icon";
 import ModalDelete from "@/components/Modal/Delete";
 import ModalEdit from "@/components/Modal/Edit";
+import ScheduleInfoModal from "@/components/Modal/ScheduleInfo";
 import SummaryModal from "@/components/Modal/Summary";
 import { useApi } from "@/hooks/useApi";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import type { Class } from "@/types/class";
-import type { Schedule } from "@/types/schedule";
 import {
   createEffect,
   createMemo,
@@ -66,6 +66,8 @@ const Calendar = () => {
   const [isSummaryModalOpen, setIsSummaryModalOpen] = createSignal(false);
   const [summaryTarget, setSummaryTarget] =
     createSignal<SummaryTargetData | null>(null);
+  const [isInfoModalOpen, setIsInfoModalOpen] = createSignal(false);
+  const [infoTarget, setInfoTarget] = createSignal<any>(null);
 
   const [modalMode, setModalMode] = createSignal<"create" | "edit">("create");
   const [formData, setFormData] = createSignal<ScheduleFormData>({
@@ -228,18 +230,39 @@ const Calendar = () => {
   const handleEditRequest = (event: any) => {
     const u = user();
     const isClassContext = selectedClass() !== null;
+    const props = event.extendedProps;
 
     const startVal = event.startStr || event.start;
     const endVal = event.endStr || event.end;
     const eventStart = new Date(startVal);
     const eventEnd = endVal
       ? new Date(endVal)
-      : new Date(eventStart.getTime() + 60 * 60 * 1000); // Fallback 1h
+      : new Date(eventStart.getTime() + 60 * 60 * 1000);
     const now = new Date();
     const eventTrainerId = String(event.extendedProps?.trainerId || "");
 
-    // CORREÇÃO LÓGICA: Consideramos que a aula "começou" se NOW >= START
     const hasStarted = now.getTime() >= eventStart.getTime();
+
+    if (u?.role === "trainee") {
+      const readOnlyData = {
+        id: event.id,
+        title: event.title,
+        moduleName: props.extendedProps?.moduleName || props.moduleName,
+        trainerName: props.instructor,
+        className: props.className || selectedClass()?.identifier,
+        roomName:
+          props.roomName === "N/A"
+            ? "Online"
+            : props.roomName || (props.isOnline ? "Online" : "N/A"),
+        start: startVal,
+        end: endVal || eventEnd.toISOString(),
+        totalDuration: props.totalDuration || 0,
+        currentDuration: props.currentDuration || 0,
+      };
+      setInfoTarget(readOnlyData);
+      setIsInfoModalOpen(true);
+      return;
+    }
 
     console.log("==== Debug ====");
     console.log("Event Trainer ID: " + eventTrainerId);
@@ -295,7 +318,6 @@ const Calendar = () => {
 
     setModalMode("edit");
     setCurrentScheduleId(event.id);
-    const props = event.extendedProps;
 
     let resolvedModuleId = props.classModuleId || "";
     if (!resolvedModuleId && props.moduleName && selectedClass()?.modules) {
@@ -563,6 +585,17 @@ const Calendar = () => {
             className={summaryTarget()!.className}
             totalDuration={summaryTarget()!.totalDuration}
             currentDuration={summaryTarget()!.currentDuration}
+          />
+        </Show>
+
+        <Show when={isInfoModalOpen() && infoTarget()}>
+          <ScheduleInfoModal
+            isOpen={isInfoModalOpen()}
+            onClose={() => {
+              setIsInfoModalOpen(false);
+              setInfoTarget(null);
+            }}
+            data={infoTarget()}
           />
         </Show>
 

@@ -13,6 +13,8 @@ import {
 } from "solid-js";
 import toast from "solid-toast";
 import { BookOpen, Crown, Lock, Save, X } from "lucide-solid";
+import { createStore } from "solid-js/store";
+import { Index } from "solid-js";
 
 interface ModuleRow {
   unique_id: string;
@@ -55,7 +57,7 @@ const GradeSheetModal = (props: {
 }) => {
   const api = useApi();
   const [loading, setLoading] = createSignal(false);
-  const [rows, setRows] = createSignal<StudentGradeRow[]>([]);
+  const [rows, setRows] = createStore<StudentGradeRow[]>([]);
 
   const [isFinalized, setIsFinalized] = createSignal(false);
 
@@ -64,12 +66,17 @@ const GradeSheetModal = (props: {
 
     setLoading(true);
     try {
-      const [existingGradesRes, allEnrollmentsRes, allTraineesRes] =
-        await Promise.all([
-          api.fetchGradesByModule(props.classModuleId).catch(() => []),
-          api.fetchEnrollments().catch(() => []),
-          api.fetchTrainees().catch(() => []),
-        ]);
+      const [
+        existingGradesRes,
+        allEnrollmentsRes,
+        allTraineesRes,
+        attendanceRes,
+      ] = await Promise.all([
+        api.fetchGradesByModule(props.classModuleId).catch(() => []),
+        api.fetchEnrollments().catch(() => []),
+        api.fetchTrainees().catch(() => []),
+        api.fetchAttendanceByClassModule(props.classModuleId).catch(() => []),
+      ]);
 
       const classEnrollments = allEnrollmentsRes.filter(
         (e) => normalizeId(e.class_id) === normalizeId(props.classId),
@@ -77,16 +84,25 @@ const GradeSheetModal = (props: {
 
       const traineeMap = new Map<string, StudentGradeRow>();
 
-      classEnrollments.forEach((e) => {
+      classEnrollments.forEach((e: any) => {
+        const tId = normalizeId(e.trainee_id);
         const trainee = allTraineesRes.find(
-          (t) => normalizeId(t.traineeId) === normalizeId(e.trainee_id),
+          (t) => normalizeId(t.traineeId) === tId,
         );
-        const name = trainee ? trainee.name : "Unknown Trainee";
 
-        traineeMap.set(normalizeId(e.trainee_id), {
+        const stats = attendanceRes.find(
+          (a: any) => normalizeId(a.trainee_id) === tId,
+        );
+        let autoAttendanceGrade = 0;
+
+        if (stats && stats.total_hours > 0) {
+          autoAttendanceGrade = (stats.attended_hours / stats.total_hours) * 20;
+        }
+
+        traineeMap.set(tId, {
           trainee_id: String(e.trainee_id),
-          trainee_name: name!,
-          attendance: 0,
+          trainee_name: trainee ? trainee.name! : "Unknown",
+          attendance: autoAttendanceGrade,
           behavior: 0,
           work: 0,
           test: 0,
@@ -117,7 +133,7 @@ const GradeSheetModal = (props: {
         }
       });
 
-      setIsFinalized(foundFinalized); // Atualiza o estado
+      setIsFinalized(foundFinalized);
       setRows(Array.from(traineeMap.values()));
     } catch (e: any) {
       toast.error("Failed to load data: " + e.message);
@@ -138,21 +154,22 @@ const GradeSheetModal = (props: {
     value: string,
   ) => {
     const numValue = Math.min(20, Math.max(0, Number(value)));
-    setRows((prev) =>
-      prev.map((row) => {
-        if (row.trainee_id === traineeId) {
-          const updated = { ...row, [field]: numValue };
-          updated.final = calculateFinal(updated);
-          return updated;
-        }
-        return row;
-      }),
+    setRows(
+      (row) => row.trainee_id === traineeId,
+      (prev) => {
+        const tempState = { ...prev, [field]: numValue };
+
+        return {
+          [field]: numValue,
+          final: calculateFinal(tempState),
+        };
+      },
     );
   };
 
   const handleSave = async () => {
     const gradesToSave: any[] = [];
-    rows().forEach((row) => {
+    rows.forEach((row) => {
       const types = [
         { type: GradeTypeEnum.ATTENDANCE, val: row.attendance },
         { type: GradeTypeEnum.BEHAVIOR, val: row.behavior },
@@ -234,25 +251,18 @@ const GradeSheetModal = (props: {
                   </tr>
                 </thead>
                 <tbody>
-                  <For each={rows()}>
+                  <Index each={rows}>
                     {(row) => (
                       <tr class="hover">
-                        <td class="font-medium">{row.trainee_name}</td>
+                        <td class="font-medium">{row().trainee_name}</td>
                         <td>
                           <input
                             type="number"
-                            min="0"
-                            max="20"
-                            class="input input-bordered input-xs w-full text-center"
-                            value={row.attendance}
-                            onInput={(e) =>
-                              handleInputChange(
-                                row.trainee_id,
-                                "attendance",
-                                e.currentTarget.value,
-                              )
-                            }
-                            disabled={isFinalized()}
+                            class="input input-ghost input-xs w-full text-center font-semibold text-primary"
+                            value={row().attendance.toFixed(1)}
+                            disabled={true}
+                            readOnly={true}
+                            title="Calculated automatically from summaries"
                           />
                         </td>
                         <td>
@@ -261,10 +271,10 @@ const GradeSheetModal = (props: {
                             min="0"
                             max="20"
                             class="input input-bordered input-xs w-full text-center"
-                            value={row.behavior}
+                            value={row().behavior}
                             onInput={(e) =>
                               handleInputChange(
-                                row.trainee_id,
+                                row().trainee_id,
                                 "behavior",
                                 e.currentTarget.value,
                               )
@@ -278,10 +288,10 @@ const GradeSheetModal = (props: {
                             min="0"
                             max="20"
                             class="input input-bordered input-xs w-full text-center"
-                            value={row.work}
+                            value={row().work}
                             onInput={(e) =>
                               handleInputChange(
-                                row.trainee_id,
+                                row().trainee_id,
                                 "work",
                                 e.currentTarget.value,
                               )
@@ -295,10 +305,10 @@ const GradeSheetModal = (props: {
                             min="0"
                             max="20"
                             class="input input-bordered input-xs w-full text-center"
-                            value={row.test}
+                            value={row().test}
                             onInput={(e) =>
                               handleInputChange(
-                                row.trainee_id,
+                                row().trainee_id,
                                 "test",
                                 e.currentTarget.value,
                               )
@@ -308,14 +318,14 @@ const GradeSheetModal = (props: {
                         </td>
                         <td class="text-center font-bold">
                           <div
-                            class={`badge ${row.final >= 9.5 ? "badge-success" : "badge-error"} badge-sm`}
+                            class={`badge ${row().final >= 9.5 ? "badge-success" : "badge-error"} badge-sm`}
                           >
-                            {row.final.toFixed(2)}
+                            {row().final.toFixed(2)}
                           </div>
                         </td>
                       </tr>
                     )}
-                  </For>
+                  </Index>
                 </tbody>
               </table>
             </Show>

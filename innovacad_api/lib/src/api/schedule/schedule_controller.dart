@@ -23,7 +23,7 @@ class ScheduleController {
   @ApiOperation(
     summary: 'Get schedules by User ID',
     description:
-        'Retrieves schedules associated with a specific user (Trainer)',
+        'Retrieves schedules associated with a specific user',
   )
   @ApiParam(
     name: 'userId',

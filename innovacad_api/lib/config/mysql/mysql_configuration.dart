@@ -40,11 +40,7 @@ class MysqlConfiguration {
     Future<T> Function(MysqlUtils db) operation,
   ) async {
     final db = await getConnection();
-    try {
-      return await operation(db);
-    } finally {
-      await closeConnection(db);
-    }
+    return await operation(db);
   }
 
   @Bean()
@@ -61,8 +57,9 @@ class MysqlConfiguration {
       secure: true,
       pool: true,
       collation: "utf8mb4_uca1400_ai_ci",
-      maxConnections: 99999,
+      maxConnections: 20,
       timeoutMs: 10000,
+      
     );
 
     utils = MysqlUtils(
