@@ -108,9 +108,7 @@ const SummaryModal = (props: SummaryModalProps) => {
 
         {/* Body */}
         <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
-          {/* --- INFO SECTION (NOVA) --- */}
           <div class="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 bg-base-200 rounded-xl border border-base-300">
-            {/* --- MODULE: Fica com a maior parte do espaço (5/12) --- */}
             <div class="form-control md:col-span-5">
               <label class="label">
                 <span class="label-text text-xs uppercase font-bold opacity-60">
@@ -125,7 +123,6 @@ const SummaryModal = (props: SummaryModalProps) => {
               />
             </div>
 
-            {/* --- ROOM: Fica mais pequeno (2/12) --- */}
             <div class="form-control md:col-span-2">
               <label class="label">
                 <span class="label-text text-xs uppercase font-bold opacity-60">
@@ -146,7 +143,6 @@ const SummaryModal = (props: SummaryModalProps) => {
               />
             </div>
 
-            {/* --- DATE: Espaço médio (3/12) --- */}
             <div class="form-control md:col-span-3">
               <label class="label">
                 <span class="label-text text-xs uppercase font-bold opacity-60">
@@ -161,7 +157,6 @@ const SummaryModal = (props: SummaryModalProps) => {
               />
             </div>
 
-            {/* --- TIME: Espaço igual à sala (2/12) --- */}
             <div class="form-control md:col-span-2">
               <label class="label">
                 <span class="label-text text-xs uppercase font-bold opacity-60">
@@ -187,7 +182,6 @@ const SummaryModal = (props: SummaryModalProps) => {
             }
           >
             <div class="flex flex-col lg:flex-row gap-6 h-full min-h-0">
-              {/* Conteúdo (Esquerda) */}
               <div class="lg:w-1/3 flex flex-col gap-2 h-full min-h-[300px]">
                 <label class="label font-bold text-base flex items-center gap-2">
                   <Icon name="FileText" size={16} /> Summary Contents
@@ -200,7 +194,6 @@ const SummaryModal = (props: SummaryModalProps) => {
                 ></textarea>
               </div>
 
-              {/* Assiduidade (Direita) */}
               <div class="lg:w-2/3 flex flex-col gap-2 h-full min-h-[300px]">
                 <div class="flex justify-between items-center">
                   <label class="label font-bold text-base flex items-center gap-2">

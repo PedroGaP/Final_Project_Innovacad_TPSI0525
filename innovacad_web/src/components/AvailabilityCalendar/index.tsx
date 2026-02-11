@@ -95,12 +95,6 @@ export const AvailabilityCalendar = (props: Props) => {
         let endStr = info.event.endStr;
 
         if (!endStr) {
-            // Fallback for missing end time (usually 1h)
-            // We use Date calc but convert to ISO. toSafeLocalDate handles ISO fine (interprets as timestamp, which is correct for durations)
-            // But wait, if startStr was "YYYY-MM-DD", start! is UTC Midnight. +1h = 01:00 UTC. ISO = "2024-01-01T01:00:00Z".
-            // If we want "YYYY-MM-DD" + 1h? Availability isn't usually 1 day + 1 hour.
-            // If end is missing on All-Day event, default is +1 Day? 
-            // If end is missing on Timed event, default is +1 Hour.
             const s = info.event.start!;
             const e = new Date(s.getTime() + 60 * 60 * 1000);
             endStr = e.toISOString();
@@ -133,8 +127,7 @@ export const AvailabilityCalendar = (props: Props) => {
             eventOverlap: false,
             slotEventOverlap: false,
 
-            // Better Dragging Config
-            snapDuration: "01:00:00", // Snap to 1h slots
+            snapDuration: "01:00:00",
             dragScroll: true,
             eventAllow: (dropInfo, _draggedEvent) => {
                 if (!props.validateDrop) return true;

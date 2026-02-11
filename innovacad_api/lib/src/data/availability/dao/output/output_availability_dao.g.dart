@@ -12,8 +12,8 @@ OutputAvailabilityDao _$OutputAvailabilityDaoFromJson(
   availabilityId: json['availability_id'] as String,
   trainerId: json['trainer_id'] as String,
   dateDay: const DateTimeConverter().fromJson(json['date_day'] as Object),
-  slotNumber: const NumberConverter().fromJson(json['slot_number'] as Object),
-  isBooked: const NumberConverter().fromJson(json['is_booked'] as Object),
+  slotNumber: const NumberConverter().fromJson(json['slot_number']),
+  isBooked: const NumberConverter().fromJson(json['is_booked']),
 );
 
 Map<String, dynamic> _$OutputAvailabilityDaoToJson(

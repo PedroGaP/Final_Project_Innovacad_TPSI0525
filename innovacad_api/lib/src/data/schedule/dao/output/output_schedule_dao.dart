@@ -22,6 +22,9 @@ class OutputScheduleDao {
   @annotation.JsonKey(name: 'trainer_id')
   final String? trainerId;
 
+  @annotation.JsonKey(name: 'trainer_email')
+  final String? trainerEmail;
+
   @annotation.JsonKey(name: 'date_day')
   @DateTimeConverter()
   final DateTime? dateDay;
@@ -69,6 +72,7 @@ class OutputScheduleDao {
     this.className,
     this.currentDuration,
     this.totalDuration,
+    this.trainerEmail,
   }) : start = (dateDay != null && startTime != null)
            ? dateDay.add(startTime).toIso8601String()
            : null,

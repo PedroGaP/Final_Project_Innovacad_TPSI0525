@@ -6,26 +6,26 @@ part of 'output_trainee_dao.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-OutputTraineeDao _$OutputTraineeDaoFromJson(Map<String, dynamic> json) =>
-    OutputTraineeDao(
-      id: json['id'] as String,
-      username: json['username'] as String,
-      name: json['name'] as String,
-      email: json['email'] as String,
-      role: json['role'] as String,
-      createdAt: const DateTimeConverter().fromJson(
-        json['createdAt'] as Object,
-      ),
-      verified: json['emailVerified'] as bool,
-      twoFactorEnabled: json['twoFactorEnabled'] as bool? ?? false,
-      traineeId: json['trainee_id'] as String,
-      birthdayDate: const DateTimeConverter().fromJson(
-        json['birthday_date'] as Object,
-      ),
-      token: json['token'] as String?,
-      image: json['image'] as String?,
-      sessionToken: json['session_token'] as String?,
-    );
+OutputTraineeDao _$OutputTraineeDaoFromJson(
+  Map<String, dynamic> json,
+) => OutputTraineeDao(
+  id: json['id'] as String,
+  username: json['username'] as String,
+  name: json['name'] as String,
+  email: json['email'] as String,
+  role: json['role'] as String,
+  createdAt: const DateTimeConverter().fromJson(json['createdAt'] as Object),
+  verified: OutputUserDao.convertBoolean(json, 'emailVerified') as bool?,
+  twoFactorEnabled:
+      OutputUserDao.convertBoolean(json, 'twoFactorEnabled') as bool? ?? false,
+  traineeId: json['trainee_id'] as String,
+  birthdayDate: const DateTimeConverter().fromJson(
+    json['birthday_date'] as Object,
+  ),
+  token: json['token'] as String?,
+  image: json['image'] as String?,
+  sessionToken: json['session_token'] as String?,
+);
 
 Map<String, dynamic> _$OutputTraineeDaoToJson(OutputTraineeDao instance) =>
     <String, dynamic>{

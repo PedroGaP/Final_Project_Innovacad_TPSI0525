@@ -77,15 +77,10 @@ const createEmptyAvailability = (): Availability =>
     is_booked: false,
   }) as unknown as Availability;
 
-
-
-// Helper: Parse a string or date into a Local Date object (Midnight)
-// This avoids the "UTC Midnight = Previous Day" trap.
 const toSafeLocalDate = (input: string | Date): Date => {
   const d = new Date(input);
   if (input instanceof Date) return d;
 
-  // If strict YYYY-MM-DD string, parse manually to current locale
   if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
     const [y, m, day] = input.split("-").map(Number);
     return new Date(y, m - 1, day);
@@ -93,7 +88,6 @@ const toSafeLocalDate = (input: string | Date): Date => {
   return d;
 };
 
-// Helper: Get local YYYY-MM-DD string
 const getLocalYYYYMMDD = (date: Date): string => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -101,12 +95,9 @@ const getLocalYYYYMMDD = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-// Helper: Get matching slot numbers for a given time range
 const getMatchingSlots = (start: Date, end: Date): number[] => {
   const matching: number[] = [];
 
-  // Use the start date as the "Base Day" for hour setting
-  // This ensures we're comparing 09:00 on the SAME DAY as the start date
   const baseDay = new Date(start);
 
   for (const [slotNum, times] of Object.entries(SLOT_TIMES)) {
@@ -119,7 +110,6 @@ const getMatchingSlots = (start: Date, end: Date): number[] => {
     const slotEnd = new Date(baseDay);
     slotEnd.setHours(eh, em, 0, 0);
 
-    // Strict overlap check
     if (start < slotEnd && end > slotStart) {
       matching.push(Number(slotNum));
     }
@@ -137,9 +127,8 @@ const AvailabilitiesPage = () => {
     api.fetchAvailabilities,
   );
 
-  // Auto-refresh when filter changes to ensure fresh data
   createEffect(() => {
-    selectedTrainerFilter(); // Dependency
+    selectedTrainerFilter();
     refetch();
   });
   const [trainersData] = createResource(api.fetchTrainers);
@@ -316,7 +305,6 @@ const AvailabilitiesPage = () => {
     const list = filteredAvailabilities();
     if (!list) return [];
 
-    // Grouping for merge
     const groups: Record<string, Availability[]> = {};
     for (const av of list) {
       if (!av.slot_number) continue;
@@ -330,7 +318,6 @@ const AvailabilitiesPage = () => {
 
     for (const key in groups) {
       const group = groups[key];
-      // Sort by slot number
       group.sort((a, b) => (a.slot_number || 0) - (b.slot_number || 0));
 
       let currentEvent: EventInput | null = null;
@@ -345,22 +332,18 @@ const AvailabilitiesPage = () => {
         const startStr = `${date}T${times.start}`;
         const endStr = `${date}T${times.end}`;
 
-        // Check if contiguous with current event
-        // Must match: previous end time === current start time
         let isContiguous = false;
         if (currentEvent && lastEndTime && lastEndTime === startStr) {
           isContiguous = true;
         }
 
         if (isContiguous && currentEvent) {
-          // Extend existing event
           currentEvent.end = endStr;
           if (currentEvent.extendedProps) {
             currentEvent.extendedProps.mergedIds.push(String(av.availability_id));
           }
           lastEndTime = endStr;
         } else {
-          // Create new event
           const trainer = trainersMap().get(normalizeId(av.trainer_id));
           const trainerName = trainer?.name || "Unknown";
 
@@ -388,11 +371,9 @@ const AvailabilitiesPage = () => {
   });
 
   const handleCalendarCreate = async (startStr: string, endStr: string) => {
-    // Robust parsing using strings
     const startDate = toSafeLocalDate(startStr);
     const endDate = toSafeLocalDate(endStr);
 
-    // Robust local date derivation
     const dateDay = getLocalYYYYMMDD(startDate);
 
     const slotsToCreate = getMatchingSlots(startDate, endDate);
@@ -474,11 +455,9 @@ const AvailabilitiesPage = () => {
     const idsToDelete: string[] = props.mergedIds || [event.id];
     const trainerId = props.trainer_id;
 
-    // Robust parsing using strings
     const newStart = toSafeLocalDate(newStartStr);
     const newEnd = toSafeLocalDate(newEndStr);
 
-    // Find matching slots
     const newSlots = getMatchingSlots(newStart, newEnd);
     const dateDay = getLocalYYYYMMDD(newStart);
 
@@ -488,7 +467,6 @@ const AvailabilitiesPage = () => {
     }
 
     try {
-      // 1. Create new (First, to ensure safety)
       for (const slot of newSlots) {
         await api.createAvailability({
           trainer_id: trainerId,
@@ -498,7 +476,6 @@ const AvailabilitiesPage = () => {
         });
       }
 
-      // 2. Delete old (Only if create succeeded)
       for (const id of idsToDelete) {
         if (!id || id === "undefined") continue;
         try {
@@ -508,34 +485,29 @@ const AvailabilitiesPage = () => {
         }
       }
 
-      // 3. Trigger refetch to ensure UI is in sync with server
       await refetch();
 
     } catch (e) {
       console.error(e);
       toast.error("Failed to move availability");
-      throw e; // Revert in calendar
+      throw e;
     }
   };
 
   const isRangeValid = (start: string | Date, end: string | Date) => {
-    // Robust parsing
     const s = toSafeLocalDate(start);
     const e = toSafeLocalDate(end);
 
-    // Check if range overlaps with ANY valid slot
     for (const [_, times] of Object.entries(SLOT_TIMES)) {
       const [sh, sm] = times.start.split(":").map(Number);
       const [eh, em] = times.end.split(":").map(Number);
 
-      // Use safe start date 's' as base
       const slotStart = new Date(s);
       slotStart.setHours(sh, sm, 0, 0);
 
       const slotEnd = new Date(s);
       slotEnd.setHours(eh, em, 0, 0);
 
-      // Overlap check
       if (s < slotEnd && e > slotStart) {
         return true;
       }

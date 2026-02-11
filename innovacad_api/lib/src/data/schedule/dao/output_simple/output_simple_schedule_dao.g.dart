@@ -12,14 +12,8 @@ OutputSimpleScheduleDao _$OutputSimpleScheduleDaoFromJson(
   classModuleId: json['class_module_id'] as String?,
   trainerId: json['trainer_id'] as String?,
   roomId: (json['room_id'] as num?)?.toInt(),
-  isOnline: _$JsonConverterFromJson<Object, int>(
-    json['is_online'],
-    const NumberConverter().fromJson,
-  ),
-  regimeType: _$JsonConverterFromJson<Object, int>(
-    json['regime_type'],
-    const NumberConverter().fromJson,
-  ),
+  isOnline: const NumberConverter().fromJson(json['is_online']),
+  regimeType: const NumberConverter().fromJson(json['regime_type']),
   totalHours: _$JsonConverterFromJson<Object, double>(
     json['total_hours'],
     const DoubleConverter().fromJson,
@@ -36,11 +30,11 @@ Map<String, dynamic> _$OutputSimpleScheduleDaoToJson(
   'class_module_id': instance.classModuleId,
   'trainer_id': instance.trainerId,
   'room_id': instance.roomId,
-  'is_online': _$JsonConverterToJson<Object, int>(
+  'is_online': _$JsonConverterToJson<Object?, int>(
     instance.isOnline,
     const NumberConverter().toJson,
   ),
-  'regime_type': _$JsonConverterToJson<Object, int>(
+  'regime_type': _$JsonConverterToJson<Object?, int>(
     instance.regimeType,
     const NumberConverter().toJson,
   ),

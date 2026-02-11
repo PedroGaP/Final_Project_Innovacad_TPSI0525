@@ -136,24 +136,37 @@ VALUES
 (UUID(), 'bd4f8ba4-9b4a-4803-abc6-1033caee7708', '2026-02-09 00:00:00', 8, 0);
 
 SELECT
-      s.schedule_id,
-      IF(s.regime_type = 0, 'daytime', 'post-work') AS regime_type,
-      m.name AS module_name,
-      u.name AS trainer_name,
-      t.trainer_id as trainer_id,
-      s.start_date_timestamp,
-      s.end_date_timestamp,
-      IF(s.is_online, 'online', r.room_name) AS room_name,
-      s.class_module_id, s.trainer_id, s.room_id, s.is_online, s.regime_type, s.total_hours,
-      CONCAT(co.identifier, ' ', c.location, ' ', c.identifier) AS class_name,
-      classm.current_duration AS current_duration,
-      m.duration AS total_duration
-      FROM schedules s
-      JOIN classes_modules classm ON s.class_module_id = classm.classes_modules_id
-      JOIN courses_modules coursem ON classm.courses_modules_id = coursem.courses_modules_id
-      JOIN modules m ON coursem.module_id = m.module_id
-      JOIN trainers t ON s.trainer_id = t.trainer_id
-      JOIN user u ON t.user_id = u.id
-      JOIN classes c ON classm.class_id = c.class_id
-      JOIN courses co ON c.course_id = co.course_id
-      LEFT JOIN rooms r ON s.room_id = r.room_id WHERE u.id = 's5NX2s4KT2jtapx63krAm7JsQKi9W7vZ' ORDER BY s.start_date_timestamp ASC
+            s.schedule_id,
+            IF(s.regime_type = 0, 'daytime', 'post-work') AS regime_type,
+            m.name AS module_name,
+            u.name AS trainer_name,
+            t.trainer_id as trainer_id,
+            u.email as trainer_email,
+            s.start_date_timestamp,
+            s.end_date_timestamp,
+            IF(s.is_online, 'online', r.room_name) AS room_name,
+            s.class_module_id, s.trainer_id, s.room_id, s.is_online, s.regime_type, s.total_hours,
+            CONCAT(co.identifier, ' ', c.location, ' ', c.identifier) AS class_name,
+            classm.current_duration AS current_duration,
+            m.duration AS total_duration
+          FROM schedules s
+          JOIN classes_modules classm ON s.class_module_id = classm.classes_modules_id
+          JOIN courses_modules coursem ON classm.courses_modules_id = coursem.courses_modules_id
+          JOIN modules m ON coursem.module_id = m.module_id
+          JOIN trainers t ON s.trainer_id = t.trainer_id
+          JOIN user u ON t.user_id = u.id
+          JOIN classes c ON classm.class_id = c.class_id
+          JOIN courses co ON c.course_id = co.course_id
+          LEFT JOIN rooms r ON s.room_id = r.room_id
+          WHERE
+            -- CONDIÇÃO A: O utilizador logado é o formador desta aula
+            t.user_id = 's5NX2s4KT2jtapx63krAm7JsQKi9W7vZ'
+            OR
+            -- CONDIÇÃO B: O utilizador logado está inscrito nesta turma como aluno
+            classm.class_id IN (
+              SELECT e.class_id
+              FROM enrollments e
+              JOIN trainees tr ON e.trainee_id = tr.trainee_id
+              WHERE tr.user_id = 's5NX2s4KT2jtapx63krAm7JsQKi9W7vZ'
+            )
+          ORDER BY s.start_date_timestamp ASC

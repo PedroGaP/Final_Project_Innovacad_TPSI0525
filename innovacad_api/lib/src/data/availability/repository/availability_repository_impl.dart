@@ -1,8 +1,9 @@
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
 import 'package:innovacad_api/src/core/core.dart';
+import 'package:innovacad_api/src/core/extensions/mysql_utils_extension.dart';
 import 'package:innovacad_api/src/data/data.dart';
 import 'package:innovacad_api/src/domain/domain.dart';
-import 'package:mysql_utils/mysql_utils.dart';
+import 'package:uuid/uuid.dart';
 import 'package:vaden/vaden.dart';
 
 @Repository()
@@ -16,7 +17,7 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
         final results = await db.getAll(table: table);
 
         final items = results.map((data) {
-          return OutputAvailabilityDao.fromJson(data);
+          return OutputAvailabilityDao.fromJson(data.cast<String, dynamic>());
         }).toList();
 
         return Result.success(items);
@@ -25,7 +26,7 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
       return Result.failure(
         AppError(
           AppErrorType.internal,
-          "Something went wrong while fetching the availabilities...",
+          "Error fetching all availabilities",
           details: {"error": e.toString(), "stacktrace": s.toString()},
         ),
       );
@@ -36,28 +37,26 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
   Future<Result<OutputAvailabilityDao>> getById(String id) async {
     try {
       return await MysqlConfiguration.executeWithConnection((db) async {
-        final result =
-            await db.getOne(table: table, where: {"availability_id": id});
+        final result = await db.getOne(
+          table: table,
+          where: {"availability_id": id},
+        );
 
-        if (result == null || result.isEmpty) {
+        if (result.isEmpty) {
           return Result.failure(
             AppError(AppErrorType.notFound, "Availability not found"),
           );
         }
 
         return Result.success(
-          OutputAvailabilityDao.fromJson(
-            result
-                .map((k, v) => MapEntry(k.toString(), v))
-                .cast<String, dynamic>(),
-          ),
+          OutputAvailabilityDao.fromJson(result.cast<String, dynamic>()),
         );
       });
     } catch (e, s) {
       return Result.failure(
         AppError(
           AppErrorType.internal,
-          "Something went wrong while fetching the availability...",
+          "Error fetching availability by id",
           details: {"error": e.toString(), "stacktrace": s.toString()},
         ),
       );
@@ -68,72 +67,50 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
   Future<Result<OutputAvailabilityDao>> create(
     CreateAvailabilityDto dto,
   ) async {
-    MysqlUtils? db;
     try {
-      db = await MysqlConfiguration.getConnection();
-
-      await db.startTrans();
-
-      final dateDay = dto.dateDay.toIso8601String().split("T")[0];
-
-      print(dto.toJson());
-
-      final insertRes = await db.insert(
-        table: table,
-        insertData: {
-          "trainer_id": dto.trainerId,
-          "date_day": dateDay,
-          "slot_number": dto.slotNumber,
-          "is_booked": dto.isBooked,
-        },
-      );
-
-      print("Insert result: $insertRes");
-
-      final results = await db.getAll(
-        table: table,
-        where: {
-          "trainer_id": dto.trainerId,
-          "date_day": dateDay,
-        },
-      );
-
-      final created = results.firstWhere(
-        (data) => data["slot_number"].toString() == dto.slotNumber.toString(),
-        orElse: () => {},
-      );
-
-      if (created.isEmpty) {
-        print("CRITICAL: Record inserted but not found in day results. Day Results: $results");
-        await db.rollback();
+      if (dto.dateDay.weekday == DateTime.saturday ||
+          dto.dateDay.weekday == DateTime.sunday) {
         return Result.failure(
           AppError(
-            AppErrorType.internal,
-            "Created Availability could not be retrieved (Slot ${dto.slotNumber} not found in retrieved list for day)",
+            AppErrorType.badRequest,
+            "Não é permitido criar disponibilidades aos fins de semana (Sábados ou Domingos).",
           ),
         );
       }
 
-      await db.commit();
+      final db = await MysqlConfiguration.getConnection();
+      final availabilityId = const Uuid().v4();
+      final dateDay = dto.dateDay.toIso8601String().split("T")[0];
 
-      return Result.success(
-        OutputAvailabilityDao.fromJson(
-          created
-              .map((k, v) => MapEntry(k.toString(), v))
-              .cast<String, dynamic>(),
-        ),
-      );
+      return await db.transaction((txn) async {
+        await txn.insert(
+          table: table,
+          insertData: {
+            "availability_id": availabilityId,
+            "trainer_id": dto.trainerId,
+            "date_day": dateDay,
+            "slot_number": dto.slotNumber,
+            "is_booked": dto.isBooked,
+          },
+        );
+
+        final created = await txn.getOne(
+          table: table,
+          where: {"availability_id": availabilityId},
+        );
+
+        return Result.success(
+          OutputAvailabilityDao.fromJson(created.cast<String, dynamic>()),
+        );
+      });
     } catch (e, s) {
-      if (db != null) await db.rollback();
       return Result.failure(
         AppError(
           AppErrorType.internal,
-          "Something went wrong while creating the availability...",
+          "Failed to create availability",
           details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
-    } finally {
-      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -142,81 +119,85 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
     String id,
     UpdateAvailabilityDto dto,
   ) async {
-    MysqlUtils? db;
-
     try {
-      final existingAvailability = await getById(id);
+      final db = await MysqlConfiguration.getConnection();
 
-      if (existingAvailability.isFailure || existingAvailability.data == null)
-        return existingAvailability;
+      return await db.transaction((txn) async {
+        final existing = await txn.getOne(
+          table: table,
+          where: {"availability_id": id},
+        );
+        if (existing.isEmpty) {
+          return Result.failure(AppError(AppErrorType.notFound, "Not found"));
+        }
 
-      db = await MysqlConfiguration.getConnection();
+        final updateData = <String, dynamic>{};
+        if (dto.trainerId != null) updateData["trainer_id"] = dto.trainerId;
+        if (dto.dateDay != null)
+          updateData["date_day"] = dto.dateDay!.toIso8601String().split("T")[0];
+        if (dto.slotNumber != null) updateData["slot_number"] = dto.slotNumber;
+        if (dto.isBooked != null)
+          updateData["is_booked"] = dto.isBooked! ? 1 : 0;
 
-      final updateData = <String, dynamic>{};
+        if (updateData.isEmpty) {
+          return Result.success(
+            OutputAvailabilityDao.fromJson(existing.cast<String, dynamic>()),
+          );
+        }
 
-      if (dto.trainerId != null &&
-          dto.trainerId != existingAvailability.data!.trainerId)
-        updateData["trainer_id"] = dto.trainerId;
+        await txn.update(
+          table: table,
+          updateData: updateData,
+          where: {"availability_id": id},
+        );
 
-      if (dto.dateDay != null &&
-          dto.dateDay != existingAvailability.data!.dateDay)
-        updateData["date_day"] = dto.dateDay!.toIso8601String();
-
-      if (dto.slotNumber != null &&
-          dto.slotNumber != existingAvailability.data!.slotNumber)
-        updateData["slot_number"] = dto.slotNumber;
-
-      if (dto.isBooked != null &&
-          dto.isBooked != existingAvailability.data!.isBooked)
-        updateData["is_booked"] = dto.isBooked;
-
-      if (updateData.isEmpty) return existingAvailability;
-
-      await db.update(
-        table: table,
-        updateData: updateData,
-        where: {"availability_id": id},
-      );
-
-      return await getById(id);
+        final updated = await txn.getOne(
+          table: table,
+          where: {"availability_id": id},
+        );
+        return Result.success(
+          OutputAvailabilityDao.fromJson(updated.cast<String, dynamic>()),
+        );
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
           AppErrorType.internal,
-          "Something went wrong while updating the availability...",
+          "Failed to update availability",
           details: {"error": e.toString(), "stacktrace": s.toString()},
         ),
       );
-    } finally {
-      await MysqlConfiguration.closeConnection(db);
     }
   }
 
   @override
   Future<Result<OutputAvailabilityDao>> delete(String id) async {
-    MysqlUtils? db;
-
     try {
-      final existingAvailability = await getById(id);
+      final db = await MysqlConfiguration.getConnection();
 
-      if (existingAvailability.isFailure || existingAvailability.data == null)
-        return existingAvailability;
+      return await db.transaction((txn) async {
+        final existing = await txn.getOne(
+          table: table,
+          where: {"availability_id": id},
+        );
+        if (existing.isEmpty) {
+          return Result.failure(AppError(AppErrorType.notFound, "Not found"));
+        }
 
-      db = await MysqlConfiguration.getConnection();
+        await txn.delete(table: table, where: {"availability_id": id});
 
-      await db.delete(table: table, where: {"availability_id": id});
-
-      return existingAvailability;
+        return Result.success(
+          OutputAvailabilityDao.fromJson(existing.cast<String, dynamic>()),
+        );
+      });
     } catch (e, s) {
       return Result.failure(
         AppError(
           AppErrorType.internal,
-          "Something went wrong while deleting the availability...",
+          "Failed to delete availability",
           details: {"error": e.toString(), "stacktrace": s.toString()},
         ),
       );
-    } finally {
-      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -227,7 +208,7 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
         final results = await db.getAll(table: "ref_slots");
 
         final items = results.map((data) {
-          return SlotsOutputDao.fromJson(data);
+          return SlotsOutputDao.fromJson(data.cast<String, dynamic>());
         }).toList();
 
         return Result.success(items);
@@ -236,11 +217,10 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
       return Result.failure(
         AppError(
           AppErrorType.internal,
-          "Something went wrong while fetching the slots...",
+          "Error fetching ref_slots",
           details: {"error": e.toString(), "stacktrace": s.toString()},
         ),
       );
     }
   }
 }
-

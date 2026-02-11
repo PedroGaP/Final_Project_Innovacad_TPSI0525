@@ -13,7 +13,7 @@ OutputDocumentDao _$OutputDocumentDaoFromJson(Map<String, dynamic> json) =>
       file_path: json['file_path'] as String,
       mime_type: json['mime_type'] as String,
       file_size_bytes: const NumberConverter().fromJson(
-        json['file_size_bytes'] as Object,
+        json['file_size_bytes'],
       ),
       type_code: json['type_code'] as String,
       created_at: json['created_at'] as String,

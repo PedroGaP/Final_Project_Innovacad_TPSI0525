@@ -85,9 +85,7 @@ class SummaryRepositoryImpl implements ISummaryRepository {
     try {
       db = await MysqlConfiguration.getConnection();
 
-      // Transação curta e rápida
       await db.transaction((txn) async {
-        // 1. Upsert Summary
         final existing = await txn.getOne(
           table: 'summaries',
           where: {'schedule_id': dto.scheduleId},
@@ -113,22 +111,17 @@ class SummaryRepositoryImpl implements ISummaryRepository {
           );
         }
 
-        // 2. Batch Upsert Attendances (OTIMIZAÇÃO CRÍTICA)
         if (dto.attendances.isNotEmpty) {
           List<String> valueSets = [];
 
           for (var att in dto.attendances) {
-            // Geramos ID novo, mas se bater na Unique Key (summary_id + trainee_id), faz update
             final attId = Uuid().v4();
             final isAbsentVal = att.isAbsent ? 1 : 0;
-            // Construção segura da string de valores
             valueSets.add(
               "('$attId', '$summaryId', '${att.traineeId}', $isAbsentVal)",
             );
           }
 
-          // Executa TUDO numa única query.
-          // O DB só bloqueia a tabela uma vez, escreve tudo e liberta.
           final sql =
               """
             INSERT INTO attendances (attendance_id, summary_id, trainee_id, is_absent)
@@ -143,7 +136,6 @@ class SummaryRepositoryImpl implements ISummaryRepository {
       return Result.success(true);
     } catch (e, s) {
       print("Save Summary Error: $e");
-      // Se der Lock Wait Timeout, o erro será apanhado aqui
       return Result.failure(
         AppError(
           AppErrorType.internal,
@@ -151,9 +143,6 @@ class SummaryRepositoryImpl implements ISummaryRepository {
           details: {"stack": s.toString()},
         ),
       );
-    } finally {
-      // Garante SEMPRE que a conexão fecha, mesmo se houver erro
-      await MysqlConfiguration.closeConnection(db);
     }
   }
 }
