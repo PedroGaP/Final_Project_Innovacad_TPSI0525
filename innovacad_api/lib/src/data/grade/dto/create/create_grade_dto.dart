@@ -24,11 +24,16 @@ class CreateGradeDto {
   @v.JsonKey('grade_type')
   final String gradeType;
 
+  @annotation.JsonKey(name: 'status')
+  @v.JsonKey('status')
+  final String? status;
+
   CreateGradeDto({
     required this.classModuleId,
     required this.traineeId,
     required this.grade,
     required this.gradeType,
+    this.status = "work",
   });
 
   Map<String, dynamic> toJson() => _$CreateGradeDtoToJson(this);

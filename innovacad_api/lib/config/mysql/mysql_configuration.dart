@@ -61,7 +61,8 @@ class MysqlConfiguration {
       secure: true,
       pool: true,
       collation: "utf8mb4_uca1400_ai_ci",
-      maxConnections: 10,
+      maxConnections: 99999,
+      timeoutMs: 10000,
     );
 
     utils = MysqlUtils(

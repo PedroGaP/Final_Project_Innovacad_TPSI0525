@@ -1,32 +1,35 @@
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
-import 'package:innovacad_api/src/domain/grade/repository/i_grade_repository.dart';
+import 'package:innovacad_api/src/data/grade/dto/batch/batch_grade_dto.dart';
+import 'package:innovacad_api/src/domain/domain.dart';
 import 'package:mysql_utils/mysql_utils.dart';
+import 'package:uuid/uuid.dart';
 import 'package:vaden/vaden.dart';
 
 @Repository()
 class GradeRepositoryImpl implements IGradeRepository {
   final String table = "grades";
+  final IClassModuleRepository _classModuleRepository;
+
+  GradeRepositoryImpl(this._classModuleRepository);
 
   @override
   Future<Result<List<OutputGradeDao>>> getAll() async {
     try {
       return await MysqlConfiguration.executeWithConnection((db) async {
         final results = await db.getAll(table: table);
-
-        final grades = results.map((data) {
-          return OutputGradeDao.fromJson(data);
-        }).toList();
-
+        final grades = results
+            .map((data) => OutputGradeDao.fromJson(data))
+            .toList();
         return Result.success(grades);
       });
     } catch (e, s) {
       return Result.failure(
         AppError(
           AppErrorType.internal,
-          "Some went wrong while fetching the grades...",
-          details: {"error": e.toString(), "stackTrace": s.toString()},
+          "Error while fetching grades",
+          details: {"error": e.toString(), "stack": s.toString()},
         ),
       );
     }
@@ -36,75 +39,209 @@ class GradeRepositoryImpl implements IGradeRepository {
   Future<Result<OutputGradeDao>> getById(String id) async {
     try {
       return await MysqlConfiguration.executeWithConnection((db) async {
-        final result =
-            await db.getOne(table: table, where: {"grade_id": id})
-                as Map<String, dynamic>;
-
+        final result = await db.getOne(table: table, where: {"grade_id": id});
         if (result.isEmpty)
           return Result.failure(
             AppError(AppErrorType.notFound, "Grade not found"),
           );
-
-        return Result.success(OutputGradeDao.fromJson(result));
+        return Result.success(
+          OutputGradeDao.fromJson(result as Map<String, dynamic>),
+        );
       });
     } catch (e, s) {
       return Result.failure(
         AppError(
           AppErrorType.internal,
-          "Something went wrong while fetching the grade...",
-          details: {"error": e.toString(), "stackTrace": s.toString()},
+          "Error while fetching grade with id '$id'",
+          details: {"error": e.toString(), "stack": s.toString()},
         ),
       );
     }
   }
 
   @override
-  Future<Result<OutputGradeDao>> create(CreateGradeDto dto) async {
-    MysqlUtils? db;
+  Future<Result<List<OutputGradeDao>>> getByClassModule(
+    String classModuleId,
+  ) async {
     try {
-      db = await MysqlConfiguration.getConnection();
-
-      await db.startTrans();
-
-      await db.insert(
-        table: table,
-        insertData: {
-          "class_module_id": dto.classModuleId,
-          "trainee_id": dto.traineeId,
-          "grade": dto.grade,
-          "grade_type": dto.gradeType,
-        },
-      );
-
-      final created =
-          await db.getOne(
-                table: table,
-                where: {
-                  "class_module_id": dto.classModuleId,
-                  "trainee_id": dto.traineeId,
-                  "grade_type": dto.gradeType,
-                },
-              )
-              as Map<String, dynamic>;
-
-      if (created.isEmpty)
-        return Result.failure(
-          AppError(
-            AppErrorType.internal,
-            "Created Grade could not be retrieved",
-          ),
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final res = await db.query(
+          """
+          SELECT g.*, t.user_id, u.name as trainee_name, u.email as trainee_email
+          FROM grades g
+          JOIN trainees t ON g.trainee_id = t.trainee_id
+          JOIN user u ON t.user_id = u.id
+          WHERE g.class_module_id = ?
+          """,
+          whereValues: [classModuleId],
+          isStmt: true,
         );
 
-      await db.commit();
+        if (res.numOfRows == 0) return Result.success([]);
 
-      return Result.success(OutputGradeDao.fromJson(created));
+        return Result.success(
+          res.rowsAssoc.map((r) => OutputGradeDao.fromJson(r.assoc())).toList(),
+        );
+      });
     } catch (e, s) {
-      if (db != null) await db.rollback();
       return Result.failure(
         AppError(
           AppErrorType.internal,
-          "Something went wrong while creating grade...",
-          details: {"error": e.toString(), "stackTrace": s.toString()},
+          "Error while fetching grades by class module id '$classModuleId'",
+          details: {"error": e.toString(), "stack": s.toString()},
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<bool> canEditGrades({
+    required String userId,
+    required String userRole,
+    required String classModuleId,
+  }) async {
+    if (userRole == 'admin') return true;
+
+    final db = await MysqlConfiguration.getConnection();
+    try {
+      final statusCheck = await db.query(
+        "SELECT status FROM grades WHERE class_module_id = ? LIMIT 1",
+        whereValues: [classModuleId],
+        isStmt: true,
+      );
+
+      if (statusCheck.numOfRows > 0) {
+        final status = statusCheck.rows.first['status'];
+        if (status == 'finalized' && userRole != 'admin') {
+          return false;
+        }
+      }
+
+      if (userRole == 'trainer') {
+        final trainerCheck = await db.query(
+          """
+          SELECT 1 FROM classes_modules cm
+          JOIN trainers t ON cm.trainer_id = t.trainer_id
+          WHERE cm.classes_modules_id = ? AND t.user_id = ?
+          """,
+          whereValues: [classModuleId, userId],
+          isStmt: true,
+        );
+        return trainerCheck.numOfRows > 0;
+      }
+
+      return false;
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
+    }
+  }
+
+  @override
+  Future<bool> canFinalizeGrades({
+    required String userId,
+    required String userRole,
+    required String classModuleId,
+  }) async {
+    if (['admin', 'assistant'].contains(userRole)) return true;
+
+    if (userRole != 'coordinator') return false;
+
+    final db = await MysqlConfiguration.getConnection();
+    try {
+      final coordCheck = await db.query(
+        """
+        SELECT 1 
+        FROM trainers_classes_coordinator tcc
+        JOIN trainers t ON tcc.trainer_id = t.trainer_id
+        JOIN classes_modules cm ON tcc.class_id = cm.class_id
+        WHERE cm.classes_modules_id = ? AND t.user_id = ?
+        """,
+        whereValues: [classModuleId, userId],
+        isStmt: true,
+      );
+      
+      return coordCheck.numOfRows > 0;
+    } catch (e) {
+      print("Error checking finalize permission: $e");
+      return false;
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
+    }
+  }
+
+  @override
+  Future<Result<bool>> batchUpsert(
+    BatchGradeDto dto,
+    ExtendedUserDetails user,
+  ) async {
+    MysqlUtils? db;
+    try {
+      if (dto.grades.isEmpty) return Result.success(true);
+
+      db = await MysqlConfiguration.getConnection();
+
+      final moduleRes = await _classModuleRepository.getById(dto.classModuleId);
+      if (moduleRes.isFailure) return Result.failure(moduleRes.error!);
+
+      final moduleData = moduleRes.data!;
+      bool hasPermission = false;
+      print("CLASS ID: ${moduleData.classId}");
+      print("USER ID: ${user.id}");
+      print("TRAINER ID: ${user.trainerId}");
+      print("ROLE: ${user.roles.first}");
+
+      if (['admin', 'assistant'].contains(user.roles.first)) {
+        hasPermission = true;
+      } else if (moduleData.trainerId == user.id ||
+          moduleData.trainerId == user.trainerId) {
+        hasPermission = true;
+      } else if (user.roles.first == 'coordinator') {
+        if (user.trainerId != null) {
+          final isCoord = await _checkCoordination(
+            user.trainerId!,
+            moduleData.classId,
+          );
+          if (isCoord) hasPermission = true;
+        }
+      }
+
+      if (!hasPermission) {
+        return Result.failure(
+          AppError(
+            AppErrorType.forbidden,
+            "You do not have permission to edit grades for this module.",
+          ),
+        );
+      }
+
+      final values = <String>[];
+      final uuid = Uuid();
+
+      for (var item in dto.grades) {
+        final gradeId = uuid.v4();
+        values.add(
+          "('$gradeId', '${dto.classModuleId}', '${item.traineeId}', ${item.grade}, '${item.gradeType}', 'draft')",
+        );
+      }
+
+      final sql =
+          """
+        INSERT INTO grades (grade_id, class_module_id, trainee_id, grade, grade_type, status)
+        VALUES ${values.join(',')}
+        ON DUPLICATE KEY UPDATE 
+          grade = VALUES(grade),
+          updated_at = CURRENT_TIMESTAMP
+      """;
+
+      await db.query(sql);
+
+      return Result.success(true);
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Error batch upsert grades",
+          details: {"error": e.toString(), "stack": s.toString()},
         ),
       );
     } finally {
@@ -113,47 +250,84 @@ class GradeRepositoryImpl implements IGradeRepository {
   }
 
   @override
-  Future<Result<OutputGradeDao>> update(String id, UpdateGradeDto dto) async {
+  Future<Result<bool>> finalizeGrades(String classModuleId) async {
+    MysqlUtils? db;
+    try {
+      db = await MysqlConfiguration.getConnection();
+      await db.query(
+        "UPDATE grades SET status = 'finalized' WHERE class_module_id = ?",
+        whereValues: [classModuleId],
+        isStmt: true,
+      );
+      return Result.success(true);
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Error while finalizing grades from class module '$classModuleId'",
+          details: {"error": e.toString(), "stack": s.toString()},
+        ),
+      );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
+    }
+  }
+
+  @override
+  Future<Result<OutputGradeDao>> create(CreateGradeDto dto) async {
     try {
       return await MysqlConfiguration.executeWithConnection((db) async {
-        final existingGrade = await getById(id);
-
-        if (existingGrade.isFailure || existingGrade.data == null)
-          return existingGrade;
-
-        final updateData = <String, dynamic>{};
-
-        if (dto.classModuleId != null &&
-            dto.classModuleId != existingGrade.data!.classModuleId)
-          updateData["class_module_id"] = dto.classModuleId;
-
-        if (dto.traineeId != null &&
-            dto.traineeId != existingGrade.data!.traineeId)
-          updateData["trainee_id"] = dto.traineeId;
-
-        if (dto.grade != null && dto.grade != existingGrade.data!.grade)
-          updateData["grade"] = dto.grade;
-
-        if (dto.gradeType != null &&
-            dto.gradeType != existingGrade.data!.gradeType)
-          updateData["grade_type"] = dto.gradeType;
-
-        if (updateData.isEmpty) return existingGrade;
-
-        await db.update(
+        final id = Uuid().v4();
+        await db.insert(
           table: table,
-          updateData: updateData,
-          where: {"grade_id": id},
+          insertData: {
+            "grade_id": id,
+            "class_module_id": dto.classModuleId,
+            "trainee_id": dto.traineeId,
+            "grade": dto.grade,
+            "grade_type": dto.gradeType,
+            "status": dto.status ?? 'draft',
+          },
         );
 
-        return await getById(id);
+        final res = await db.getOne(table: table, where: {"grade_id": id});
+        return Result.success(
+          OutputGradeDao.fromJson(res as Map<String, dynamic>),
+        );
       });
     } catch (e, s) {
       return Result.failure(
         AppError(
           AppErrorType.internal,
-          "Something went wrong while updating the grade...",
-          details: {"error": e.toString(), "stackTrace": s.toString()},
+          "Error while creating grade",
+          details: {"error": e.toString(), "stack": s.toString()},
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Result<OutputGradeDao>> update(String id, UpdateGradeDto dto) async {
+    try {
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        if (dto.grade != null) {
+          await db.update(
+            table: table,
+            where: {'grade_id': id},
+            updateData: {'grade': dto.grade},
+          );
+        }
+        final res = await db.getOne(table: table, where: {"grade_id": id});
+        return Result.success(
+          OutputGradeDao.fromJson(res as Map<String, dynamic>),
+        );
+      });
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Error while updating grade with id '$id'",
+          details: {"error": e.toString(), "stack": s.toString()},
         ),
       );
     }
@@ -163,23 +337,42 @@ class GradeRepositoryImpl implements IGradeRepository {
   Future<Result<OutputGradeDao>> delete(String id) async {
     try {
       return await MysqlConfiguration.executeWithConnection((db) async {
-        final existingGrade = await getById(id);
-
-        if (existingGrade.isFailure || existingGrade.data == null)
-          return existingGrade;
-
-        await db.delete(table: table, where: {"grade_id": id});
-
-        return existingGrade;
+        await db.delete(table: table, where: {'grade_id': id});
+        return Result.success(
+          OutputGradeDao(
+            gradeId: id,
+            classModuleId: '',
+            traineeId: '',
+            grade: 0,
+            gradeType: '',
+            status: '',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        );
       });
     } catch (e, s) {
       return Result.failure(
         AppError(
           AppErrorType.internal,
-          "Something went wrong while deleting the grade...",
-          details: {"error": e.toString(), "stackTrace": s.toString()},
+          "Error while deleting grade with id '$id'",
+          details: {"error": e.toString(), "stack": s.toString()},
         ),
       );
+    }
+  }
+
+  Future<bool> _checkCoordination(String trainerId, String classId) async {
+    final db = await MysqlConfiguration.getConnection();
+    try {
+      final result = await db.query(
+        "SELECT 1 FROM trainers_classes_coordinator WHERE trainer_id = ? AND class_id = ?",
+        whereValues: [trainerId, classId],
+        isStmt: true,
+      );
+      return result.numOfRows > 0;
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 }

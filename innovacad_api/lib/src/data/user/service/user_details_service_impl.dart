@@ -4,9 +4,15 @@ import 'package:vaden_security/vaden_security.dart';
 
 class ExtendedUserDetails extends UserDetails {
   final String? token;
+  final String id;
+  final String? trainerId;
+  final String? traineeId;
 
   ExtendedUserDetails({
     this.token,
+    this.trainerId,
+    this.traineeId,
+    required this.id,
     required super.username,
     required super.password,
     required super.roles,
@@ -30,11 +36,38 @@ class UserDetailsServiceImpl implements UserDetailsService {
           return null;
         }
 
+        String? trainerId;
+        String? traineeId;
+        final String role = user["role"];
+
+        if (['trainer', 'coordinator'].contains(role)) {
+          final trainerData = await db.getOne(
+            table: 'trainers',
+            where: {'user_id': user['id']},
+          );
+
+          if (trainerData.isNotEmpty) {
+            trainerId = trainerData['trainer_id']?.toString();
+          }
+        } else if (role == 'trainee') {
+          final traineeData = await db.getOne(
+            table: 'trainees',
+            where: {'user_id': user['id']},
+          );
+
+          if (traineeData.isNotEmpty) {
+            traineeId = traineeData['trainee_id']?.toString();
+          }
+        }
+
         final details = ExtendedUserDetails(
+          id: user["id"],
           username: user["username"],
           password: "",
-          roles: [user["role"]],
+          roles: [role],
           token: "",
+          trainerId: trainerId,
+          traineeId: traineeId,
         );
 
         return details;

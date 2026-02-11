@@ -1,10 +1,11 @@
-import { createResource, Show } from "solid-js";
+import { createMemo, createResource, Show } from "solid-js";
 import type { Trainer } from "@/types/user";
 import { useApi } from "@/hooks/useApi";
 import toast from "solid-toast";
 import { newPasswordEmail } from "@/components/NewPasswordEmail";
 import EntityTable from "@/components/EntityTable";
 import UserDocumentsManager from "@/components/DocumentManager";
+import type { Class } from "@/types/class";
 
 const createEmptyTrainer = (): Trainer =>
   ({
@@ -20,78 +21,28 @@ const createEmptyTrainer = (): Trainer =>
     verified: false,
     session_token: "",
     skills: [],
+    is_coordinator: false,
+    coordinated_class_ids: [],
   }) as unknown as Trainer;
 
 const epochToDateTime = (epoch: number | string): string => {
   if (!epoch || isNaN(Number(epoch)) || Number(epoch) <= 0) return "";
-
   const date = new Date(Number(epoch));
   if (isNaN(date.getTime())) return "";
-
   const pad = (n: number) => n.toString().padStart(2, "0");
-  const yyyy = date.getFullYear();
-  const mm = pad(date.getMonth() + 1);
-  const dd = pad(date.getDate());
-
-  return `${yyyy}-${mm}-${dd}`;
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
 
 const validateTrainer = (
   trainer: Trainer,
 ): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
-
-  const name = String(trainer.name || "").trim();
-  if (!name) errors.push("Name is required");
-
-  const email = String(trainer.email || "").trim();
-  if (!email) {
-    errors.push("Email is required");
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errors.push("Email is invalid");
-  }
-
-  const username = String(trainer.username || "").trim();
-  if (!username) {
-    errors.push("Username is required");
-  } else if (username.length < 3) {
-    errors.push("Username must be at least 3 characters");
-  }
-
+  if (!trainer.name) errors.push("Name is required");
+  if (!trainer.email) errors.push("Email is required");
+  if (!trainer.username) errors.push("Username is required");
   if (!trainer.birthdayDate) errors.push("Birthday date is required");
-
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
+  return { valid: errors.length === 0, errors };
 };
-
-const getChangedFields = (
-  oldTrainer: Trainer,
-  newTrainer: Trainer,
-): {
-  name?: string;
-  email?: string;
-  username?: string;
-  birthday_date?: string;
-} => {
-  const changes: any = {};
-
-  if (String(oldTrainer.name) !== String(newTrainer.name)) {
-    changes.name = String(newTrainer.name);
-  }
-
-  if (String(oldTrainer.email) !== String(newTrainer.email)) {
-    changes.email = String(newTrainer.email);
-  }
-
-  if (String(oldTrainer.birthdayDate) !== String(newTrainer.birthdayDate)) {
-    changes.birthday_date = epochToDateTime(newTrainer.birthdayDate!);
-  }
-
-  return changes;
-};
-
 
 const TrainerPage = () => {
   const api = useApi();
@@ -99,6 +50,7 @@ const TrainerPage = () => {
   const [trainersData, { mutate }] = createResource<Trainer[]>(
     api.fetchTrainers,
   );
+  const [classesData] = createResource<Class[]>(api.fetchClasses);
 
   const handleSaveTrainer = async (
     trainer: Trainer,
@@ -111,24 +63,45 @@ const TrainerPage = () => {
         throw new Error("Validation failed");
       }
 
-      if (original) {
-        const changedFields = getChangedFields(original, trainer);
+      const currentClassIds = trainer.coordinated_class_ids || [];
+      const isCoordinator = currentClassIds.length > 0;
 
-        if (Object.keys(changedFields).length === 0) return;
+      if (original) {
+        const changes: any = {};
+
+        if (String(original.name) !== String(trainer.name))
+          changes.name = String(trainer.name);
+        if (String(original.email) !== String(trainer.email))
+          changes.email = String(trainer.email);
+        if (String(original.birthdayDate) !== String(trainer.birthdayDate))
+          changes.birthday_date = epochToDateTime(trainer.birthdayDate!);
+
+        const oldIds = original.coordinated_class_ids || [];
+        const newIds = currentClassIds;
+
+        const toAdd = newIds.filter((id) => !oldIds.includes(id));
+        const toRemove = oldIds.filter((id) => !newIds.includes(id));
+
+        if (toAdd.length > 0) changes.class_ids_to_add = toAdd;
+        if (toRemove.length > 0) changes.class_ids_to_remove = toRemove;
+
+        if (original.is_coordinator !== isCoordinator) {
+          changes.is_coordinator = isCoordinator;
+        }
+
+        if (Object.keys(changes).length === 0) return;
 
         const idToUpdate = String(trainer.trainerId || trainer.id);
-
-        await api.updateTrainer(idToUpdate, changedFields);
+        await api.updateTrainer(idToUpdate, changes);
 
         mutate(
           (prev) =>
             prev?.map((u) =>
-              u.trainerId === trainer.trainerId || u.id === trainer.id
-                ? trainer
+              u.trainerId === trainer.trainerId
+                ? ({ ...trainer, is_coordinator: isCoordinator } as Trainer)
                 : u,
             ) || [],
         );
-
         toast.success(`Trainer updated successfully`);
       } else {
         const tempPassword = "T" + Math.random().toString(36).slice(-10) + "1@";
@@ -139,6 +112,8 @@ const TrainerPage = () => {
           username: String(trainer.username),
           birthdayDate: epochToDateTime(trainer.birthdayDate!),
           password: tempPassword,
+          classIds: currentClassIds,
+          isCoordinator: isCoordinator,
         };
 
         const newTrainer = await api.createTrainer(trainerObj);
@@ -146,148 +121,151 @@ const TrainerPage = () => {
         try {
           await api.sendEmail({
             to: trainer.email!,
-            subject: "Welcome to Innovacad - Trainer Credentials",
+            subject: "Welcome - Trainer Credentials",
             body: newPasswordEmail(tempPassword),
           });
-        } catch (error) {
-          console.error(`Email fail for ${trainer.email}`, error);
-          toast.error("Trainer created but failed to send email.");
+        } catch (e) {
+          console.error(e);
         }
 
         mutate((prev) => [...(prev || []), newTrainer]);
-        toast.success("Trainer created successfully. Credentials sent.");
+        toast.success("Trainer created successfully.");
       }
-    } catch (error) {
-      if (error instanceof Error && error.message !== "Validation failed") {
-        toast.error(error.message || "Failed to save trainer");
-      }
-      throw error;
+    } catch (error: any) {
+      if (error.message !== "Validation failed")
+        toast.error(error.message || "Failed to save");
     }
   };
 
-  const confirmDelete = async (trainerToDelete: Trainer) => {
-    const idToDelete = String(trainerToDelete.trainerId || trainerToDelete.id);
-    await api.deleteTrainer(idToDelete);
-
+  const confirmDelete = async (trainer: Trainer) => {
+    await api.deleteTrainer(String(trainer.trainerId || trainer.id));
     mutate(
-      (prev) => prev?.filter((u) => (u.trainerId || u.id) !== idToDelete) || [],
+      (prev) => prev?.filter((u) => u.trainerId !== trainer.trainerId) || [],
     );
     toast.success("Trainer deleted");
-  };
-
-  const handleExport = async (trainer: Trainer) => {
-    try {
-      toast.loading("Generating Trainer Sheet...", { id: "exp-trainer" });
-
-      const idToExport = String(trainer.trainerId || trainer.id);
-
-      await api.exportTrainerSheet(
-        idToExport,
-        String(trainer.name || "Trainer"),
-      );
-
-      toast.dismiss("exp-trainer");
-      toast.success("Download started!");
-    } catch (error: any) {
-      toast.dismiss("exp-trainer");
-      console.error(error);
-      toast.error(error.message || "Failed to export document.");
-    }
   };
 
   return (
     <EntityTable<Trainer>
       title="Manage Trainers"
       data={trainersData}
-      handleExportClick={handleExport}
       handleEditClick={(user) => ({
         ...user,
         birthdayDate: epochToDateTime(user.birthdayDate!),
+        coordinated_class_ids: user.coordinated_class_ids || [],
       })}
       handleAddClick={() => createEmptyTrainer()}
       confirmDelete={confirmDelete}
       handleSave={handleSaveTrainer}
-      filter={(e: Trainer, search: string) => {
-        const s = search.toLowerCase();
-        return (
-          (e.name?.toLowerCase().includes(s) ||
-            e.email?.toLowerCase().includes(s) ||
-            e.username?.toLowerCase().includes(s)) ??
-          false
-        );
-      }}
+      filter={(e, s) =>
+        e.name?.toLowerCase().includes(s.toLowerCase()) ?? false
+      }
       fields={[
         {
-          formattedName: "Trainer ID",
-          fieldName: "trainerId",
+          formattedName: "ID",
+          fieldName: "trainer_id",
           canCopy: true,
-          smaller: true,
+          bigger: true,
         },
-        {
-          formattedName: "Name",
-          fieldName: "name",
-        },
-        {
-          formattedName: "Email",
-          fieldName: "email",
-          canCopy: true,
-        },
-        {
-          formattedName: "Username",
-          fieldName: "username",
-        },
+        { formattedName: "Name", fieldName: "name" },
+        { formattedName: "Email", fieldName: "email" },
+        { formattedName: "Username", fieldName: "username" },
         {
           formattedName: "Birth Date",
           fieldName: "birthdayDate",
-          customGeneration: (e: Trainer) => {
-            const d = epochToDateTime(e.birthdayDate!);
-            return <span class="text-sm">{d}</span>;
-          },
-          smaller: true,
+          customGeneration: (t) => epochToDateTime(t.birthdayDate!),
+        },
+        {
+          formattedName: "Role",
+          fieldName: "role",
+          customGeneration: (t) => (
+            <span
+              class={`badge ${t.is_coordinator ? "badge-primary" : "badge-ghost"}`}
+            >
+              {t.is_coordinator ? "Coordinator" : "Trainer"}
+            </span>
+          ),
         },
         {
           formattedName: "Verified",
           fieldName: "verified",
-          smaller: true,
         },
       ]}
       formFields={[
+        { label: "Name", name: "name", required: true, type: "text" },
+        { label: "Email", name: "email", required: true, type: "email" },
+        { label: "Username", name: "username", required: true, type: "text" },
         {
-          label: "Name",
-          name: "name",
-          required: true,
-          type: "text",
-        },
-        {
-          label: "Email",
-          name: "email",
-          required: true,
-          type: "email",
-        },
-        {
-          label: "Username",
-          name: "username",
-          required: true,
-          type: "text",
-        },
-        {
-          label: "Birthday Date",
+          label: "Birth Date",
           name: "birthdayDate",
           required: true,
           type: "date",
         },
       ]}
-      renderCustomFields={(formData) => (
-        <Show
-          when={formData.id}
-          fallback={
-            <div class="alert alert-info text-xs mt-4">
-              <span>Save the trainer first to upload documents.</span>
+      renderCustomFields={(formData, setFormData) => (
+        <div class="flex flex-col gap-4 mt-2">
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text font-bold">Coordination Classes</span>
+            </label>
+            <div class="h-48 overflow-y-auto border rounded-lg p-2 bg-base-100">
+              <Show
+                when={classesData()}
+                fallback={<span class="loading loading-spinner" />}
+              >
+                {classesData()?.map((cls) => (
+                  <label class="label cursor-pointer justify-start gap-3 hover:bg-base-200 rounded px-2">
+                    <input
+                      type="checkbox"
+                      class="checkbox checkbox-sm checkbox-primary"
+                      checked={formData.coordinated_class_ids?.includes(
+                        String(cls.class_id),
+                      )}
+                      onChange={(e) => {
+                        const checked = e.currentTarget.checked;
+                        const clsId = String(cls.class_id);
+                        const current =
+                          (formData as any).coordinated_class_ids || [];
+
+                        let updated: string[];
+                        if (checked) {
+                          updated = [...current, clsId];
+                        } else {
+                          updated = current.filter(
+                            (id: string) => id !== clsId,
+                          );
+                        }
+
+                        setFormData((prev) => {
+                          const newState = {
+                            ...prev,
+                            coordinated_class_ids: updated,
+                            is_coordinator: updated.length > 0,
+                          };
+                          return newState as Trainer;
+                        });
+                      }}
+                    />
+                    <span class="label-text">
+                      {cls.identifier} - {cls.location}
+                    </span>
+                  </label>
+                ))}
+              </Show>
             </div>
-          }
-        >
-          <UserDocumentsManager userId={String(formData.id)} />
-        </Show>
+            <label class="label">
+              <span class="label-text-alt text-warning">
+                Selecting classes will automatically promote this user to
+                Coordinator.
+              </span>
+            </label>
+          </div>
+
+          <Show when={formData.id}>
+            <div class="divider">Documents</div>
+            <UserDocumentsManager userId={String(formData.id)} />
+          </Show>
+        </div>
       )}
     />
   );

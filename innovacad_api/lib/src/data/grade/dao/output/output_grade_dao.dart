@@ -31,6 +31,9 @@ class OutputGradeDao {
   @DateTimeConverter()
   final DateTime updatedAt;
 
+  @annotation.JsonKey(name: 'status')
+  final String status;
+
   OutputGradeDao({
     required this.gradeId,
     required this.classModuleId,
@@ -39,6 +42,7 @@ class OutputGradeDao {
     required this.gradeType,
     required this.createdAt,
     required this.updatedAt,
+    required this.status,
   });
 
   Map<String, dynamic> toJson() => _$OutputGradeDaoToJson(this);

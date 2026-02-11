@@ -1,4 +1,5 @@
 import 'package:innovacad_api/src/core/middleware/cors_middleware.dart';
+import 'package:innovacad_api/src/core/middleware/loom_logger.dart';
 import 'package:vaden/vaden.dart';
 
 @Configuration()
@@ -13,6 +14,6 @@ class AppConfiguration {
     return Pipeline()
         .addMiddleware(corsMiddleware())
         .addVadenMiddleware(EnforceJsonContentType())
-        .addMiddleware(logRequests());
+        .addMiddleware(loomLogger());
   }
 }

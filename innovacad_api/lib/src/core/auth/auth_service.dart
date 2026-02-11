@@ -12,14 +12,16 @@ class AuthService extends JwtService {
   });
 
   factory AuthService.withSettings(ApplicationSettings settings) {
-    final audiencesList = settings['security']['audiences']; 
-    final List<String> audiences = (audiencesList is List) 
-        ? audiencesList.cast<String>() 
+    final audiencesList = settings['security']['audiences'];
+    final List<String> audiences = (audiencesList is List)
+        ? audiencesList.cast<String>()
         : const <String>[];
 
     return AuthService(
       secret: settings['security']['secret'],
-      tokenValidity: Duration(seconds: settings['security']['tokenValidity'] ?? 7200),
+      tokenValidity: Duration(
+        seconds: settings['security']['tokenValidity'] ?? 7200,
+      ),
       refreshTokenValidity: Duration(
         seconds: settings['security']['refreshTokenValidity'] ?? 2592000,
       ),
@@ -30,6 +32,7 @@ class AuthService extends JwtService {
 
   @override
   Map<String, dynamic>? verifyToken(String token) {
+    print("A verificar...");
     String cleaned = token.trim().replaceAll('"', '');
 
     if (cleaned.toLowerCase().startsWith('bearer ')) {

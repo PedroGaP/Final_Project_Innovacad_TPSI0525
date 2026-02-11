@@ -29,11 +29,11 @@ interface Props<T> {
   title: string;
   data: any;
   fields: FieldType<T>[];
-  handleAddClick: (entity: T) => any;
-  handleEditClick: (entity: T) => any;
-  handleSave: (entity: T, original: T | null) => any;
-  confirmDelete: (entity: T) => any;
-  handleExportClick?: (entity: T) => any;
+  handleAddClick: ((entity: T) => any) | undefined;
+  handleEditClick: ((entity: T) => any) | undefined;
+  handleSave: ((entity: T, original: T | null) => any) | undefined;
+  confirmDelete: ((entity: T) => any) | undefined;
+  handleExportClick?: ((entity: T) => any) | undefined;
   filter?: (entity: T, search: string) => boolean;
   renderCustomFields?: (
     formData: T,
@@ -132,6 +132,7 @@ export default function EntityTable<T>(props: Props<T>) {
             <button
               class="btn btn-primary btn-sm"
               onClick={() => {
+                if (props.handleAddClick === undefined) return;
                 const newItem = props.handleAddClick(null as any);
                 setEditingEntity(() => newItem);
                 setOriginalEntity(null);
@@ -206,6 +207,7 @@ export default function EntityTable<T>(props: Props<T>) {
                             <button
                               class="btn btn-ghost btn-sm"
                               onClick={() => {
+                                if (props.handleEditClick === undefined) return;
                                 const prepared = props.handleEditClick(entity);
                                 setEditingEntity(() => prepared);
                                 setOriginalEntity(() => prepared);
@@ -261,6 +263,7 @@ export default function EntityTable<T>(props: Props<T>) {
               value={u()}
               setValue={setEditingEntity}
               onSave={async (val) => {
+                if (props.handleSave === undefined) return;
                 await props.handleSave(val, originalEntity());
                 setEditingEntity(null);
               }}
@@ -279,6 +282,7 @@ export default function EntityTable<T>(props: Props<T>) {
               value={u}
               setValue={setDeletingEntity}
               onConfirm={async () => {
+                if (props.confirmDelete === undefined) return;
                 await props.confirmDelete(u());
                 setDeletingEntity(null);
               }}

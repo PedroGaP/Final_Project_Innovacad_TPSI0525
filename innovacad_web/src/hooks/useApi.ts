@@ -20,6 +20,7 @@ import { Grade, type GradeResponseData } from "@/types/grade";
 import { Module, type ModuleResponseData } from "@/types/module";
 import { Room, type RoomResponseData } from "@/types/room";
 import { Schedule, type ScheduleResponseData } from "@/types/schedule";
+import type { SaveSummaryPayload, SummaryGridResponse } from "@/types/summary";
 import {
   Account,
   LinkSocialData,
@@ -65,12 +66,18 @@ export const API_ENDPOINTS = {
   ENTITY: {
     CLASS: "/classes",
     COURSE: "/courses",
-    GRADE: "/grades",
     ROOM: "/rooms",
     MODULE: "/modules",
     ENROLLMENT: "/enrollments",
     AVAILABILITY: "/availabilities",
     SCHEDULE: "/schedules",
+    GRADE: "/grades",
+    GRADE_BATCH: "/grades/batch",
+    GRADE_FINALIZE: "/grades/finalize",
+  },
+  SUMMARY: {
+    BASE: "/summaries",
+    GRID: "/summaries/schedule",
   },
   DOCUMENTS: {
     BASE: "/documents",
@@ -150,6 +157,8 @@ export const useApi = () => {
           ? { Authorization: `Bearer ${user()!.token}` }
           : {}),
       };
+
+      console.log(reqHeaders);
 
       // const res = await fetch(`${baseUrl}${path}`, {
       const res = await fetch(`${baseUrl}${path}`, {
@@ -1117,6 +1126,56 @@ export const useApi = () => {
   };
 
   /**
+   * Batch upsert grades (Criar ou atualizar várias notas)
+   */
+  const batchUpsertGrades = async (data: {
+    class_module_id: string;
+    grades: { trainee_id: string; grade: number; grade_type: string }[];
+  }): Promise<void> => {
+    const res = await fetchApi<void>(
+      API_ENDPOINTS.ENTITY.GRADE_BATCH,
+      "POST",
+      data,
+    );
+
+    if (res.isError) {
+      throw new Error(`Batch save failed: ${res.error?.message}`);
+    }
+  };
+
+  /**
+   * Finalize grades for a module (Coordinator only)
+   */
+  const finalizeGrades = async (classModuleId: string): Promise<void> => {
+    const res = await fetchApi<void>(
+      API_ENDPOINTS.ENTITY.GRADE_FINALIZE,
+      "POST",
+      { class_module_id: classModuleId },
+    );
+
+    if (res.isError) {
+      throw new Error(`Finalize failed: ${res.error?.message}`);
+    }
+  };
+
+  /**
+   * Get grades by module ID
+   */
+  const fetchGradesByModule = async (
+    classModuleId: string,
+  ): Promise<Grade[]> => {
+    const res = await fetchApi<GradeResponseData[]>(
+      `${API_ENDPOINTS.ENTITY.GRADE}/module/${classModuleId}`,
+      "GET",
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(`Fetch grades failed: ${res.error?.message}`);
+    }
+    return res.data.map((g) => new Grade(g));
+  };
+
+  /**
    * Fetch all rooms
    */
   const fetchRooms = async (): Promise<Room[]> => {
@@ -1736,6 +1795,45 @@ export const useApi = () => {
     document.body.removeChild(a);
   };
 
+  /**
+   * Fetch summary grid (contents + student list) for a schedule
+   */
+  const fetchSummaryGrid = async (
+    scheduleId: string,
+  ): Promise<SummaryGridResponse> => {
+    const res = await fetchApi<SummaryGridResponse>(
+      `${API_ENDPOINTS.SUMMARY.GRID}/${scheduleId}`,
+      "GET",
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(
+        `Fetch summary grid failed: ${res.error?.message || "Unknown error"}`,
+      );
+    }
+
+    return res.data;
+  };
+
+  /**
+   * Save or Update a summary and attendances
+   */
+  const saveSummary = async (data: SaveSummaryPayload): Promise<boolean> => {
+    const res = await fetchApi<boolean>(
+      API_ENDPOINTS.SUMMARY.BASE,
+      "POST",
+      data,
+    );
+
+    if (res.isError) {
+      throw new Error(
+        `Save summary failed: ${res.error?.message || "Unknown error"}`,
+      );
+    }
+
+    return true;
+  };
+
   return {
     // Sign In/Up
     signIn,
@@ -1792,6 +1890,9 @@ export const useApi = () => {
     createGrade,
     updateGrade,
     deleteGrade,
+    batchUpsertGrades,
+    finalizeGrades,
+    fetchGradesByModule,
 
     // Rooms
     fetchRooms,
@@ -1831,5 +1932,9 @@ export const useApi = () => {
 
     // Statistics
     fetchStatistics,
+
+    // Summaries
+    fetchSummaryGrid,
+    saveSummary,
   };
 };

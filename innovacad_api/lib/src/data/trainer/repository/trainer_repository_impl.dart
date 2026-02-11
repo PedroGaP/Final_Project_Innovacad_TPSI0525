@@ -141,6 +141,12 @@ class TrainerRepositoryImpl implements ITrainerRepository {
     MysqlUtils? db;
     String? createdUserId;
     try {
+      final bool hasClassesToCoordinate =
+          dto.classIds != null && dto.classIds!.isNotEmpty;
+      final bool isCoordinator =
+          hasClassesToCoordinate || (dto.isCoordinator == true);
+      final String userRole = isCoordinator ? "coordinator" : "trainer";
+
       final responseUser = await _remoteUserService.signUpUser(
         dto.email,
         dto.name,
@@ -153,8 +159,6 @@ class TrainerRepositoryImpl implements ITrainerRepository {
 
       db = await MysqlConfiguration.getConnection();
       await db.startTrans();
-
-      final userRole = (dto.isCoordinator == true) ? "coordinator" : "trainer";
 
       final userCheck = await db.query(
         "SELECT id FROM user WHERE id = ?",
@@ -191,7 +195,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
           "trainer_id": trainerId,
           "user_id": createdUserId,
           "birthday_date": dto.birthdayDate,
-          "is_coordinator": (dto.isCoordinator == true) ? 1 : 0,
+          "is_coordinator": isCoordinator ? 1 : 0,
         },
       );
 
@@ -208,7 +212,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
         }
       }
 
-      if (dto.isCoordinator == true && dto.classIds != null) {
+      if (hasClassesToCoordinate) {
         for (var classId in dto.classIds!) {
           await db.query(
             "INSERT INTO trainers_classes_coordinator (trainer_id, class_id) VALUES (?, ?)",
@@ -219,15 +223,12 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       }
 
       await db.commit();
-
       return await getById(trainerId);
     } catch (e) {
       if (db != null) await db.rollback();
-
       if (createdUserId != null) {
         await _remoteUserService.deleteUserAsAdmin(createdUserId);
       }
-
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     } finally {
       await MysqlConfiguration.closeConnection(db);
@@ -249,30 +250,59 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       db = await MysqlConfiguration.getConnection();
       await db.startTrans();
 
-      final updateData = <String, dynamic>{};
-      if (dto.birthdayDate != null)
-        updateData["birthday_date"] = dto.birthdayDate;
+      bool isCurrentlyCoordinator = _parseBool(res.data!.isCoordinator);
 
-      bool isNowCoordinator = _parseBool(res.data!.isCoordinator);
+      final currentClassesQuery = await db.query(
+        "SELECT COUNT(*) as total FROM trainers_classes_coordinator WHERE trainer_id = ?",
+        whereValues: [trainerId],
+        isStmt: true,
+      );
+      int currentClassCount = int.parse(
+        currentClassesQuery.rows.first['total'].toString(),
+      );
+
+      int toAddCount = dto.classIdsToAdd?.length ?? 0;
+      int toRemoveCount = dto.classIdsToRemove?.length ?? 0;
+
+      int futureClassCount = currentClassCount + toAddCount - toRemoveCount;
+      if (futureClassCount < 0) futureClassCount = 0;
+
+      bool newIsCoordinatorState = isCurrentlyCoordinator;
 
       if (dto.isCoordinator != null) {
-        updateData["is_coordinator"] = dto.isCoordinator! ? 1 : 0;
-        isNowCoordinator = dto.isCoordinator!;
+        newIsCoordinatorState = dto.isCoordinator!;
+      }
 
-        final newRole = isNowCoordinator ? "coordinator" : "trainer";
+      if (futureClassCount > 0) {
+        newIsCoordinatorState = true;
+      }
+
+      if (newIsCoordinatorState != isCurrentlyCoordinator) {
+        final newRole = newIsCoordinatorState ? "coordinator" : "trainer";
+
         await db.update(
           table: "user",
           updateData: {"role": newRole},
           where: {"id": res.data!.id},
         );
 
-        if (!isNowCoordinator) {
+        await db.update(
+          table: table,
+          updateData: {"is_coordinator": newIsCoordinatorState ? 1 : 0},
+          where: {"trainer_id": trainerId},
+        );
+
+        if (!newIsCoordinatorState) {
           await db.delete(
             table: "trainers_classes_coordinator",
             where: {"trainer_id": trainerId},
           );
         }
       }
+
+      final updateData = <String, dynamic>{};
+      if (dto.birthdayDate != null)
+        updateData["birthday_date"] = dto.birthdayDate;
 
       if (updateData.isNotEmpty) {
         await db.update(
@@ -294,7 +324,6 @@ class TrainerRepositoryImpl implements ITrainerRepository {
           isStmt: true,
         );
       }
-
       if (dto.skillsToAdd != null) {
         for (var skill in dto.skillsToAdd!) {
           await db.query(
@@ -310,11 +339,9 @@ class TrainerRepositoryImpl implements ITrainerRepository {
         }
       }
 
-      if (isNowCoordinator) {
+      if (newIsCoordinatorState) {
         if (dto.classIdsToRemove != null && dto.classIdsToRemove!.isNotEmpty) {
-          print("🗑️ [Update] Removendo turmas: ${dto.classIdsToRemove}");
           final placeholders = dto.classIdsToRemove!.map((_) => "?").join(",");
-
           await db.query(
             "DELETE FROM trainers_classes_coordinator WHERE trainer_id = ? AND class_id IN ($placeholders)",
             whereValues: [trainerId, ...dto.classIdsToRemove!],
@@ -714,6 +741,23 @@ class TrainerRepositoryImpl implements ITrainerRepository {
           details: {"error": e.toString()},
         ),
       );
+    }
+  }
+
+  @override
+  Future<bool> isCoordinatorOfClass(String trainerId, String classId) async {
+    try {
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final result = await db.query(
+          "SELECT 1 FROM trainers_classes_coordinator WHERE trainer_id = ? AND class_id = ? LIMIT 1",
+          whereValues: [trainerId, classId],
+          isStmt: true,
+        );
+        return result.numOfRows > 0;
+      });
+    } catch (e) {
+      print("Error checking coordination: $e");
+      return false;
     }
   }
 }

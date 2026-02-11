@@ -2,6 +2,69 @@ CREATE DATABASE IF NOT EXISTS innovacad_tpsi0525;
 
 USE innovacad_tpsi0525;
 
+CREATE TABLE IF NOT EXISTS user
+(
+    id                     VARCHAR(36)  NOT NULL PRIMARY KEY,
+    name                   VARCHAR(255) NOT NULL,
+    email                  VARCHAR(255) NOT NULL UNIQUE,
+    emailVerified          BOOLEAN      NOT NULL DEFAULT FALSE,
+    image                  VARCHAR(255),
+    createdAt              TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedAt              TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    role                   VARCHAR(50),
+    banned                 BOOLEAN      NOT NULL DEFAULT FALSE,
+    banReason              TEXT,
+    banExpires             TIMESTAMP,
+    username               VARCHAR(50) UNIQUE,
+    displayUsername        VARCHAR(50),
+    twoFactorEnabled       BOOLEAN      NOT NULL DEFAULT FALSE,
+    twoFactorSecret        TEXT,
+    twoFactorBackupCodes   TEXT,
+    twoFactorRedirect      BOOLEAN      DEFAULT FALSE
+);
+
+CREATE TABLE IF NOT EXISTS session
+(
+    id        VARCHAR(36)  NOT NULL PRIMARY KEY,
+    expiresAt TIMESTAMP    NOT NULL,
+    token     VARCHAR(255) NOT NULL UNIQUE,
+    createdAt TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    ipAddress VARCHAR(45),
+    userAgent TEXT,
+    userId    VARCHAR(36)  NOT NULL,
+    impersonatedBy VARCHAR(36),
+    FOREIGN KEY (userId) REFERENCES user (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS account
+(
+    id                    VARCHAR(36)  NOT NULL PRIMARY KEY,
+    accountId             VARCHAR(255) NOT NULL,
+    providerId            VARCHAR(255) NOT NULL,
+    userId                VARCHAR(36)  NOT NULL,
+    accessToken           TEXT,
+    refreshToken          TEXT,
+    idToken               TEXT,
+    accessTokenExpiresAt  TIMESTAMP,
+    refreshTokenExpiresAt TIMESTAMP,
+    scope                 TEXT,
+    password              TEXT,
+    createdAt             TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedAt             TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (userId) REFERENCES user (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS verification
+(
+    id         VARCHAR(36)  NOT NULL PRIMARY KEY,
+    identifier TEXT         NOT NULL,
+    value      TEXT         NOT NULL,
+    expiresAt  TIMESTAMP    NOT NULL,
+    createdAt  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedAt  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS trainers
 (
     trainer_id     VARCHAR(36) DEFAULT (UUID()) PRIMARY KEY,
@@ -32,8 +95,8 @@ CREATE TABLE IF NOT EXISTS classes
 (
     class_id             VARCHAR(36)                              DEFAULT (UUID()) PRIMARY KEY,
     course_id            VARCHAR(36)        NOT NULL,
-    location             VARCHAR(6)         NOT NULL, -- PAL, CAS...
-    identifier           VARCHAR(20) UNIQUE NOT NULL, -- 0525...
+    location             VARCHAR(6)         NOT NULL,
+    identifier           VARCHAR(20) UNIQUE NOT NULL,
     status               ENUM ('ongoing', 'finished', 'starting') DEFAULT 'starting',
     start_date_timestamp TIMESTAMP          NOT NULL,
     end_date_timestamp   TIMESTAMP          NOT NULL,
@@ -55,7 +118,7 @@ CREATE TABLE IF NOT EXISTS trainer_skills
 (
     trainer_id       VARCHAR(36),
     module_id        VARCHAR(36),
-    competence_level TINYINT DEFAULT 1, -- 0: Basic, 1: Expert
+    competence_level TINYINT DEFAULT 1,
     PRIMARY KEY (trainer_id, module_id),
     FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id) ON UPDATE CASCADE ON DELETE CASCADE,
     FOREIGN KEY (module_id) REFERENCES modules (module_id) ON UPDATE CASCADE ON DELETE CASCADE
@@ -103,7 +166,8 @@ CREATE TABLE IF NOT EXISTS grades
     class_module_id VARCHAR(36)                  NOT NULL,
     trainee_id      VARCHAR(36)                  NOT NULL,
     grade           DECIMAL(4, 2)                NOT NULL,
-    grade_type      ENUM ('final', 'assessment') NOT NULL DEFAULT 'assessment',
+    grade_type      ENUM ('attendance', 'behavior', 'work', 'test', 'final') NOT NULL DEFAULT 'work',
+    status          ENUM ('draft', 'finalized')  NOT NULL DEFAULT 'draft',
     created_at      TIMESTAMP                             DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP                             DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE (trainee_id, class_module_id, grade_type),
@@ -137,7 +201,7 @@ CREATE TABLE IF NOT EXISTS schedules
     trainer_id           VARCHAR(36) NOT NULL,
     room_id              INT,
     is_online            BOOLEAN       DEFAULT FALSE,
-    regime_type          TINYINT(1)    DEFAULT 0, -- 0=daytime, 1=post-work
+    regime_type          TINYINT(1)    DEFAULT 0,
     total_hours          DECIMAL(4, 2) DEFAULT 6.0,
     created_at           TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
     start_date_timestamp TIMESTAMP   NOT NULL,
@@ -158,16 +222,6 @@ CREATE TABLE IF NOT EXISTS enrollments
     FOREIGN KEY (trainee_id) REFERENCES trainees (trainee_id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS trainer_skills
-(
-    trainer_id       VARCHAR(36),
-    module_id        VARCHAR(36),
-    competence_level TINYINT DEFAULT 1, -- 1=Básico, 2=Expert
-    PRIMARY KEY (trainer_id, module_id),
-    FOREIGN KEY (trainer_id) REFERENCES trainers (trainer_id) ON DELETE CASCADE,
-    FOREIGN KEY (module_id) REFERENCES modules (module_id) ON DELETE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS document_types
 (
     code  VARCHAR(20) PRIMARY KEY,
@@ -184,7 +238,6 @@ CREATE TABLE IF NOT EXISTS documents
     type_code       VARCHAR(20)  NOT NULL,
     user_id         VARCHAR(36)  NOT NULL,
     created_at      TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
-
     FOREIGN KEY (type_code) REFERENCES document_types (code),
     FOREIGN KEY (user_id) REFERENCES user (id) ON DELETE CASCADE
 );
@@ -211,22 +264,55 @@ CREATE TABLE IF NOT EXISTS schedule_slots
     FOREIGN KEY (availability_id) REFERENCES availabilities (availability_id)
 );
 
-CREATE INDEX idx_trainer_user ON trainers (user_id);
+CREATE TABLE IF NOT EXISTS summaries (
+    summary_id VARCHAR(36) NOT NULL PRIMARY KEY,
+    schedule_id VARCHAR(36) NOT NULL,
+    contents TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-CREATE INDEX idx_trainee_user ON trainees (user_id);
+    UNIQUE KEY unique_schedule_summary (schedule_id),
 
-CREATE INDEX idx_class_course ON classes (course_id);
+    CONSTRAINT fk_summary_schedule
+        FOREIGN KEY (schedule_id)
+        REFERENCES schedules (schedule_id)
+        ON DELETE CASCADE
+);
 
-CREATE INDEX idx_grade_trainee ON grades (trainee_id);
+CREATE TABLE IF NOT EXISTS attendances (
+    attendance_id VARCHAR(36) NOT NULL PRIMARY KEY,
+    summary_id VARCHAR(36) NOT NULL,
+    trainee_id VARCHAR(36) NOT NULL,
+    is_absent TINYINT(1) DEFAULT 0,
+    notes TEXT NULL,
 
-CREATE INDEX idx_sched_trainer ON schedules (trainer_id);
+    CONSTRAINT fk_attendance_summary
+        FOREIGN KEY (summary_id)
+        REFERENCES summaries (summary_id)
+        ON DELETE CASCADE,
 
-CREATE INDEX idx_skills_module ON trainer_skills (module_id);
+    CONSTRAINT fk_attendance_trainee
+        FOREIGN KEY (trainee_id)
+        REFERENCES trainees (trainee_id)
+        ON DELETE CASCADE,
 
-CREATE INDEX idx_avail_lookup ON availabilities (date_day, slot_number, is_booked);
+    UNIQUE KEY unique_summary_trainee (summary_id, trainee_id)
+);
 
-CREATE INDEX idx_sched_room_lookup ON schedules (room_id);
-
-CREATE INDEX idx_slots_sched_avail ON schedule_slots (schedule_id, availability_id);
-
-CREATE INDEX idx_courses_modules_id ON courses_modules (courses_modules_id);
+CREATE INDEX idx_trainers_user_id ON trainers (user_id);
+CREATE INDEX idx_trainees_user_id ON trainees (user_id);
+CREATE INDEX idx_classes_course_id ON classes (course_id);
+CREATE INDEX idx_classes_modules_class_id ON classes_modules (class_id);
+CREATE INDEX idx_classes_modules_trainer_id ON classes_modules (trainer_id);
+CREATE INDEX idx_grades_trainee_id ON grades (trainee_id);
+CREATE INDEX idx_grades_class_module_id ON grades (class_module_id);
+CREATE INDEX idx_grades_status ON grades (status);
+CREATE INDEX idx_availabilities_trainer_id ON availabilities (trainer_id);
+CREATE INDEX idx_schedules_class_module_id ON schedules (class_module_id);
+CREATE INDEX idx_schedules_trainer_id ON schedules (trainer_id);
+CREATE INDEX idx_enrollments_class_id ON enrollments (class_id);
+CREATE INDEX idx_enrollments_trainee_id ON enrollments (trainee_id);
+CREATE INDEX idx_documents_user_id ON documents (user_id);
+CREATE INDEX idx_coordinator_trainer_id ON trainers_classes_coordinator (trainer_id);
+CREATE INDEX idx_coordinator_class_id ON trainers_classes_coordinator (class_id);
+CREATE INDEX idx_schedule_slots_schedule_id ON schedule_slots (schedule_id);

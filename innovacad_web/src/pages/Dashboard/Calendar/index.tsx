@@ -3,6 +3,7 @@ import { Icon } from "@/components/Icon";
 import ModalDelete from "@/components/Modal/Delete";
 import type { ModalFieldDefinition } from "@/components/Modal/Edit";
 import ModalEdit from "@/components/Modal/Edit";
+import SummaryModal from "@/components/Modal/Summary";
 import { useApi } from "@/hooks/useApi";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import type { Class } from "@/types/class";
@@ -36,6 +37,8 @@ const Calendar = () => {
     deleteSchedule,
     fetchTrainers,
     fetchRooms,
+    fetchSummaryGrid,
+    saveSummary,
   } = useApi();
 
   const { user } = useUserDetails();
@@ -64,7 +67,7 @@ const Calendar = () => {
   const trainerOptions = createMemo(
     () =>
       allTrainers()?.map((t) => ({
-        label: t.name || "Unknown",
+        label: t.email || "Unknown",
         value: t.trainerId!,
       })) || [],
   );
@@ -148,6 +151,12 @@ const Calendar = () => {
         };
       });
   });
+
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = createSignal(false);
+  const [summaryTarget, setSummaryTarget] = createSignal<{
+    id: string;
+    title: string;
+  } | null>(null);
 
   const [isEditModalOpen, setIsEditModalOpen] = createSignal(false);
   const [modalMode, setModalMode] = createSignal<"create" | "edit">("create");
@@ -270,6 +279,44 @@ const Calendar = () => {
   };
 
   const handleEditRequest = (event: any) => {
+    console.log(selectedClass() ?? "NULO puta");
+    const u = user();
+    if (!u) return;
+
+    const eventStart = new Date(event.start);
+    const now = new Date();
+
+    const hasStarted = now >= eventStart;
+
+    const eventTrainerId = String(event.extendedProps.trainerId || "");
+
+    let isMyClass = false;
+
+    if (u.role === "admin") {
+      isMyClass = true;
+    } else if (u.role === "trainer") {
+      const myTrainerId =
+        "trainer_id" in u ? String((u as any).trainer_id) : "";
+      isMyClass = myTrainerId === eventTrainerId;
+    } else if (u.role === "coordinator") {
+      const myTrainerId =
+        "trainer_id" in u ? String((u as any).trainer_id) : "";
+      isMyClass = myTrainerId === eventTrainerId;
+    }
+
+    if (hasStarted) {
+      if (isMyClass) {
+        setSummaryTarget({
+          id: event.id,
+          title: event.title,
+        });
+        setIsSummaryModalOpen(true);
+      } else {
+        toast.error("Only the assigned trainer can create summaries.");
+      }
+      return;
+    }
+
     if (!canEdit()) return;
     setModalMode("edit");
     setCurrentScheduleId(event.id);
@@ -287,6 +334,7 @@ const Calendar = () => {
           foundMod.classesModulesId ||
           foundMod.courses_modules_id;
     }
+
     let resolvedRoomId = props.roomId ? String(props.roomId) : "";
     if (
       !resolvedRoomId &&
@@ -297,13 +345,8 @@ const Calendar = () => {
       const foundRoom = allRooms()?.find((r) => r.room_name === props.roomName);
       if (foundRoom) resolvedRoomId = String(foundRoom.room_id);
     }
+
     let resolvedTrainerId = props.trainerId ? String(props.trainerId) : "";
-    if (!resolvedTrainerId && props.instructor && allTrainers()) {
-      const foundTrainer = allTrainers()?.find(
-        (t) => t.name === props.instructor,
-      );
-      if (foundTrainer) resolvedTrainerId = String(foundTrainer.trainerId);
-    }
 
     setFormData({
       moduleId: String(resolvedModuleId || ""),
@@ -315,6 +358,14 @@ const Calendar = () => {
       force: false,
     });
     setIsEditModalOpen(true);
+  };
+
+  const handleSummaryRequest = (event: any) => {
+    console.log(selectedClass());
+    const scheduleId = String(event.id);
+    const title = event.title;
+    setSummaryTarget({ id: scheduleId, title });
+    setIsSummaryModalOpen(true);
   };
 
   const handleSave = async (data: ScheduleFormData) => {
@@ -362,15 +413,7 @@ const Calendar = () => {
       const defaultTrainerId =
         selectedMod?.trainer_id || selectedMod?.trainerId;
       const hasDefaultTrainer = !!defaultTrainerId;
-
       const isTrainerSelectDisabled = hasDefaultTrainer && !formData().force;
-
-      const trainerPlaceholder = allTrainers.loading
-        ? "Loading trainers..."
-        : isTrainerSelectDisabled
-          ? "Default Trainer (Check Override to change)"
-          : "Select a trainer";
-
       return [
         {
           name: "moduleId",
@@ -386,7 +429,7 @@ const Calendar = () => {
           type: "select",
           required: true,
           disabled: isTrainerSelectDisabled,
-          placeholder: trainerPlaceholder,
+          placeholder: "Select Trainer",
           options: trainerOptions(),
         },
         {
@@ -434,7 +477,11 @@ const Calendar = () => {
                 {user()?.role === "admin" ? "Select Class" : "My Schedule"}
               </option>
               <For each={availableClasses()}>
-                {(k) => <option value={k.class_id}>{k.identifier}</option>}
+                {(k) => (
+                  <option value={k.class_id}>
+                    {k.identifier} {k.location}
+                  </option>
+                )}
               </For>
             </select>
             <Show when={schedules.loading || fetchedClasses.loading}>
@@ -469,10 +516,14 @@ const Calendar = () => {
           <EventCalendar
             selectedClass={selectedClass()}
             events={calendarEvents()}
-            isEditable={canEdit()}
+            isEditable={true}
             loading={schedules.loading}
             onCreateRequest={handleCreateRequest}
-            onEditRequest={handleEditRequest}
+            onEditRequest={
+              selectedClass() === null
+                ? handleSummaryRequest
+                : handleEditRequest
+            }
             onMoveRequest={handleMoveRequest}
           />
         </div>
@@ -490,6 +541,15 @@ const Calendar = () => {
                 : undefined
             }
             fields={dynamicFields()}
+          />
+        </Show>
+
+        <Show when={isSummaryModalOpen() && summaryTarget()}>
+          <SummaryModal
+            isOpen={isSummaryModalOpen()}
+            onClose={() => setIsSummaryModalOpen(false)}
+            scheduleId={summaryTarget()!.id}
+            title={`Summary: ${summaryTarget()!.title}`}
           />
         </Show>
 

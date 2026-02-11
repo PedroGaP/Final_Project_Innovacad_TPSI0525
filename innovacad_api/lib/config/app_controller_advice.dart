@@ -28,6 +28,7 @@ class AppControllerAdvice {
     return Response.internalServerError(
       body: jsonEncode({
         'message': 'Internal server error',
+        'error': e.toString(),
       }),
     );
   }

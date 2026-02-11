@@ -32,6 +32,7 @@ DROP TABLE IF EXISTS
     ref_slots,
     classes_modules,
     courses_modules,
+    trainers_classes_coordinator,
     rooms,
     classes,
     courses,
