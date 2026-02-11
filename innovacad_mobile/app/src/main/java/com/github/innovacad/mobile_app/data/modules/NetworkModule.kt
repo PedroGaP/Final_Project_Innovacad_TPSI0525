@@ -1,6 +1,7 @@
 package com.github.innovacad.mobile_app.data.modules
 
 import android.util.Log
+import com.github.innovacad.mobile_app.data.plugins.AuthPlugin
 import com.github.innovacad.mobile_app.data.plugins.CookiesPlugin
 import com.github.innovacad.mobile_app.data.services.ApiService
 import com.github.innovacad.mobile_app.data.services.UserService
@@ -53,6 +54,10 @@ object NetworkModule {
             }
 
             install(CookiesPlugin) {
+                this.userService = userService
+            }
+
+            install(AuthPlugin) {
                 this.userService = userService
             }
         }
