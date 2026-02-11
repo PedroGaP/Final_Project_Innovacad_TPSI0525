@@ -37,15 +37,21 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
     try {
       return await MysqlConfiguration.executeWithConnection((db) async {
         final result =
-            await db.getOne(table: table, where: {"availability_id": id})
-                as Map<String, dynamic>;
+            await db.getOne(table: table, where: {"availability_id": id});
 
-        if (result.isEmpty)
+        if (result == null || result.isEmpty) {
           return Result.failure(
             AppError(AppErrorType.notFound, "Availability not found"),
           );
+        }
 
-        return Result.success(OutputAvailabilityDao.fromJson(result));
+        return Result.success(
+          OutputAvailabilityDao.fromJson(
+            result
+                .map((k, v) => MapEntry(k.toString(), v))
+                .cast<String, dynamic>(),
+          ),
+        );
       });
     } catch (e, s) {
       return Result.failure(
@@ -68,11 +74,11 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
 
       await db.startTrans();
 
-      final dateDay = dto.dateDay.toIso8601String();
+      final dateDay = dto.dateDay.toIso8601String().split("T")[0];
 
       print(dto.toJson());
 
-      await db.insert(
+      final insertRes = await db.insert(
         table: table,
         insertData: {
           "trainer_id": dto.trainerId,
@@ -82,23 +88,31 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
         },
       );
 
-      final created = await db.getOne(
+      print("Insert result: $insertRes");
+
+      final results = await db.getAll(
         table: table,
         where: {
           "trainer_id": dto.trainerId,
           "date_day": dateDay,
-          "slot_number": dto.slotNumber,
-          "is_booked": dto.isBooked,
         },
       );
 
-      if (created.isEmpty)
+      final created = results.firstWhere(
+        (data) => data["slot_number"].toString() == dto.slotNumber.toString(),
+        orElse: () => {},
+      );
+
+      if (created.isEmpty) {
+        print("CRITICAL: Record inserted but not found in day results. Day Results: $results");
+        await db.rollback();
         return Result.failure(
           AppError(
             AppErrorType.internal,
-            "Created Availability could not be retrieved",
+            "Created Availability could not be retrieved (Slot ${dto.slotNumber} not found in retrieved list for day)",
           ),
         );
+      }
 
       await db.commit();
 
@@ -229,3 +243,4 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
     }
   }
 }
+

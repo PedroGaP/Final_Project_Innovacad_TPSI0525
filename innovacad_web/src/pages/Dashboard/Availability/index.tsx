@@ -3,8 +3,27 @@ import type { ModalFieldDefinition } from "@/components/Modal/Edit";
 import { useApi } from "@/hooks/useApi";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import { Availability } from "@/types/availability";
-import { createEffect, createMemo, createResource, Show } from "solid-js";
+import { createMemo, createResource, createSignal, Show, createEffect } from "solid-js";
+import { AvailabilityCalendar } from "@/components/AvailabilityCalendar";
+import { type EventInput } from "@fullcalendar/core";
 import toast from "solid-toast";
+
+const SLOT_TIMES: Record<number, { start: string; end: string }> = {
+  1: { start: "08:00", end: "09:00" },
+  2: { start: "09:00", end: "10:00" },
+  3: { start: "10:00", end: "11:00" },
+  4: { start: "12:00", end: "13:00" },
+  5: { start: "13:00", end: "14:00" },
+  6: { start: "14:00", end: "15:00" },
+  7: { start: "16:00", end: "17:00" },
+  8: { start: "17:00", end: "18:00" },
+  9: { start: "18:00", end: "19:00" },
+  10: { start: "20:00", end: "21:00" },
+  11: { start: "21:00", end: "22:00" },
+  12: { start: "22:00", end: "23:00" },
+};
+
+
 
 const SLOT_OPTIONS = [
   { label: "Slot 1 (08:00 - 09:00)", value: 1 },
@@ -58,26 +77,78 @@ const createEmptyAvailability = (): Availability =>
     is_booked: false,
   }) as unknown as Availability;
 
+
+
+// Helper: Parse a string or date into a Local Date object (Midnight)
+// This avoids the "UTC Midnight = Previous Day" trap.
+const toSafeLocalDate = (input: string | Date): Date => {
+  const d = new Date(input);
+  if (input instanceof Date) return d;
+
+  // If strict YYYY-MM-DD string, parse manually to current locale
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+    const [y, m, day] = input.split("-").map(Number);
+    return new Date(y, m - 1, day);
+  }
+  return d;
+};
+
+// Helper: Get local YYYY-MM-DD string
+const getLocalYYYYMMDD = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+// Helper: Get matching slot numbers for a given time range
+const getMatchingSlots = (start: Date, end: Date): number[] => {
+  const matching: number[] = [];
+
+  // Use the start date as the "Base Day" for hour setting
+  // This ensures we're comparing 09:00 on the SAME DAY as the start date
+  const baseDay = new Date(start);
+
+  for (const [slotNum, times] of Object.entries(SLOT_TIMES)) {
+    const [sh, sm] = times.start.split(":").map(Number);
+    const [eh, em] = times.end.split(":").map(Number);
+
+    const slotStart = new Date(baseDay);
+    slotStart.setHours(sh, sm, 0, 0);
+
+    const slotEnd = new Date(baseDay);
+    slotEnd.setHours(eh, em, 0, 0);
+
+    // Strict overlap check
+    if (start < slotEnd && end > slotStart) {
+      matching.push(Number(slotNum));
+    }
+  }
+  return matching;
+};
 const AvailabilitiesPage = () => {
   const api = useApi();
   const { user } = useUserDetails();
 
-  const [availabilitiesData, { mutate }] = createResource<Availability[]>(
+  const [viewMode, setViewMode] = createSignal<"calendar" | "list">("calendar");
+  const [selectedTrainerFilter, setSelectedTrainerFilter] = createSignal<string>("");
+
+  const [availabilitiesData, { refetch }] = createResource<Availability[]>(
     api.fetchAvailabilities,
   );
+
+  // Auto-refresh when filter changes to ensure fresh data
+  createEffect(() => {
+    selectedTrainerFilter(); // Dependency
+    refetch();
+  });
   const [trainersData] = createResource(api.fetchTrainers);
 
-  createEffect(() => {
-    const u = user();
-    if (u) {
-      console.log("DEBUG: Current User:", u.name, "| Role:", u.role);
-      console.log("DEBUG: Detected Trainer ID:", getTrainerId(u));
-    }
-  });
+
 
   const isStrictTrainer = createMemo(() => {
     const u = user();
-    return u?.role === "trainer";
+    return (u?.role || "").toLowerCase() !== "admin";
   });
 
   const filteredAvailabilities = createMemo(() => {
@@ -87,24 +158,20 @@ const AvailabilitiesPage = () => {
     const u = user();
     if (!u) return [];
 
-    const role = u.role as string;
-
-    if (role === "admin" || role === "coordinator") return list;
-
+    const role = (u.role || "").toLowerCase();
+    let result = list;
     const myId = getTrainerId(u);
-    if (!myId) return [];
 
-    console.log(
-      `DEBUG: Filtering ${list.length} records for Trainer ID: ${myId}`,
-    );
+    if (role !== "admin") {
+      if (!myId) return [];
+      result = list.filter(a => normalizeId(a.trainer_id) === normalizeId(myId));
+    }
 
-    const results = list.filter((a) => {
-      const isMatch = normalizeId(a.trainer_id) === normalizeId(myId);
-      return isMatch;
-    });
+    if (selectedTrainerFilter()) {
+      result = result.filter(a => normalizeId(a.trainer_id) === normalizeId(selectedTrainerFilter()));
+    }
 
-    console.log(`DEBUG: Found ${results.length} matches.`);
-    return results;
+    return result;
   });
   const trainerOptions = createMemo(() => {
     const allTrainers = trainersData();
@@ -190,23 +257,16 @@ const AvailabilitiesPage = () => {
           String(availability.availability_id),
           cleanData as any,
         );
-        mutate(
-          (prev) =>
-            prev?.map((u) =>
-              u.availability_id === availability.availability_id
-                ? (cleanData as Availability)
-                : u,
-            ) || [],
-        );
+        await refetch();
         toast.success("Updated");
       } else {
-        const newAv = await api.createAvailability({
+        await api.createAvailability({
           trainer_id: String(cleanData.trainer_id),
           date_day: String(cleanData.date_day),
           slot_number: Number(cleanData.slot_number),
           is_booked: 0,
         });
-        mutate((prev) => [...(prev || []), newAv]);
+        await refetch();
         toast.success("Created");
       }
     } catch (e: any) {
@@ -216,11 +276,15 @@ const AvailabilitiesPage = () => {
   };
 
   const confirmDelete = async (item: Availability) => {
-    await api.deleteAvailability(String(item.availability_id));
-    mutate(
-      (prev) =>
-        prev?.filter((c) => c.availability_id !== item.availability_id) || [],
-    );
+    const id = String(item.availability_id);
+    if (!id || id === "undefined") return;
+    try {
+      await api.deleteAvailability(id);
+    } catch (e) {
+      console.warn("Delete failed", e);
+    }
+
+    await refetch();
     toast.success("Availability deleted");
   };
 
@@ -245,104 +309,391 @@ const AvailabilitiesPage = () => {
       });
     }
     return map;
+    return map;
   });
 
+  const calendarEvents = createMemo<EventInput[]>(() => {
+    const list = filteredAvailabilities();
+    if (!list) return [];
+
+    // Grouping for merge
+    const groups: Record<string, Availability[]> = {};
+    for (const av of list) {
+      if (!av.slot_number) continue;
+      const date = toInputDate(av.date_day);
+      const key = `${normalizeId(av.trainer_id)}-${date}-${av.is_booked}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(av);
+    }
+
+    const events: EventInput[] = [];
+
+    for (const key in groups) {
+      const group = groups[key];
+      // Sort by slot number
+      group.sort((a, b) => (a.slot_number || 0) - (b.slot_number || 0));
+
+      let currentEvent: EventInput | null = null;
+      let lastEndTime: string | null = null;
+
+      for (const av of group) {
+        if (!av.slot_number) continue;
+        const times = SLOT_TIMES[av.slot_number];
+        if (!times) continue;
+
+        const date = toInputDate(av.date_day);
+        const startStr = `${date}T${times.start}`;
+        const endStr = `${date}T${times.end}`;
+
+        // Check if contiguous with current event
+        // Must match: previous end time === current start time
+        let isContiguous = false;
+        if (currentEvent && lastEndTime && lastEndTime === startStr) {
+          isContiguous = true;
+        }
+
+        if (isContiguous && currentEvent) {
+          // Extend existing event
+          currentEvent.end = endStr;
+          if (currentEvent.extendedProps) {
+            currentEvent.extendedProps.mergedIds.push(String(av.availability_id));
+          }
+          lastEndTime = endStr;
+        } else {
+          // Create new event
+          const trainer = trainersMap().get(normalizeId(av.trainer_id));
+          const trainerName = trainer?.name || "Unknown";
+
+          currentEvent = {
+            id: String(av.availability_id),
+            title: `Available`,
+            start: startStr,
+            end: endStr,
+            backgroundColor: av.is_booked ? "var(--color-error)" : "var(--color-success)",
+            borderColor: av.is_booked ? "var(--color-error)" : "var(--color-success)",
+            textColor: "#fff",
+            extendedProps: {
+              trainerName,
+              mergedIds: [String(av.availability_id)],
+              ...av
+            }
+          };
+          events.push(currentEvent);
+          lastEndTime = endStr;
+        }
+      }
+    }
+
+    return events;
+  });
+
+  const handleCalendarCreate = async (startStr: string, endStr: string) => {
+    // Robust parsing using strings
+    const startDate = toSafeLocalDate(startStr);
+    const endDate = toSafeLocalDate(endStr);
+
+    // Robust local date derivation
+    const dateDay = getLocalYYYYMMDD(startDate);
+
+    const slotsToCreate = getMatchingSlots(startDate, endDate);
+
+    if (slotsToCreate.length === 0) {
+      toast.error("Please select a range covering at least one valid slot (slots are usually 1h long).");
+      return;
+    }
+
+    try {
+      const u = user();
+      let trainerId = isStrictTrainer() ? getTrainerId(u) : "";
+
+      if (!isStrictTrainer()) {
+        if (selectedTrainerFilter()) {
+          trainerId = selectedTrainerFilter();
+        }
+      }
+
+      if (!trainerId) {
+        toast.error("Please select a specific trainer from the dropdown above to add availability.");
+        return;
+      }
+
+      const createdList: Availability[] = [];
+      for (const slot of slotsToCreate) {
+        try {
+          const newAv = await api.createAvailability({
+            trainer_id: trainerId,
+            date_day: dateDay,
+            slot_number: slot,
+            is_booked: 0,
+          });
+          createdList.push(newAv);
+        } catch (e) {
+          console.warn(`Failed to create for slot ${slot}`, e);
+        }
+      }
+
+      if (createdList.length > 0) {
+        await refetch();
+        toast.success(`Created ${createdList.length} availability slot(s)`);
+      } else {
+        toast.error("Failed to create any slots.");
+      }
+
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const handleCalendarEdit = async (event: any) => {
+    const props = event.extendedProps;
+    const idsToDelete: string[] = props.mergedIds || [event.id];
+
+    if (confirm(`Delete availability? ${idsToDelete.length > 1 ? `(${idsToDelete.length} slots)` : ""}`)) {
+      try {
+        for (const id of idsToDelete) {
+          if (!id || id === "undefined") continue;
+          try {
+            await api.deleteAvailability(id);
+          } catch (e) {
+            console.warn(`Failed to delete ${id}`, e);
+          }
+        }
+
+        await refetch();
+        toast.success("Deleted");
+      } catch (e) {
+        console.error(e);
+        toast.error("Error deleting one or more slots");
+      }
+    }
+  };
+
+
+  const handleCalendarMove = async (event: any, newStartStr: string, newEndStr: string) => {
+    const props = event.extendedProps;
+    const idsToDelete: string[] = props.mergedIds || [event.id];
+    const trainerId = props.trainer_id;
+
+    // Robust parsing using strings
+    const newStart = toSafeLocalDate(newStartStr);
+    const newEnd = toSafeLocalDate(newEndStr);
+
+    // Find matching slots
+    const newSlots = getMatchingSlots(newStart, newEnd);
+    const dateDay = getLocalYYYYMMDD(newStart);
+
+    if (newSlots.length === 0) {
+      toast.error("No valid slots found for this time range.");
+      throw new Error("Invalid range");
+    }
+
+    try {
+      // 1. Create new (First, to ensure safety)
+      for (const slot of newSlots) {
+        await api.createAvailability({
+          trainer_id: trainerId,
+          date_day: dateDay,
+          slot_number: slot,
+          is_booked: 0,
+        });
+      }
+
+      // 2. Delete old (Only if create succeeded)
+      for (const id of idsToDelete) {
+        if (!id || id === "undefined") continue;
+        try {
+          await api.deleteAvailability(id);
+        } catch (e) {
+          console.warn(`Failed to delete ${id}, likely already deleted or not found.`);
+        }
+      }
+
+      // 3. Trigger refetch to ensure UI is in sync with server
+      await refetch();
+
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to move availability");
+      throw e; // Revert in calendar
+    }
+  };
+
+  const isRangeValid = (start: string | Date, end: string | Date) => {
+    // Robust parsing
+    const s = toSafeLocalDate(start);
+    const e = toSafeLocalDate(end);
+
+    // Check if range overlaps with ANY valid slot
+    for (const [_, times] of Object.entries(SLOT_TIMES)) {
+      const [sh, sm] = times.start.split(":").map(Number);
+      const [eh, em] = times.end.split(":").map(Number);
+
+      // Use safe start date 's' as base
+      const slotStart = new Date(s);
+      slotStart.setHours(sh, sm, 0, 0);
+
+      const slotEnd = new Date(s);
+      slotEnd.setHours(eh, em, 0, 0);
+
+      // Overlap check
+      if (s < slotEnd && e > slotStart) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   return (
-    <EntityTable<Availability>
-      title="Manage Availabilities"
-      data={filteredAvailabilities}
-      handleEditClick={(item) => ({
-        ...item,
-        date_day: toInputDate(item.date_day),
-      })}
-      handleAddClick={prepareAdd}
-      confirmDelete={confirmDelete}
-      handleSave={handleSave}
-      formFields={formFieldsConfig()}
-      filter={(e: Availability, search: string) => {
-        const s = search.toLowerCase();
-        const tData = trainersData();
+    <div class="p-6 h-full flex flex-col gap-6">
+      <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-4 w-full sm:w-auto">
+          <h1 class="text-2xl font-bold text-base-content">Availability</h1>
+          <Show when={!isStrictTrainer() && trainersData()}>
+            <select
+              class="select select-bordered select-sm w-full max-w-xs"
+              value={selectedTrainerFilter()}
+              onChange={(e) => setSelectedTrainerFilter(e.currentTarget.value)}
+            >
+              <option value="">All Trainers</option>
+              {trainerOptions().map((t) => (
+                <option value={String(t.value)}>{t.label}</option>
+              ))}
+            </select>
+          </Show>
+        </div>
 
-        const trainer = tData?.find(
-          (t) => normalizeId(getTrainerId(t)) === normalizeId(e.trainer_id),
-        );
-        const tName = trainer?.name?.toLowerCase() || "";
-        const dateStr = toInputDate(e.date_day);
+        <div class="join bg-base-200/50 p-1 rounded-lg">
+          <button
+            class={`join-item btn border-0 ${viewMode() === "calendar" ? "btn-active shadow-sm !bg-base-100 text-base-content hover:!bg-base-100" : "btn-ghost text-base-content/70 hover:bg-transparent"}`}
+            onClick={() => setViewMode("calendar")}
+          >
+            Calendar
+          </button>
+          <button
+            class={`join-item btn border-0 ${viewMode() === "list" ? "btn-active shadow-sm !bg-base-100 text-base-content hover:!bg-base-100" : "btn-ghost text-base-content/70 hover:bg-transparent"}`}
+            onClick={() => setViewMode("list")}
+          >
+            List
+          </button>
+        </div>
+      </div>
 
-        return tName.includes(s) || dateStr.includes(s);
-      }}
-      fields={[
-        {
-          formattedName: "Trainer",
-          fieldName: "trainer_id",
-          canCopy: false,
-          customGeneration: (e) => {
-            return (
-              <Show
-                when={!trainersData.loading && trainersData()}
-                fallback={<div class="skeleton h-4 w-32"></div>}
-              >
-                {(trainers) => {
-                  const avTrainerId = normalizeId(e.trainer_id);
-                  const trainer = trainersMap().get(avTrainerId);
+      <div class="flex-1 min-h-0">
+        <Show when={viewMode() === "calendar"}>
+          <div class="card bg-base-100 shadow-xl h-full border border-base-300">
+            <div class="card-body p-4 h-full relative overflow-hidden">
+              <AvailabilityCalendar
+                events={calendarEvents()}
+                isEditable={true}
+                loading={availabilitiesData.loading}
+                onCreateRequest={handleCalendarCreate}
+                onEditRequest={handleCalendarEdit}
+                onMoveRequest={handleCalendarMove}
+                validateDrop={isRangeValid}
+              />
+            </div>
+          </div>
+        </Show>
 
-                  const name =
-                    trainer?.name || trainer?.username || "Unknown Trainer";
-                  const idToDisplay = e.trainer_id || "N/A";
+        <Show when={viewMode() === "list"}>
+          <EntityTable<Availability>
+            title=""
+            data={filteredAvailabilities}
+            handleEditClick={(item) => ({
+              ...item,
+              date_day: toInputDate(item.date_day),
+            })}
+            handleAddClick={prepareAdd}
+            confirmDelete={confirmDelete}
+            handleSave={handleSave}
+            formFields={formFieldsConfig()}
+            filter={(e: Availability, search: string) => {
+              const s = search.toLowerCase();
+              const tData = trainersData();
 
+              const trainer = tData?.find(
+                (t) => normalizeId(getTrainerId(t)) === normalizeId(e.trainer_id),
+              );
+              const tName = trainer?.name?.toLowerCase() || "";
+              const dateStr = toInputDate(e.date_day);
+
+              return tName.includes(s) || dateStr.includes(s);
+            }}
+            fields={[
+              {
+                formattedName: "Trainer",
+                fieldName: "trainer_id",
+                canCopy: false,
+                customGeneration: (e) => {
                   return (
-                    <div class="flex flex-col items-start justify-center">
-                      <div class="font-bold text-sm">{name}</div>
-                      <div
-                        class="text-[10px] font-mono opacity-60 flex items-center gap-1 cursor-pointer hover:text-primary hover:opacity-100 transition-colors"
-                        onClick={(evt) => {
-                          evt.stopPropagation();
-                          copyToClipboard(idToDisplay);
-                        }}
-                        title="Click to copy ID"
-                      >
-                        {idToDisplay.substring(0, 8)}...
-                      </div>
-                    </div>
+                    <Show
+                      when={!trainersData.loading && trainersData()}
+                      fallback={<div class="skeleton h-4 w-32"></div>}
+                    >
+                      {(_) => {
+                        const avTrainerId = normalizeId(e.trainer_id);
+                        const trainer = trainersMap().get(avTrainerId);
+
+                        const name =
+                          trainer?.name || trainer?.username || "Unknown Trainer";
+                        const idToDisplay = e.trainer_id || "N/A";
+
+                        return (
+                          <div class="flex flex-col items-start justify-center">
+                            <div class="font-bold text-sm">{name}</div>
+                            <div
+                              class="text-[10px] font-mono opacity-60 flex items-center gap-1 cursor-pointer hover:text-primary hover:opacity-100 transition-colors"
+                              onClick={(evt) => {
+                                evt.stopPropagation();
+                                copyToClipboard(idToDisplay);
+                              }}
+                              title="Click to copy ID"
+                            >
+                              {idToDisplay.substring(0, 8)}...
+                            </div>
+                          </div>
+                        );
+                      }}
+                    </Show>
                   );
-                }}
-              </Show>
-            );
-          },
-        },
-        {
-          formattedName: "Date",
-          fieldName: "date_day",
-          customGeneration: (e) => toInputDate(e.date_day),
-        },
-        {
-          formattedName: "Slot",
-          fieldName: "slot_number",
-          customGeneration: (e) => {
-            const slot = SLOT_OPTIONS.find((s) => s.value == e.slot_number);
-            return (
-              <span class="badge badge-ghost badge-sm">
-                {slot ? slot.label : `Slot ${e.slot_number}`}
-              </span>
-            );
-          },
-        },
-        {
-          formattedName: "Status",
-          fieldName: "is_booked",
-          customGeneration: (e) =>
-            e.is_booked ? (
-              <span class="badge badge-error gap-1 text-xs font-semibold text-white">
-                Booked
-              </span>
-            ) : (
-              <span class="badge badge-success gap-1 text-xs font-semibold text-white">
-                Free
-              </span>
-            ),
-        },
-      ]}
-    />
+                },
+              },
+              {
+                formattedName: "Date",
+                fieldName: "date_day",
+                customGeneration: (e) => toInputDate(e.date_day),
+              },
+              {
+                formattedName: "Slot",
+                fieldName: "slot_number",
+                customGeneration: (e) => {
+                  const slot = SLOT_OPTIONS.find((s) => s.value == e.slot_number);
+                  return (
+                    <span class="badge badge-ghost badge-sm">
+                      {slot ? slot.label : `Slot ${e.slot_number}`}
+                    </span>
+                  );
+                },
+              },
+              {
+                formattedName: "Status",
+                fieldName: "is_booked",
+                customGeneration: (e) =>
+                  e.is_booked ? (
+                    <span class="badge badge-error gap-1 text-xs font-semibold text-white">
+                      Booked
+                    </span>
+                  ) : (
+                    <span class="badge badge-success gap-1 text-xs font-semibold text-white">
+                      Free
+                    </span>
+                  ),
+              },
+            ]}
+          />
+        </Show>
+      </div>
+    </div>
   );
 };
 
