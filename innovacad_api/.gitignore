@@ -5,3 +5,4 @@ lib/vaden_application.dart
 .vscode
 public/**
 .env
+bin/certificates/**

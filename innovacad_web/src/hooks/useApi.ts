@@ -7,6 +7,7 @@ import {
   type Result,
 } from "@/api/api";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
+import type { AttendanceStats } from "@/types/attendance";
 import type { SendVerificationData, SignInData } from "@/types/auth";
 import {
   Availability,
@@ -1832,6 +1833,26 @@ export const useApi = () => {
     return true;
   };
 
+  /**
+   * Fetch attendance statistics for all trainees in a class module
+   */
+  const fetchAttendanceByClassModule = async (
+    classModuleId: string,
+  ): Promise<AttendanceStats[]> => {
+    const res = await fetchApi<AttendanceStats[]>(
+      `/attendances/stats/${classModuleId}`,
+      "GET",
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(
+        `Fetch attendance stats failed: ${res.error?.message || "Unknown error"}`,
+      );
+    }
+
+    return res.data;
+  };
+
   return {
     // Sign In/Up
     signIn,
@@ -1934,5 +1955,8 @@ export const useApi = () => {
     // Summaries
     fetchSummaryGrid,
     saveSummary,
+
+    // Attendances
+    fetchAttendanceByClassModule,
   };
 };

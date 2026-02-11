@@ -18,13 +18,13 @@ class OutputEnrollmentDao {
 
   @annotation.JsonKey(name: 'final_grade')
   @DoubleConverter()
-  final double finalGrade;
+  final double? finalGrade;
 
   OutputEnrollmentDao({
     required this.enrollmentId,
     required this.classId,
     required this.traineeId,
-    required this.finalGrade,
+    this.finalGrade = 0,
   });
 
   Map<String, dynamic> toJson() => _$OutputEnrollmentDaoToJson(this);
