@@ -100,7 +100,7 @@ export const auth = betterAuth({
     "http://localhost:5000",
   ],
   session: {
-    expiresIn: 1800,
+    expiresIn: 3600,
     cookieCache: { enabled: true, strategy: "jwt" },
     additionalFields: {
       iss: { type: "string", defaultValue: API.JWT.ISSUER },
