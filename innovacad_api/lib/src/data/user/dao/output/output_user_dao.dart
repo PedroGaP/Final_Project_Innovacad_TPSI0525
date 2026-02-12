@@ -71,7 +71,10 @@ class OutputUserDao {
   });
 
   static bool convertBoolean(Map map, String s) {
-    return map[s] == 1;
+    print("CONVERT BOOLEAN ($s): ${map[s]} > $map");
+    if (map[s] is bool) return map[s];
+    if (map[s] is int) return map[s] == null ? false : map[s] == 1;
+    return false;
   }
 
   Map<String, dynamic> toJson() => _$OutputUserDaoToJson(this);

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
 import 'package:innovacad_api/src/core/core.dart';
+import 'package:innovacad_api/src/core/extensions/mysql_utils_extension.dart';
 import 'package:innovacad_api/src/data/data.dart';
 import 'package:innovacad_api/src/data/trainer/dao/skills_output/skill_output_dao.dart';
 import 'package:innovacad_api/src/domain/domain.dart';
@@ -129,10 +130,18 @@ class TrainerRepositoryImpl implements ITrainerRepository {
           trainerMap['coordinated_class_ids'] = [];
         }
 
+        print("TRAINER MAP::: $trainerMap");
+
         return Result.success(OutputTrainerDao.fromJson(trainerMap));
       });
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          e.toString(),
+          details: {"stack": s.toString()},
+        ),
+      );
     }
   }
 
@@ -140,6 +149,9 @@ class TrainerRepositoryImpl implements ITrainerRepository {
   Future<Result<OutputTrainerDao>> create(CreateTrainerDto dto) async {
     MysqlUtils? db;
     String? createdUserId;
+
+    print("TRAINER DTO::: ${dto.toJson()}");
+
     try {
       final bool hasClassesToCoordinate =
           dto.classIds != null && dto.classIds!.isNotEmpty;
@@ -151,6 +163,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
         dto.email,
         dto.name,
         dto.password,
+        dto.username,
       );
       if (responseUser.isFailure) return Result.failure(responseUser.error!);
 
@@ -158,80 +171,79 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       createdUserId = userData["id"];
 
       db = await MysqlConfiguration.getConnection();
-      await db.startTrans();
 
-      final userCheck = await db.query(
-        "SELECT id FROM user WHERE id = ?",
-        whereValues: [createdUserId],
-        isStmt: true,
-      );
-
-      if (userCheck.numOfRows == 0) {
-        await db.insert(
-          table: "user",
-          insertData: {
-            "id": createdUserId,
-            "username": dto.username,
-            "name": dto.name,
-            "email": dto.email,
-            "role": userRole,
-            "createdAt": DateTime.now().toIso8601String(),
-            "emailVerified": 0,
-          },
+      return await db.transaction((txn) async {
+        final userCheck = await txn.query(
+          "SELECT id FROM user WHERE id = ?",
+          whereValues: [createdUserId],
+          isStmt: true,
         );
-      } else {
-        await db.update(
-          table: "user",
-          updateData: {"username": dto.username, "role": userRole},
-          where: {"id": createdUserId},
-        );
-      }
 
-      final trainerId = Uuid().v4();
-
-      await db.insert(
-        table: table,
-        insertData: {
-          "trainer_id": trainerId,
-          "user_id": createdUserId,
-          "birthday_date": dto.birthdayDate,
-          "is_coordinator": isCoordinator ? 1 : 0,
-        },
-      );
-
-      if (dto.skillsToAdd != null) {
-        for (var skill in dto.skillsToAdd!) {
-          await db.insert(
-            table: "trainer_skills",
+        if (userCheck.numOfRows == 0) {
+          await txn.insert(
+            table: "user",
             insertData: {
-              "trainer_id": trainerId,
-              "module_id": skill.moduleId,
-              "competence_level": skill.competenceLevel ?? 1,
+              "id": createdUserId,
+              "username": dto.username,
+              "name": dto.name,
+              "email": dto.email,
+              "role": userRole,
+              "createdAt": DateTime.now().toIso8601String(),
+              "emailVerified": 0,
             },
           );
         }
-      }
 
-      if (hasClassesToCoordinate) {
-        for (var classId in dto.classIds!) {
-          await db.query(
-            "INSERT INTO trainers_classes_coordinator (trainer_id, class_id) VALUES (?, ?)",
-            whereValues: [trainerId, classId],
-            isStmt: true,
-          );
+        final trainerId = const Uuid().v4();
+
+        await txn.insert(
+          table: table,
+          insertData: {
+            "trainer_id": trainerId,
+            "user_id": createdUserId,
+            "birthday_date": dto.birthdayDate,
+            "is_coordinator": isCoordinator ? 1 : 0,
+          },
+        );
+
+        if (dto.skillsToAdd != null) {
+          for (var skill in dto.skillsToAdd!) {
+            await txn.insert(
+              table: "trainer_skills",
+              insertData: {
+                "trainer_id": trainerId,
+                "module_id": skill.moduleId,
+                "competence_level": skill.competenceLevel ?? 1,
+              },
+            );
+          }
         }
-      }
 
-      await db.commit();
-      return await getById(trainerId);
-    } catch (e) {
-      if (db != null) await db.rollback();
+        if (hasClassesToCoordinate) {
+          for (var classId in dto.classIds!) {
+            await txn.query(
+              "INSERT INTO trainers_classes_coordinator (trainer_id, class_id) VALUES (?, ?)",
+              whereValues: [trainerId, classId],
+              isStmt: true,
+            );
+          }
+        }
+
+        final res = await getById(trainerId);
+        print("Trainer::: ${res.data?.toJson()}");
+        return res;
+      });
+    } catch (e, s) {
       if (createdUserId != null) {
         await _remoteUserService.deleteUserAsAdmin(createdUserId);
       }
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
-    } finally {
-      await MysqlConfiguration.closeConnection(db);
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          e.toString(),
+          details: {"stack": s.toString()},
+        ),
+      );
     }
   }
 

@@ -42,7 +42,6 @@ fun RoomAvailabilityScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            // Room Selector
             RoomDropdown(
                 rooms = rooms,
                 selectedRoom = selectedRoom,
@@ -62,7 +61,6 @@ fun RoomAvailabilityScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Check Availability Button
             Button(
                 onClick = {
                     selectedRoom?.let { room ->
@@ -84,7 +82,6 @@ fun RoomAvailabilityScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Error Message
             error?.let {
                 Card(
                     colors = CardDefaults.cardColors(
@@ -108,7 +105,6 @@ fun RoomAvailabilityScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Results
             if (selectedRoom != null && busySlots.isNotEmpty()) {
                 Text(
                     "Busy Time Slots",

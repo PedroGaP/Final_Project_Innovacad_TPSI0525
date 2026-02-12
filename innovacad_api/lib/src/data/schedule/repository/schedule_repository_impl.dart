@@ -392,21 +392,30 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
     try {
       print(dto.toJson());
 
-      final currentResult = await _getSingleScheduleById(id);
-      if (currentResult.isFailure) return currentResult;
-
       db = await MysqlConfiguration.getConnection();
-      final rawCurrent = await db.getOne(
-        table: schedulesTable,
-        where: {'schedule_id': id},
+      await db.query("SET SESSION innodb_lock_wait_timeout = 10");
+
+      final rawCurrent = await db.query(
+        "SELECT schedule_id, trainer_id, class_module_id, "
+        "start_date_timestamp, end_date_timestamp "
+        "FROM schedules WHERE schedule_id = ? FOR UPDATE",
+        whereValues: [id],
+        isStmt: true,
       );
 
-      final String oldTrainerId = rawCurrent['trainer_id'];
+      if (rawCurrent.numOfRows == 0) {
+        return Result.failure(
+          AppError(AppErrorType.notFound, "Schedule not found"),
+        );
+      }
+
+      final current = rawCurrent.rowsAssoc.first.assoc();
+      final String oldTrainerId = current['trainer_id'];
       final DateTime oldStartTime = DateTime.parse(
-        rawCurrent['start_date_timestamp'].toString(),
+        current['start_date_timestamp'].toString(),
       );
       final DateTime oldEndTime = DateTime.parse(
-        rawCurrent['end_date_timestamp'].toString(),
+        current['end_date_timestamp'].toString(),
       );
 
       final bool isTrainerChanged =
@@ -421,33 +430,50 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       if (dto.isOnline != null) updateData['is_online'] = dto.isOnline! ? 1 : 0;
       if (dto.regimeType != null) updateData['regime_type'] = dto.regimeType;
 
-      List<String> newAvailabilityIds = [];
-      List<String> oldAvailabilityIds = [];
-
       final targetTrainerId = dto.trainerId ?? oldTrainerId;
       final targetStart = dto.startTime ?? oldStartTime;
       final targetEnd = dto.endTime ?? oldEndTime;
 
-      if (isTrainerChanged || isTimeChanged) {
-        final oldSlotsResult = await db.query(
-          "SELECT availability_id FROM schedule_slots WHERE schedule_id = ?",
+      if (!isTrainerChanged && !isTimeChanged) {
+        if (updateData.isEmpty) {
+          return await _getSingleScheduleById(id);
+        }
+
+        await db.update(
+          table: schedulesTable,
+          updateData: updateData,
+          where: {'schedule_id': id},
+        );
+
+        return await _getSingleScheduleById(id);
+      }
+
+      List<String> newAvailabilityIds = [];
+
+      await db.transaction((txn) async {
+        final oldSlotsResult = await txn.query(
+          "SELECT availability_id FROM schedule_slots "
+          "WHERE schedule_id = ? ORDER BY availability_id FOR UPDATE",
           whereValues: [id],
           isStmt: true,
         );
+
+        List<String> oldAvailabilityIds = [];
         for (var row in oldSlotsResult.rows) {
           oldAvailabilityIds.add(row['availability_id'].toString());
         }
 
         final availSql = """
-            SELECT rs.start_time, rs.end_time, a.availability_id, a.is_booked
-            FROM availabilities a
-            JOIN ref_slots rs ON a.slot_number = rs.slot_number
-            WHERE a.trainer_id = ? 
-            AND DATE(a.date_day) = DATE(?)
-            ORDER BY rs.start_time ASC
-        """;
+        SELECT a.availability_id, a.is_booked, rs.start_time, rs.end_time
+        FROM availabilities a
+        JOIN ref_slots rs ON a.slot_number = rs.slot_number
+        WHERE a.trainer_id = ? 
+          AND DATE(a.date_day) = DATE(?)
+        ORDER BY a.availability_id ASC
+        FOR UPDATE SKIP LOCKED
+      """;
 
-        final availResult = await db.query(
+        final availResult = await txn.query(
           availSql,
           whereValues: [targetTrainerId, targetStart],
           isStmt: true,
@@ -457,75 +483,101 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
           final data = row.assoc();
           final sStart = _combineDateAndTime(targetStart, data['start_time']);
           final sEnd = _combineDateAndTime(targetStart, data['end_time']);
-
           final isBooked =
               (data['is_booked'] == 1 || data['is_booked'] == true);
           final availId = data['availability_id'].toString();
 
           if (sStart.isBefore(targetEnd) && sEnd.isAfter(targetStart)) {
-
-            if (isBooked && !oldAvailabilityIds.contains(availId)) {
-              continue;
+            if (!isBooked || oldAvailabilityIds.contains(availId)) {
+              newAvailabilityIds.add(availId);
             }
-
-            newAvailabilityIds.add(availId);
           }
         }
 
         if (newAvailabilityIds.isEmpty) {
-          return Result.failure(
-            AppError(
-              AppErrorType.conflict,
-              "Não há slots disponíveis (Horário ocupado por outro agendamento).",
-            ),
+          throw AppError(AppErrorType.conflict, "Não há slots disponíveis.");
+        }
+
+        final idsToFree = oldAvailabilityIds
+            .where((id) => !newAvailabilityIds.contains(id))
+            .toList();
+
+        final idsToBook = newAvailabilityIds
+            .where((id) => !oldAvailabilityIds.contains(id))
+            .toList();
+
+        await txn.query(
+          "DELETE FROM schedule_slots WHERE schedule_id = ?",
+          whereValues: [id],
+          isStmt: true,
+        );
+
+        if (idsToFree.isNotEmpty) {
+          final placeholders = idsToFree.map((_) => '?').join(',');
+          await txn.query(
+            "UPDATE availabilities SET is_booked = 0 "
+            "WHERE availability_id IN ($placeholders)",
+            whereValues: idsToFree,
+            isStmt: true,
           );
         }
-      }
 
-      await db.transaction((txn) async {
-        if (isTrainerChanged || isTimeChanged) {
-          final idsToFree = oldAvailabilityIds
-              .where((id) => !newAvailabilityIds.contains(id))
-              .toList();
+        if (idsToBook.isNotEmpty) {
+          final placeholders = idsToBook.map((_) => '?').join(',');
 
-          if (idsToFree.isNotEmpty) {
-            idsToFree.sort();
-            final idsStr = idsToFree.map((id) => "'$id'").join(',');
-            await txn.query(
-              "UPDATE availabilities SET is_booked = 0 WHERE availability_id IN ($idsStr)",
-            );
-          }
-
-          await txn.delete(
-            table: schedulesSlotsTable,
-            where: {'schedule_id': id},
+          final recheckResult = await txn.query(
+            "SELECT availability_id FROM availabilities "
+            "WHERE availability_id IN ($placeholders) "
+            "AND is_booked = 0 "
+            "FOR UPDATE",
+            whereValues: idsToBook,
+            isStmt: true,
           );
 
-          if (newAvailabilityIds.isNotEmpty) {
-            newAvailabilityIds.sort();
-            final idsStr = newAvailabilityIds.map((id) => "'$id'").join(',');
+          final foundIds = recheckResult.rows
+              .map((r) => r['availability_id'].toString())
+              .toSet();
 
-            await txn.query(
-              "UPDATE availabilities SET is_booked = 1 WHERE availability_id IN ($idsStr)",
-            );
+          final missingIds = idsToBook
+              .where((id) => !foundIds.contains(id))
+              .toList();
 
-            final slotsValues = <String>[];
-            for (final availId in newAvailabilityIds) {
-              final slotId = Uuid().v4();
-              slotsValues.add("('$slotId', '$id', '$availId', 1)");
-            }
-            await txn.query(
-              "INSERT INTO schedule_slots (slot_id, schedule_id, availability_id, slot_status) VALUES ${slotsValues.join(',')}",
+          if (missingIds.isNotEmpty) {
+            throw AppError(
+              AppErrorType.conflict,
+              "Slots ${missingIds.join(', ')} já foram reservados por outro agendamento.",
             );
           }
 
-          if (isTrainerChanged) updateData['trainer_id'] = targetTrainerId;
-          if (isTimeChanged) {
-            updateData['start_date_timestamp'] = _toSqlDate(targetStart);
-            updateData['end_date_timestamp'] = _toSqlDate(targetEnd);
-            updateData['total_hours'] =
-                targetEnd.difference(targetStart).inMinutes / 60.0;
-          }
+          await txn.query(
+            "UPDATE availabilities SET is_booked = 1 "
+            "WHERE availability_id IN ($placeholders)",
+            whereValues: idsToBook,
+            isStmt: true,
+          );
+        }
+
+        if (newAvailabilityIds.isNotEmpty) {
+          final values = newAvailabilityIds
+              .map((availId) {
+                final slotId = Uuid().v4();
+                return "('$slotId', '$id', '$availId', 1)";
+              })
+              .join(',');
+
+          await txn.query(
+            "INSERT INTO schedule_slots "
+            "(slot_id, schedule_id, availability_id, slot_status) "
+            "VALUES $values",
+          );
+        }
+
+        if (isTrainerChanged) updateData['trainer_id'] = targetTrainerId;
+        if (isTimeChanged) {
+          updateData['start_date_timestamp'] = _toSqlDate(targetStart);
+          updateData['end_date_timestamp'] = _toSqlDate(targetEnd);
+          updateData['total_hours'] =
+              targetEnd.difference(targetStart).inMinutes / 60.0;
         }
 
         if (updateData.isNotEmpty) {
@@ -539,7 +591,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
 
       return await _getSingleScheduleById(id);
     } catch (e, s) {
-      print("Update Error: $e");
+      print("Update Error: $e\n$s");
       if (e is AppError) return Result.failure(e);
       return Result.failure(
         AppError(AppErrorType.internal, "Update failed: $e"),

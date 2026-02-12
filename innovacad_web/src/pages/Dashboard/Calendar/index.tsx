@@ -7,7 +7,6 @@ import SummaryModal from "@/components/Modal/Summary";
 import { useApi } from "@/hooks/useApi";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import type { Class } from "@/types/class";
-import type { Schedule } from "@/types/schedule";
 import {
   createEffect,
   createMemo,
@@ -262,7 +261,7 @@ const Calendar = () => {
       };
       setInfoTarget(readOnlyData);
       setIsInfoModalOpen(true);
-      return;
+      return true;
     }
 
     console.log("==== Debug ====");
@@ -298,12 +297,12 @@ const Calendar = () => {
             currentDuration: event.extendedProps?.currentDuration,
           });
           setIsSummaryModalOpen(true);
-          return;
+          return true;
         } else {
           toast.error(
             `Aulas passadas: apenas o formador (${event.extendedProps?.instructor}) pode preencher sumários.`,
           );
-          return;
+          return false;
         }
       }
     }
@@ -312,7 +311,7 @@ const Calendar = () => {
       toast.success(
         `Informação da Aula:\n${event.title}\nSala: ${event.extendedProps?.roomName || "N/A"}`,
       );
-      return;
+      return false;
     }
 
     setModalMode("edit");
@@ -339,6 +338,7 @@ const Calendar = () => {
       force: false,
     });
     setIsEditModalOpen(true);
+    return true;
   };
 
   const handleFormChange = (newData: ScheduleFormData) => {
@@ -468,7 +468,7 @@ const Calendar = () => {
             isEditable={true}
             loading={schedules.loading}
             onCreateRequest={(start, end) => {
-              if (!canEdit()) return;
+              if (!canEdit()) return false;
               setModalMode("create");
               setFormData({
                 moduleId: "",
@@ -480,15 +480,16 @@ const Calendar = () => {
                 force: false,
               });
               setIsEditModalOpen(true);
+              return true;
             }}
             onEditRequest={handleEditRequest}
             onMoveRequest={async (id, start, end) => {
-              if (!canEdit()) return;
+              if (!canEdit()) return false;
               try {
                 const original = displaySchedules().find(
                   (s: any) => (s.schedule_id || s.scheduleId) === id,
                 );
-                if (!original) return;
+                if (!original) return false;
                 await updateSchedule(id, {
                   trainer_id: original.trainer_id || original.trainerId,
                   room_id: original.room_id || original.roomId,
@@ -497,8 +498,10 @@ const Calendar = () => {
                   end_time: end.toISOString(),
                 });
                 refetchSchedules();
+                return true;
               } catch (e: any) {
                 toast.error("Failed to move event");
+                return false;
               }
             }}
           />

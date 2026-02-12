@@ -17,6 +17,7 @@ class SecurityConfiguration {
       RequestMatcher('/sign/**').permitAll(),
       RequestMatcher('/email/**').permitAll(),
       RequestMatcher('/statistics/**').permitAll(),
+      RequestMatcher('/resource/**').permitAll(),
 
       // Trainees
       RequestMatcher(

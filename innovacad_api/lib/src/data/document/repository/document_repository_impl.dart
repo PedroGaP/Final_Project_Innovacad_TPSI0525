@@ -22,7 +22,7 @@ class DocumentRepositoryImpl {
 
       await db.startTrans();
 
-      await db.insert(
+      BigInt bg = await db.insert(
         table: 'documents',
         insertData: {
           'document_id': Uuid().v4(),
@@ -34,6 +34,17 @@ class DocumentRepositoryImpl {
           'user_id': userId,
         },
       );
+
+      print(bg);
+      print({
+        'document_id': Uuid().v4(),
+        'file_name': originalName,
+        'file_path': filePath,
+        'mime_type': mimeType,
+        'file_size_bytes': size,
+        'type_code': typeCode,
+        'user_id': userId,
+      });
 
       await db.commit();
 
