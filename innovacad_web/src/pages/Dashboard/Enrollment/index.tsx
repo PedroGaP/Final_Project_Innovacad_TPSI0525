@@ -1,34 +1,32 @@
-import { createMemo, createResource } from "solid-js";
+import { createMemo, createResource, createSignal, Show } from "solid-js";
 import type { Enrollment } from "@/types/enrollment";
 import type { Trainee } from "@/types/user";
 import type { Class } from "@/types/class";
 import { useApi } from "@/hooks/useApi";
+import { useUserDetails } from "@/providers/UserDetailsProvider";
 import toast from "solid-toast";
-import EntityTable from "@/components/EntityTable";
+import EntityTable, { ActionsEnum } from "@/components/EntityTable";
 import type { ModalFieldDefinition } from "@/components/Modal/Edit";
+import type { Course } from "@/types/course";
+import { Icon } from "@/components/Icon";
 
 const createEmptyEnrollment = (): Enrollment =>
   ({
     enrollment_id: "",
     class_id: "",
     trainee_id: "",
-    final_grade: "",
+    final_grade: "0",
   }) as unknown as Enrollment;
 
 const validateEnrollment = (
   enrollment: Enrollment,
 ): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
-
   const class_id = String(enrollment.class_id || "").trim();
-  if (!class_id) {
-    errors.push("Class is required");
-  }
+  if (!class_id) errors.push("Class is required");
 
   const trainee_id = String(enrollment.trainee_id || "").trim();
-  if (!trainee_id) {
-    errors.push("Trainee is required");
-  }
+  if (!trainee_id) errors.push("Trainee is required");
 
   const final_grade = String(enrollment.final_grade || "").trim();
   if (
@@ -40,74 +38,81 @@ const validateEnrollment = (
     errors.push("Final Grade must be between 0 and 20");
   }
 
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
+  return { valid: errors.length === 0, errors };
 };
 
 const getChangedFields = (
   oldEnrollment: Enrollment,
   newEnrollment: Enrollment,
-): {
-  class_id?: string;
-  trainee_id?: string;
-  final_grade?: string;
-} => {
+): Partial<Enrollment> => {
   const changes: any = {};
-
   if (String(oldEnrollment.class_id) !== String(newEnrollment.class_id)) {
     changes.class_id = String(newEnrollment.class_id);
   }
-
   if (String(oldEnrollment.trainee_id) !== String(newEnrollment.trainee_id)) {
     changes.trainee_id = String(newEnrollment.trainee_id);
   }
-
   if (String(oldEnrollment.final_grade) !== String(newEnrollment.final_grade)) {
     changes.final_grade = String(newEnrollment.final_grade);
   }
-
   return changes;
 };
 
 const EnrollmentsPage = () => {
   const api = useApi();
+  const { user } = useUserDetails();
 
   const [enrollmentsData, { mutate }] = createResource<Enrollment[]>(
     api.fetchEnrollments,
   );
-
   const [trainees] = createResource<Trainee[]>(api.fetchTrainees);
   const [classes] = createResource<Class[]>(api.fetchClasses);
+  const [courses] = createResource<Course[]>(api.fetchCourses);
+
+  const isTrainee = () => user()?.role === "trainee";
+
+  const tableActions = createMemo(() => {
+    if (isTrainee()) return [ActionsEnum.CUSTOM];
+    return [ActionsEnum.ADD, ActionsEnum.EDIT, ActionsEnum.DELETE];
+  });
+
+  const displayData = createMemo(() => {
+    const all = enrollmentsData();
+    const currentUser = user();
+    if (!all || !currentUser) return [];
+
+    if (currentUser.role === "trainee") {
+      const myId = String(
+        (currentUser as any).trainee_id || currentUser.id,
+      ).toLowerCase();
+      return all.filter((e) => String(e.trainee_id).toLowerCase() === myId);
+    }
+
+    return all;
+  });
 
   const traineeOptions = createMemo(() => {
-    const list = trainees();
-    if (!list) return [];
-
-    return list.map((t) => ({
+    return (trainees() || []).map((t) => ({
       label: `${t.name} (${t.email})`,
       value: t.traineeId!,
     }));
   });
 
   const classOptions = createMemo(() => {
-    const list = classes();
-    if (!list) return [];
-    return list.map((c) => ({
+    return (classes() || []).map((c) => ({
       label: `${c.identifier} - ${c.location} (${c.status})`,
       value: c.class_id!,
     }));
   });
 
   const getTraineeName = (id: string | undefined) => {
-    if (!id || !trainees()) return id;
+    if (!id || !trainees()) return id || "N/A";
     const found = trainees()?.find((t) => t.traineeId === id);
     return found ? found.name : id;
   };
 
   const getClassIdentifier = (id: string | undefined) => {
-    if (!id || !classes()) return id;
+    if (!id || !classes()) return id || "N/A";
     const found = classes()?.find((c) => c.class_id === id);
     return found ? `${found.identifier} (${found.location})` : id;
   };
@@ -125,33 +130,25 @@ const EnrollmentsPage = () => {
 
       if (original) {
         const changedFields = getChangedFields(original, enrollment);
-
         if (Object.keys(changedFields).length === 0) return;
 
-        await api.updateEnrollment(
-          String(enrollment.enrollment_id),
-          changedFields,
-        );
-
+        await api.updateEnrollment(String(enrollment.enrollment_id), {
+          ...changedFields,
+          final_grade: String(enrollment.final_grade),
+        });
         mutate(
           (prev) =>
             prev?.map((u) =>
               u.enrollment_id === enrollment.enrollment_id ? enrollment : u,
             ) || [],
         );
-
-        const changedFieldNames = Object.keys(changedFields).join(", ");
-        toast.success(`Enrollment updated successfully (${changedFieldNames})`);
+        toast.success(`Enrollment updated successfully`);
       } else {
-        const enrollmentObj = {
+        const newEnrollment = await api.createEnrollment({
           class_id: String(enrollment.class_id),
           trainee_id: String(enrollment.trainee_id),
-          final_grade: enrollment.final_grade
-            ? String(enrollment.final_grade)
-            : "0",
-        };
-
-        const newEnrollment = await api.createEnrollment(enrollmentObj);
+          final_grade: String(enrollment.final_grade),
+        });
 
         mutate((prev) => [...(prev || []), newEnrollment]);
         toast.success("Enrollment created successfully.");
@@ -164,14 +161,17 @@ const EnrollmentsPage = () => {
     }
   };
 
-  const confirmDelete = async (userToDelete: Enrollment) => {
-    await api.deleteEnrollment(String(userToDelete.enrollment_id));
-    mutate(
-      (prev) =>
-        prev?.filter((u) => u.enrollment_id !== userToDelete.enrollment_id) ||
-        [],
-    );
-    toast.success("Enrollment deleted successfully");
+  const confirmDelete = async (item: Enrollment) => {
+    try {
+      await api.deleteEnrollment(String(item.enrollment_id));
+      mutate(
+        (prev) =>
+          prev?.filter((u) => u.enrollment_id !== item.enrollment_id) || [],
+      );
+      toast.success("Enrollment removed");
+    } catch (e: any) {
+      toast.error(e.message);
+    }
   };
 
   const formFieldsConfig = createMemo<ModalFieldDefinition<Enrollment>[]>(
@@ -182,7 +182,6 @@ const EnrollmentsPage = () => {
         type: "select",
         options: classOptions(),
         required: true,
-        placeholder: classes.loading ? "Loading Classes..." : "Select Class",
       },
       {
         name: "trainee_id",
@@ -190,9 +189,6 @@ const EnrollmentsPage = () => {
         type: "select",
         options: traineeOptions(),
         required: true,
-        placeholder: trainees.loading
-          ? "Loading Trainees..."
-          : "Select Trainee",
       },
       {
         name: "final_grade",
@@ -204,26 +200,31 @@ const EnrollmentsPage = () => {
 
   return (
     <EntityTable<Enrollment>
-      title="Manage Enrollments"
-      data={enrollmentsData}
-      handleEditClick={(enrollment) => ({
-        ...enrollment,
-      })}
-      handleAddClick={() => createEmptyEnrollment()}
-      confirmDelete={confirmDelete}
+      title={isTrainee() ? "My Enrollments & Grades" : "Manage Enrollments"}
+      data={displayData}
+      handleAddClick={isTrainee() ? undefined : () => createEmptyEnrollment()}
+      handleEditClick={isTrainee() ? undefined : (e) => ({ ...e })}
+      confirmDelete={isTrainee() ? undefined : confirmDelete}
       handleSave={handleSaveEnrollment}
       formFields={formFieldsConfig()}
+      actions={tableActions()}
+      renderCustomAction={(e) => (
+        <button
+          class="btn btn-primary btn-sm tooltip tooltip-left z-10"
+          data-tip={"View Details"}
+          onClick={() => {}}
+        >
+          <Icon name="Eye" size={16} />
+        </button>
+      )}
       filter={(e: Enrollment, search: string) => {
         const s = search.toLowerCase();
-        
         const traineeName = getTraineeName(e.trainee_id)?.toLowerCase() || "";
         const classIdent = getClassIdentifier(e.class_id)?.toLowerCase() || "";
-
         return (
-          (String(e.final_grade)?.toLowerCase().includes(s) ||
-            traineeName.includes(s) ||
-            classIdent.includes(s)) ??
-          false
+          String(e.final_grade).toLowerCase().includes(s) ||
+          traineeName.includes(s) ||
+          classIdent.includes(s)
         );
       }}
       fields={[
@@ -232,22 +233,52 @@ const EnrollmentsPage = () => {
           fieldName: "enrollment_id",
           canCopy: true,
           smaller: true,
+          hidden: isTrainee(),
         },
         {
+          formattedName: "Course",
+          fieldName: "class_id",
+          customGeneration: (e) => (
+            <div class="flex flex-col">
+              <span class="font-bold text-sm">
+                {
+                  courses()?.find(
+                    (c) =>
+                      c.course_id ===
+                      classes()!.find((cl) => cl.class_id === e.class_id)
+                        ?.course_id,
+                  )?.name
+                }
+              </span>
+              <Show when={!isTrainee()}>
+                <span class="text-[10px] opacity-50 font-mono">
+                  {e.class_id}
+                </span>
+              </Show>
+            </div>
+          ),
+        },
+        {
+          bigger: true,
           formattedName: "Class",
           fieldName: "class_id",
-          
           customGeneration: (e) => (
-            <span class="font-mono text-xs">
-              {getClassIdentifier(e.class_id)}
-            </span>
+            <div class="flex flex-col">
+              <span class="font-bold text-sm">
+                {getClassIdentifier(e.class_id)}
+              </span>
+              <Show when={!isTrainee()}>
+                <span class="text-[10px] opacity-50 font-mono">
+                  {e.class_id}
+                </span>
+              </Show>
+            </div>
           ),
-          smaller: true,
         },
         {
           formattedName: "Trainee",
           fieldName: "trainee_id",
-          
+          hidden: isTrainee(),
           customGeneration: (e) => (
             <div class="flex flex-col">
               <span class="font-medium">{getTraineeName(e.trainee_id)}</span>
@@ -256,19 +287,21 @@ const EnrollmentsPage = () => {
               </span>
             </div>
           ),
-          canCopy: true,
         },
         {
           formattedName: "Final Grade",
           fieldName: "final_grade",
           smaller: true,
-          customGeneration: (e) => (
-            <div
-              class={`badge ${Number(e.final_grade) >= 10 ? "badge-success" : "badge-error"} badge-outline`}
-            >
-              {e.final_grade}
-            </div>
-          ),
+          customGeneration: (e) => {
+            const grade = Number(e.final_grade);
+            return (
+              <div
+                class={`badge ${grade >= 9.5 ? "badge-success" : "badge-error"} badge-md font-bold py-3 px-4`}
+              >
+                {grade > 0 ? grade.toFixed(2) : "Pending"}
+              </div>
+            );
+          },
         },
       ]}
     />

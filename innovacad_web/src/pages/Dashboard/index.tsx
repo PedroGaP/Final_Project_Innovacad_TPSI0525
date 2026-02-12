@@ -89,6 +89,7 @@ const DashboardLayout = (props: any) => {
       size: 22,
       path: "grades",
       title: "Grades",
+      role: ["admin", "trainer", "coordinator"],
     },
     {
       icon: "BookUser",
@@ -185,7 +186,7 @@ const DashboardLayout = (props: any) => {
                               onError={(e: any) => {
                                 e.target.src = `https://ui-avatars.com/api/?name=${user()?.name}&background=random`;
                               }}
-                              src={`${API_ENDPOINTS.BASE}/resource/public/${user()?.image}?t=${Date.now()}`}
+                              src={`${API_ENDPOINTS.BASE}/resource/${user()?.image}?t=${Date.now()}`}
                               alt="Avatar"
                             />
                           </Show>

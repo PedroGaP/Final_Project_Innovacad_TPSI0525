@@ -179,7 +179,7 @@ const AccountSettingsPage = () => {
     const toastId = toast.loading(`Downloading ${doc.file_name}...`);
     try {
       const cleanPath = doc.file_path.replace(/^public[\\/]/, "");
-      const fileUrl = `${API_ENDPOINTS.BASE}/resource/public/${cleanPath}`;
+      const fileUrl = `${API_ENDPOINTS.BASE}/resource/${cleanPath}`;
       const response = await fetch(fileUrl);
       if (!response.ok) throw new Error(`File not found`);
       const blob = await response.blob();
@@ -199,9 +199,9 @@ const AccountSettingsPage = () => {
   };
 
   console.log(
-    `${API_ENDPOINTS.BASE}/resource/public/${user()?.image}?t=${imageKey()}`,
+    `URL::: ${API_ENDPOINTS.BASE}/resource/${user()?.image}?t=${imageKey()}`,
   );
-  console.log(user()!["image"]);
+  console.log(`IMAGE::: ${user()?.image}`);
 
   return (
     <>
@@ -240,7 +240,7 @@ const AccountSettingsPage = () => {
                     }
                   >
                     <img
-                      src={`${API_ENDPOINTS.BASE}/resource/public/${user()?.image}?t=${imageKey()}`}
+                      src={`${API_ENDPOINTS.BASE}/resource/${user()?.image}?t=${imageKey()}`}
                       alt="Avatar"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";

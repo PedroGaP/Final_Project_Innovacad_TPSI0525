@@ -22,18 +22,28 @@ class DocumentRepositoryImpl {
 
       await db.startTrans();
 
-      BigInt bg = await db.insert(
-        table: 'documents',
-        insertData: {
-          'document_id': Uuid().v4(),
-          'file_name': originalName,
-          'file_path': filePath,
-          'mime_type': mimeType,
-          'file_size_bytes': size,
-          'type_code': typeCode,
-          'user_id': userId,
-        },
-      );
+      BigInt bg = BigInt.zero;
+
+      if (typeCode == "PROFILE_PIC") {
+        bg = await db.update(
+          table: 'user',
+          updateData: {"image": filePath},
+          where: {"id": userId},
+        );
+      } else {
+        bg = await db.insert(
+          table: 'documents',
+          insertData: {
+            'document_id': Uuid().v4(),
+            'file_name': originalName,
+            'file_path': filePath,
+            'mime_type': mimeType,
+            'file_size_bytes': size,
+            'type_code': typeCode,
+            'user_id': userId,
+          },
+        );
+      }
 
       print(bg);
       print({
