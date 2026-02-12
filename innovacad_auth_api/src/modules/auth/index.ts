@@ -100,7 +100,7 @@ export const auth = betterAuth({
     "http://localhost:5000",
   ],
   session: {
-    expiresIn: 900,
+    expiresIn: 1800,
     cookieCache: { enabled: true, strategy: "jwt" },
     additionalFields: {
       iss: { type: "string", defaultValue: API.JWT.ISSUER },
@@ -260,6 +260,7 @@ export const seedAdmin = async () => {
       role: "admin",
       data: {
         username: API.ADMIN.USERNAME,
+        emailVerified: true,
       },
     },
   });

@@ -1571,7 +1571,7 @@ export const useApi = () => {
       try {
         const err = await res.json();
         errorMessage = err.message || errorMessage;
-      } catch { }
+      } catch {}
 
       throw new Error(errorMessage);
     }

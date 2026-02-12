@@ -15,6 +15,15 @@ import { Toaster } from "solid-toast";
 
 const PAGE_SIZE = 10;
 
+export enum ActionsEnum {
+  ADD = "add",
+  EDIT = "edit",
+  DELETE = "delete",
+  EXPORT = "export",
+  CUSTOM = "custom",
+  NONE = "none",
+}
+
 type FieldType<T> = {
   formattedName: string;
   fieldName: string;
@@ -22,6 +31,7 @@ type FieldType<T> = {
   capitalizeValue?: boolean;
   bigger?: boolean;
   smaller?: boolean;
+  hidden?: boolean;
   customGeneration?: (entity: T) => JSXElement;
 };
 
@@ -29,17 +39,19 @@ interface Props<T> {
   title: string;
   data: any;
   fields: FieldType<T>[];
-  handleAddClick: ((entity: T) => any) | undefined;
-  handleEditClick: ((entity: T) => any) | undefined;
-  handleSave: ((entity: T, original: T | null) => any) | undefined;
-  confirmDelete: ((entity: T) => any) | undefined;
-  handleExportClick?: ((entity: T) => any) | undefined;
+  handleAddClick?: (entity: T) => any;
+  handleEditClick?: (entity: T) => any;
+  handleSave?: (entity: T, original: T | null) => any;
+  confirmDelete?: (entity: T) => any;
+  handleExportClick?: (entity: T) => any;
   filter?: (entity: T, search: string) => boolean;
   renderCustomFields?: (
     formData: T,
     setFormData: (prev: (prev: T) => T) => void,
   ) => JSXElement;
   formFields?: ModalFieldDefinition<T>[];
+  actions?: ActionsEnum[];
+  renderCustomAction?: (entity: T) => JSXElement;
 }
 
 export default function EntityTable<T>(props: Props<T>) {
@@ -48,6 +60,27 @@ export default function EntityTable<T>(props: Props<T>) {
   const [editingEntity, setEditingEntity] = createSignal<T | null>(null);
   const [deletingEntity, setDeletingEntity] = createSignal<T | null>(null);
   const [originalEntity, setOriginalEntity] = createSignal<T | null>(null);
+
+  const activeActions = createMemo(() => {
+    if (props.actions?.includes(ActionsEnum.NONE)) return [];
+
+    if (!props.actions || props.actions.length === 0) {
+      return [ActionsEnum.ADD, ActionsEnum.EDIT, ActionsEnum.DELETE];
+    }
+    return props.actions;
+  });
+
+  const hasAction = (action: ActionsEnum) => activeActions().includes(action);
+
+  const shouldShowActionColumn = createMemo(() => {
+    const hasRowEnums =
+      hasAction(ActionsEnum.EDIT) ||
+      hasAction(ActionsEnum.DELETE) ||
+      hasAction(ActionsEnum.EXPORT) ||
+      hasAction(ActionsEnum.CUSTOM);
+
+    return hasRowEnums;
+  });
 
   const filteredEntity = createMemo(() => {
     const list = props.data() || [];
@@ -81,9 +114,7 @@ export default function EntityTable<T>(props: Props<T>) {
     const fieldValueType = typeof fieldValue;
 
     if (!tableData) tableData = fieldValue;
-
     if (field.capitalizeValue) tableData = capitalize(String(fieldValue));
-
     if (!fieldValue && fieldValueType != "boolean") return <td>N/A</td>;
 
     if (!customGeneration && fieldValueType == "boolean")
@@ -129,47 +160,52 @@ export default function EntityTable<T>(props: Props<T>) {
         <div class="card-body gap-4 flex-1 flex flex-col overflow-hidden min-h-0 p-6">
           <div class="flex justify-between items-center shrink-0">
             <h2 class="card-title">{capitalize(props.title)}</h2>
-            <button
-              class="btn btn-primary btn-sm"
-              onClick={() => {
-                if (props.handleAddClick === undefined) return;
-                const newItem = props.handleAddClick(null as any);
-                setEditingEntity(() => newItem);
-                setOriginalEntity(null);
-              }}
-            >
-              <Icon name="Plus" size={16} />
-              Add
-            </button>
+
+            <Show when={hasAction(ActionsEnum.ADD) && props.handleAddClick}>
+              <button
+                class="btn btn-primary btn-sm"
+                onClick={() => {
+                  const newItem = props.handleAddClick!(null as any);
+                  setEditingEntity(() => newItem);
+                  setOriginalEntity(null);
+                }}
+              >
+                <Icon name="Plus" size={16} /> Add
+              </button>
+            </Show>
           </div>
+
           <div class="shrink-0">
             <input
               type="text"
               placeholder="Search..."
               class="input input-bordered input-sm w-full max-w-xs"
-              onInput={(e) => {
-                setSearch(e.currentTarget.value);
-              }}
+              onInput={(e) => setSearch(e.currentTarget.value)}
             />
           </div>
+
           <div class="overflow-auto flex-1 border border-base-200 rounded-lg">
-            <table class="table table-zebra table-pin-rows table-auto w-full ">
+            <table class="table table-zebra table-pin-rows table-auto w-full">
               <thead>
                 <tr class="z-10">
                   <For each={props.fields}>
-                    {(field) => (
-                      <th
-                        class="bg-base-100"
-                        classList={{
-                          "w-52": field.bigger ?? false,
-                          "w-28": field.smaller ?? false,
-                        }}
-                      >
-                        {field.formattedName}
-                      </th>
-                    )}
+                    {(field) =>
+                      !field.hidden && (
+                        <th
+                          class="bg-base-100"
+                          classList={{
+                            "w-52": field.bigger ?? false,
+                            "w-28": field.smaller ?? false,
+                          }}
+                        >
+                          {field.formattedName}
+                        </th>
+                      )
+                    }
                   </For>
-                  <th class="w-48 text-right bg-base-100">Actions</th>
+                  <Show when={shouldShowActionColumn()}>
+                    <th class="w-48 text-right bg-base-100">Actions</th>
+                  </Show>
                 </tr>
               </thead>
               <tbody>
@@ -188,41 +224,78 @@ export default function EntityTable<T>(props: Props<T>) {
                 >
                   <For each={paginatedEntity()}>
                     {(entity) => (
-                      <tr>
+                      <tr class="hover">
                         <For each={props.fields}>
-                          {(field) => generateTableData(field, entity)}
+                          {(field) =>
+                            !field.hidden && generateTableData(field, entity)
+                          }
                         </For>
-                        <td class="text-right">
-                          <div class="flex justify-end gap-1">
-                            <Show when={props.handleExportClick}>
-                              <button
-                                class="btn btn-ghost btn-sm text-info"
-                                onClick={() => props.handleExportClick!(entity)}
-                                title="Export PDF"
-                              >
-                                <Icon name="Download" size={16} />
-                              </button>
-                            </Show>
 
-                            <button
-                              class="btn btn-ghost btn-sm"
-                              onClick={() => {
-                                if (props.handleEditClick === undefined) return;
-                                const prepared = props.handleEditClick(entity);
-                                setEditingEntity(() => prepared);
-                                setOriginalEntity(() => prepared);
-                              }}
-                            >
-                              <Icon name="Pencil" size={16} />
-                            </button>
-                            <button
-                              class="btn btn-ghost btn-sm text-error"
-                              onClick={() => setDeletingEntity(() => entity)}
-                            >
-                              <Icon name="Trash" size={16} />
-                            </button>
-                          </div>
-                        </td>
+                        <Show when={shouldShowActionColumn()}>
+                          <td class="text-right">
+                            <div class="flex justify-end gap-1">
+                              <Show
+                                when={
+                                  hasAction(ActionsEnum.CUSTOM) &&
+                                  props.renderCustomAction
+                                }
+                              >
+                                {props.renderCustomAction!(entity)}
+                              </Show>
+
+                              <Show
+                                when={
+                                  hasAction(ActionsEnum.EXPORT) &&
+                                  props.handleExportClick
+                                }
+                              >
+                                <button
+                                  class="btn btn-ghost btn-sm text-info"
+                                  onClick={() =>
+                                    props.handleExportClick!(entity)
+                                  }
+                                >
+                                  <Icon name="Download" size={16} />
+                                </button>
+                              </Show>
+
+                              <Show
+                                when={
+                                  hasAction(ActionsEnum.EDIT) &&
+                                  props.handleEditClick
+                                }
+                              >
+                                <button
+                                  class="btn btn-ghost btn-sm"
+                                  onClick={() => {
+                                    const prepared =
+                                      props.handleEditClick!(entity);
+                                    setEditingEntity(() => prepared);
+                                    setOriginalEntity(() => prepared);
+                                  }}
+                                >
+                                  <Icon name="Pencil" size={16} />
+                                </button>
+                              </Show>
+
+                              <Show
+                                when={
+                                  hasAction(ActionsEnum.DELETE) &&
+                                  props.confirmDelete
+                                }
+                              >
+                                <button
+                                  class="btn btn-ghost btn-sm text-error"
+                                  onClick={() =>
+                                    setDeletingEntity(() => entity)
+                                  }
+                                >
+                                  <Icon name="Trash" size={16} />
+                                </button>
+                              </Show>
+                            </div>
+                          </td>
+                        </Show>
                       </tr>
                     )}
                   </For>
@@ -231,9 +304,9 @@ export default function EntityTable<T>(props: Props<T>) {
             </table>
           </div>
 
-          <div class="flex justify-between items-center shrink-0 pt-2">
-            <span class="text-sm opacity-60">
-              Page {page()} of {totalPages()} ({filteredEntity().length} items)
+          <div class="flex justify-between items-center shrink-0 pt-2 text-sm">
+            <span class="opacity-60">
+              Page {page()} of {totalPages()}
             </span>
             <div class="join">
               <button
@@ -243,9 +316,7 @@ export default function EntityTable<T>(props: Props<T>) {
               >
                 «
               </button>
-
               <button class="join-item btn btn-sm btn-active">{page()}</button>
-
               <button
                 class="join-item btn btn-sm"
                 disabled={page() >= totalPages()}
@@ -263,14 +334,13 @@ export default function EntityTable<T>(props: Props<T>) {
               value={u()}
               setValue={setEditingEntity}
               onSave={async (val) => {
-                if (props.handleSave === undefined) return;
-                await props.handleSave(val, originalEntity());
+                if (props.handleSave)
+                  await props.handleSave(val, originalEntity());
                 setEditingEntity(null);
               }}
               onCancel={() => setEditingEntity(null)}
-              title={originalEntity() ? "Edit" : "Add"}
+              title={originalEntity() ? "Edit Entry" : "New Entry"}
               fields={props.formFields}
-              disabledFields={originalEntity() ? ["class_id"] : []}
               renderCustomFields={props.renderCustomFields}
             />
           )}
@@ -282,13 +352,12 @@ export default function EntityTable<T>(props: Props<T>) {
               value={u}
               setValue={setDeletingEntity}
               onConfirm={async () => {
-                if (props.confirmDelete === undefined) return;
-                await props.confirmDelete(u());
+                if (props.confirmDelete) await props.confirmDelete(u());
                 setDeletingEntity(null);
               }}
               onCancel={() => setDeletingEntity(null)}
-              title="Confirm Delete"
-              description="Are you sure? This action is irreversible."
+              title="Delete Confirmation"
+              description="Are you sure you want to delete this record?"
             />
           )}
         </Show>

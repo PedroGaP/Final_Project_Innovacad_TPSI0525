@@ -43,7 +43,7 @@ class DocumentController {
   @ApiOperation(summary: 'Upload a document')
   @ApiParam(name: 'userId', description: 'The ID of the user', required: true)
   @Post('/upload/<userId>')
-  Future<Response> uploadTraineeFile(
+  Future<Response> uploadDocument(
     Request request,
     @Param('userId') String userId,
   ) async {
