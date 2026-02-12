@@ -379,6 +379,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
     } catch (e, s) {
       print("CRITICAL DB ERROR: $e");
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -467,15 +469,17 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         SELECT a.availability_id, a.is_booked, rs.start_time, rs.end_time
         FROM availabilities a
         JOIN ref_slots rs ON a.slot_number = rs.slot_number
-        WHERE a.trainer_id = ? 
-          AND DATE(a.date_day) = DATE(?)
-        ORDER BY a.availability_id ASC
+        WHERE a.trainer_id = ?
+          AND a.date_day = ?
+          AND rs.start_time >= ?
+          AND rs.end_time <= ?
+        ORDER BY a.availability_id  -- Consistent lock ordering to prevent deadlocks
         FOR UPDATE SKIP LOCKED
       """;
 
         final availResult = await txn.query(
           availSql,
-          whereValues: [targetTrainerId, targetStart],
+          whereValues: [targetTrainerId, _toSqlDate(targetStart), _toSqlDate(targetStart), _toSqlDate(targetEnd)],
           isStmt: true,
         );
 
@@ -722,6 +726,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
           details: {"error": e.toString(), "stackTrace": s.toString()},
         ),
       );
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 
@@ -975,6 +981,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       return Result.success(true);
     } catch (e) {
       return Result.failure(AppError(AppErrorType.internal, "Erro: $e"));
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
     }
   }
 

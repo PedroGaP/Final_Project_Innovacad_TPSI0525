@@ -92,8 +92,6 @@ class RemoteUserService {
     } catch (e) {
       print("[Enrichment Error] Failed to fetch local data: $e");
       return userData;
-    } finally {
-      // await db?.close();
     }
   }
 

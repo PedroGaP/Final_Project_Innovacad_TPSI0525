@@ -136,6 +136,7 @@ class TraineeRepositoryImpl implements ITraineeRepository {
             "user_id": createdUserId,
             "birthday_date": dto.birthdayDate,
           },
+          debug: true,
         );
       });
 

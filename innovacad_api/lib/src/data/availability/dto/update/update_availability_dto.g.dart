@@ -15,7 +15,7 @@ UpdateAvailabilityDto _$UpdateAvailabilityDtoFromJson(
     const DateTimeConverter().fromJson,
   ),
   slotNumber: (json['slot_number'] as num?)?.toInt(),
-  isBooked: json['is_booked'] as bool?,
+  isBooked: (json['is_booked'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$UpdateAvailabilityDtoToJson(
