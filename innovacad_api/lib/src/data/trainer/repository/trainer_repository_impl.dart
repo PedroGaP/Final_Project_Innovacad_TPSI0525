@@ -50,7 +50,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
           GROUP BY t.trainer_id, t.user_id, t.birthday_date, t.is_coordinator,
                    u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt, u.emailVerified
         """;
-        
+
         final results = await db.query(query);
         final List<OutputTrainerDao> daos = [];
 
@@ -59,7 +59,9 @@ class TrainerRepositoryImpl implements ITrainerRepository {
           row['is_coordinator'] = isCoordinator;
 
           final skillsData = row['skills_data']?.toString();
-          if (skillsData != null && skillsData.isNotEmpty && skillsData != 'null') {
+          if (skillsData != null &&
+              skillsData.isNotEmpty &&
+              skillsData != 'null') {
             final skillsList = skillsData.split('|').map((skill) {
               final parts = skill.split(':');
               return {
@@ -73,7 +75,10 @@ class TrainerRepositoryImpl implements ITrainerRepository {
           }
 
           final classIdsData = row['coordinated_class_ids']?.toString();
-          if (isCoordinator && classIdsData != null && classIdsData.isNotEmpty && classIdsData != 'null') {
+          if (isCoordinator &&
+              classIdsData != null &&
+              classIdsData.isNotEmpty &&
+              classIdsData != 'null') {
             row['coordinated_class_ids'] = classIdsData.split(',');
           } else {
             row['coordinated_class_ids'] = [];
@@ -185,6 +190,9 @@ class TrainerRepositoryImpl implements ITrainerRepository {
           isStmt: true,
         );
 
+        print("USER CHECK::: ${userCheck.rowsAssoc.first.assoc()}");
+        print("USER DTO::: ${dto.toJson()}");
+
         if (userCheck.numOfRows == 0) {
           await txn.insert(
             table: "user",
@@ -198,6 +206,16 @@ class TrainerRepositoryImpl implements ITrainerRepository {
               "emailVerified": 0,
             },
           );
+        } else {
+          BigInt res = await txn.update(
+            table: 'user',
+            updateData: {"role": userRole},
+            where: {"id": createdUserId},
+          );
+
+          if (res == BigInt.zero) {
+            throw Exception("Error while updating user role.");
+          }
         }
 
         final trainerId = const Uuid().v4();

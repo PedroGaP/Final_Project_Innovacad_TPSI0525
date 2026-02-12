@@ -18,9 +18,21 @@ class GradeRepositoryImpl implements IGradeRepository {
   Future<Result<List<OutputGradeDao>>> getAll() async {
     try {
       return await MysqlConfiguration.executeWithConnection((db) async {
-        final results = await db.getAll(table: table);
-        final grades = results
-            .map((data) => OutputGradeDao.fromJson(data))
+        final result = await db.query("""
+          SELECT g.class_module_id,
+              crm.module_id,
+              g.trainee_id,
+              g.grade,
+              g.grade_type,
+              g.status,
+              g.created_at,
+              g.updated_at
+          FROM grades g
+          JOIN classes_modules cm ON g.class_module_id = cm.classes_modules_id
+          JOIN courses_modules crm USING(courses_modules_id);
+        """);
+        final grades = result.rowsAssoc
+            .map((data) => OutputGradeDao.fromJson(data.assoc()))
             .toList();
         return Result.success(grades);
       });
@@ -39,13 +51,30 @@ class GradeRepositoryImpl implements IGradeRepository {
   Future<Result<OutputGradeDao>> getById(String id) async {
     try {
       return await MysqlConfiguration.executeWithConnection((db) async {
-        final result = await db.getOne(table: table, where: {"grade_id": id});
-        if (result.isEmpty)
+        final result = await db.query(
+          """
+          SELECT g.class_module_id,
+              crm.module_id,
+              g.trainee_id,
+              g.grade,
+              g.grade_type,
+              g.status,
+              g.created_at,
+              g.updated_at
+          FROM grades g
+          JOIN classes_modules cm ON g.class_module_id = cm.classes_modules_id
+          JOIN courses_modules crm USING(courses_modules_id)
+          WHERE g.grade_id = ?;
+        """,
+          whereValues: [id],
+          isStmt: true,
+        );
+        if (result.numOfRows == 0)
           return Result.failure(
             AppError(AppErrorType.notFound, "Grade not found"),
           );
         return Result.success(
-          OutputGradeDao.fromJson(result as Map<String, dynamic>),
+          OutputGradeDao.fromJson(result.rowsAssoc.first.assoc()),
         );
       });
     } catch (e, s) {
@@ -67,11 +96,20 @@ class GradeRepositoryImpl implements IGradeRepository {
       return await MysqlConfiguration.executeWithConnection((db) async {
         final res = await db.query(
           """
-          SELECT g.*, t.user_id, u.name as trainee_name, u.email as trainee_email
-          FROM grades g
-          JOIN trainees t ON g.trainee_id = t.trainee_id
-          JOIN user u ON t.user_id = u.id
-          WHERE g.class_module_id = ?
+            SELECT
+              g.grade_id as grade_id,
+              g.class_module_id as class_module_id,
+              crm.module_id as module_id,
+              g.trainee_id as trainee_id,
+              g.grade as grade,
+              g.grade_type as grade_type,
+              g.status as status,
+              g.created_at as created_at,
+              g.updated_at as updated_at
+            FROM grades g
+            JOIN classes_modules cm ON g.class_module_id = cm.classes_modules_id
+            JOIN courses_modules crm USING (courses_modules_id)
+            WHERE cm.classes_modules_id = ?;
           """,
           whereValues: [classModuleId],
           isStmt: true,
@@ -159,7 +197,7 @@ class GradeRepositoryImpl implements IGradeRepository {
         whereValues: [classModuleId, userId],
         isStmt: true,
       );
-      
+
       return coordCheck.numOfRows > 0;
     } catch (e) {
       print("Error checking finalize permission: $e");
@@ -290,7 +328,7 @@ class GradeRepositoryImpl implements IGradeRepository {
           },
         );
 
-        final res = await db.getOne(table: table, where: {"grade_id": id});
+        final res = await getById(id);
         return Result.success(
           OutputGradeDao.fromJson(res as Map<String, dynamic>),
         );
@@ -317,10 +355,8 @@ class GradeRepositoryImpl implements IGradeRepository {
             updateData: {'grade': dto.grade},
           );
         }
-        final res = await db.getOne(table: table, where: {"grade_id": id});
-        return Result.success(
-          OutputGradeDao.fromJson(res as Map<String, dynamic>),
-        );
+        final res = await getById(id);
+        return res;
       });
     } catch (e, s) {
       return Result.failure(
@@ -342,6 +378,7 @@ class GradeRepositoryImpl implements IGradeRepository {
           OutputGradeDao(
             gradeId: id,
             classModuleId: '',
+            moduleId: '',
             traineeId: '',
             grade: 0,
             gradeType: '',
@@ -371,6 +408,52 @@ class GradeRepositoryImpl implements IGradeRepository {
         isStmt: true,
       );
       return result.numOfRows > 0;
+    } finally {
+      await MysqlConfiguration.closeConnection(db);
+    }
+  }
+
+  Future<Result<List<OutputGradeDao>>> fetchGradesByTraineeId(
+    String traineeId,
+  ) async {
+    final db = await MysqlConfiguration.getConnection();
+    try {
+      final result = await db.query(
+        """
+          SELECT g.class_module_id as class_module_id,
+              crm.module_id as module_id,
+              g.trainee_id as trainee_id,
+              g.grade as grade,
+              g.grade_type as grade_type,
+              g.status as status,
+              g.created_at as created_at,
+              g.updated_at as updated_at,
+              g.grade_id as grade_id
+          FROM grades g
+          JOIN classes_modules cm ON g.class_module_id = cm.classes_modules_id
+          JOIN courses_modules crm USING(courses_modules_id)
+          WHERE trainee_id = ?;
+        """,
+        whereValues: [traineeId],
+        isStmt: true,
+      );
+
+      if (result.numOfRows == 0) {
+        return Result.success([]);
+      }
+
+      final grades = result.rowsAssoc
+          .map((data) => OutputGradeDao.fromJson(data.assoc()))
+          .toList();
+      return Result.success(grades);
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Failed to fetch trainee grades",
+          details: {"error": e.toString(), "stack": s.toString()},
+        ),
+      );
     } finally {
       await MysqlConfiguration.closeConnection(db);
     }

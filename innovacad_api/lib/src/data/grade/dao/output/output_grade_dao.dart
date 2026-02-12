@@ -34,6 +34,9 @@ class OutputGradeDao {
   @annotation.JsonKey(name: 'status')
   final String status;
 
+  @annotation.JsonKey(name: 'module_id')
+  final String moduleId;
+
   OutputGradeDao({
     required this.gradeId,
     required this.classModuleId,
@@ -42,6 +45,7 @@ class OutputGradeDao {
     required this.gradeType,
     required this.createdAt,
     required this.updatedAt,
+    required this.moduleId,
     required this.status,
   });
 

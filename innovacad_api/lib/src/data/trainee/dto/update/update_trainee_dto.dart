@@ -18,6 +18,18 @@ class UpdateTraineeDto extends UpdateUserDto with Validator<UpdateTraineeDto> {
   LucidValidator<UpdateTraineeDto> validate(
     ValidatorBuilder<UpdateTraineeDto> builder,
   ) {
+    if (birthdayDate != null) {
+      final now = DateTime.now();
+      final minAgeDate = DateTime(now.year - 13, now.month, now.day);
+
+      builder
+          .ruleFor((e) => e.birthdayDate, key: 'birthday_date')
+          .lessThanOrEqualTo(now, message: 'Birthday cannot be in the future')
+          .lessThanOrEqualTo(
+            minAgeDate,
+            message: 'You must be at least 13 years old',
+          );
+    }
     return builder;
   }
 

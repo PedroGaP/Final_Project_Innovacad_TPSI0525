@@ -1,3 +1,4 @@
+import 'package:innovacad_api/src/core/converters/double_converter.dart';
 import 'package:vaden/vaden.dart';
 import 'package:json_annotation/json_annotation.dart' as annotation;
 
@@ -10,9 +11,11 @@ class OutputModuleAttendanceDao {
   final String traineeId;
 
   @annotation.JsonKey(name: 'attended_hours')
+  @DoubleConverter()
   final double attendedHours;
 
   @annotation.JsonKey(name: 'total_hours')
+  @DoubleConverter()
   final double totalHours;
 
   OutputModuleAttendanceDao({

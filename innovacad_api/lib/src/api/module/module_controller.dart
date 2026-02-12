@@ -55,4 +55,13 @@ class ModuleController {
   @Delete('/<id>')
   Future<Response> delete(@Param("id") String id) async =>
       resultToResponse(await _service.delete(id));
+
+  @ApiParam(name: 'id', description: 'The class ID', required: true)
+  @ApiOperation(
+    summary: 'Fetch modules by class ID',
+    description: 'Fecthed modules by class unique identifier',
+  )
+  @Get('/class/<id>')
+  Future<Response> getByClassId(@Param("id") String id) async =>
+      resultToResponse(await _service.getByClassId(id));
 }

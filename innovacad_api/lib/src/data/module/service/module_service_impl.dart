@@ -30,4 +30,8 @@ class ModuleServiceImpl implements IModuleService {
   @override
   Future<Result<OutputModuleDao>> delete(String id) async =>
       await _repository.delete(id);
+
+  @override
+  Future<Result<List<OutputModuleDao>>> getByClassId(String classId) async =>
+      await _repository.getByClassId(classId);
 }

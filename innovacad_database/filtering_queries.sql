@@ -1,14 +1,13 @@
 -- Check for database locks
-SELECT
-    r.trx_id AS waiting_trx,
-    r.trx_mysql_thread_id AS waiting_thread,
-    r.trx_query AS waiting_query,
-    b.trx_id AS blocking_trx,
-    b.trx_mysql_thread_id AS blocking_thread,
-    b.trx_query AS blocking_query
+SELECT r.trx_id              AS waiting_trx,
+       r.trx_mysql_thread_id AS waiting_thread,
+       r.trx_query           AS waiting_query,
+       b.trx_id              AS blocking_trx,
+       b.trx_mysql_thread_id AS blocking_thread,
+       b.trx_query           AS blocking_query
 FROM information_schema.innodb_lock_waits w
-JOIN information_schema.innodb_trx b ON b.trx_id = w.blocking_trx_id
-JOIN information_schema.innodb_trx r ON r.trx_id = w.requesting_trx_id;
+         JOIN information_schema.innodb_trx b ON b.trx_id = w.blocking_trx_id
+         JOIN information_schema.innodb_trx r ON r.trx_id = w.requesting_trx_id;
 
 -- ==========================================================
 -- TIME & DATE UTILS
@@ -143,30 +142,82 @@ LIMIT 10;
 -- Encontrar availabilities órfãos (marcados como booked mas sem schedule)
 SELECT a.availability_id, a.trainer_id, a.date_day, a.is_booked
 FROM availabilities a
-LEFT JOIN schedule_slots ss ON a.availability_id = ss.availability_id
-WHERE a.is_booked = 1 AND ss.slot_id IS NULL;
+         LEFT JOIN schedule_slots ss ON a.availability_id = ss.availability_id
+WHERE a.is_booked = 1
+  AND ss.slot_id IS NULL;
 
 -- Ver especificamente os 2 slots problemáticos
-SELECT
-    a.availability_id,
-    a.trainer_id,
-    a.date_day,
-    a.is_booked,
-    ss.schedule_id,
-    s.schedule_id as schedule_exists
+SELECT a.availability_id,
+       a.trainer_id,
+       a.date_day,
+       a.is_booked,
+       ss.schedule_id,
+       s.schedule_id as schedule_exists
 FROM availabilities a
-LEFT JOIN schedule_slots ss ON a.availability_id = ss.availability_id
-LEFT JOIN schedules s ON ss.schedule_id = s.schedule_id
+         LEFT JOIN schedule_slots ss ON a.availability_id = ss.availability_id
+         LEFT JOIN schedules s ON ss.schedule_id = s.schedule_id
 WHERE a.availability_id IN (
-    '340154e1-06df-11f1-9fb8-98eecb87bc27',
-    '5e850485-0780-11f1-8bee-98eecb87bc27'
-);
+                            '340154e1-06df-11f1-9fb8-98eecb87bc27',
+                            '5e850485-0780-11f1-8bee-98eecb87bc27'
+    );
 
 -- Corrigir availabilities órfãos
 UPDATE availabilities a
-LEFT JOIN schedule_slots ss ON a.availability_id = ss.availability_id
+    LEFT JOIN schedule_slots ss ON a.availability_id = ss.availability_id
 SET a.is_booked = 0
-WHERE a.is_booked = 1 AND ss.slot_id IS NULL;
+WHERE a.is_booked = 1
+  AND ss.slot_id IS NULL;
 
 -- Verificar quantos foram corrigidos
 SELECT ROW_COUNT();
+
+Select m.module_id, m.name, m.duration, m.has_computers, m.has_projector, m.has_smartboard, m.has_computers
+from classes_modules cm
+         JOIN courses_modules crm USING (courses_modules_id)
+         JOIN modules m USING (module_id)
+where cm.class_id = '';
+
+/*
+
+ gradeId: id,
+            classModuleId: '',
+            moduleId: '',
+            traineeId: '',
+            grade: 0,
+            gradeType: '',
+            status: '',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+ */
+
+SELECT g.class_module_id,
+       crm.module_id,
+       g.trainee_id,
+       g.grade,
+       g.grade_type,
+       g.status,
+       g.created_at,
+       g.updated_at
+FROM grades g
+         JOIN classes_modules cm ON g.class_module_id = cm.classes_modules_id
+         JOIN courses_modules crm USING (courses_modules_id)
+WHERE trainee_id = ?;
+
+SELECT TRUNCATE(AVG(g.grade), 2) as average_grade
+FROM grades g
+WHERE g.trainee_id = '1139771f-26ae-4c23-8af0-6af5feca11fc'
+  and g.grade_type = 'final'
+  and g.status = 'finalized';
+
+ SELECT g.class_module_id,
+                crm.module_id,
+                g.trainee_id,
+                g.grade,
+                g.grade_type,
+                g.status,
+                g.created_at,
+                g.updated_at
+          FROM grades g
+         JOIN classes_modules cm ON g.class_module_id = cm.classes_modules_id
+         JOIN courses_modules crm USING (courses_modules_id)
+          WHERE cm.classes_modules_id = ?;

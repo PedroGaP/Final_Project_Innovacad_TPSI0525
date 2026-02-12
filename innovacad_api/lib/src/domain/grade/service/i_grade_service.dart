@@ -15,4 +15,5 @@ abstract class IGradeService {
     ExtendedUserDetails user,
   );
   Future<Result<List<OutputGradeDao>>> getByClassModule(String classModuleId);
+  Future<Result<List<OutputGradeDao>>> fetchGradesByTraineeId(String traineeId);
 }

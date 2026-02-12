@@ -32,13 +32,20 @@ class AttendanceRepositoryImpl extends IAttendanceRepository {
 
         final list = results.rowsAssoc.map((row) {
           final data = row.assoc();
+          print(data);
           return OutputModuleAttendanceDao.fromJson(data);
         }).toList();
 
         return Result.success(list);
       });
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          e.toString(),
+          details: {"error": e.toString(), "stack": s.toString()},
+        ),
+      );
     }
   }
 }

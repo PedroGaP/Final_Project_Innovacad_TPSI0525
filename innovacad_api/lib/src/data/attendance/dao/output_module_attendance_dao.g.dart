@@ -10,14 +10,16 @@ OutputModuleAttendanceDao _$OutputModuleAttendanceDaoFromJson(
   Map<String, dynamic> json,
 ) => OutputModuleAttendanceDao(
   traineeId: json['trainee_id'] as String,
-  attendedHours: (json['attended_hours'] as num).toDouble(),
-  totalHours: (json['total_hours'] as num).toDouble(),
+  attendedHours: const DoubleConverter().fromJson(
+    json['attended_hours'] as Object,
+  ),
+  totalHours: const DoubleConverter().fromJson(json['total_hours'] as Object),
 );
 
 Map<String, dynamic> _$OutputModuleAttendanceDaoToJson(
   OutputModuleAttendanceDao instance,
 ) => <String, dynamic>{
   'trainee_id': instance.traineeId,
-  'attended_hours': instance.attendedHours,
-  'total_hours': instance.totalHours,
+  'attended_hours': const DoubleConverter().toJson(instance.attendedHours),
+  'total_hours': const DoubleConverter().toJson(instance.totalHours),
 };

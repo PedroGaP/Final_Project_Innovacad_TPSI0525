@@ -48,6 +48,18 @@ class UpdateTrainerDto extends UpdateUserDto
   vaden.LucidValidator<UpdateTrainerDto> validate(
     vaden.ValidatorBuilder<UpdateTrainerDto> builder,
   ) {
+    final now = DateTime.now();
+    final minAgeDate = DateTime(now.year - 13, now.month, now.day);
+
+    if (birthdayDate != null) {
+      builder
+          .ruleFor((e) => e.birthdayDate, key: 'birthday_date')
+          .lessThanOrEqualTo(now, message: 'Birthday cannot be in the future')
+          .lessThanOrEqualTo(
+            minAgeDate,
+            message: 'You must be at least 13 years old',
+          );
+    }
     return builder;
   }
 

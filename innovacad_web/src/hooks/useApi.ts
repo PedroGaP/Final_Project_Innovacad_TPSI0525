@@ -152,14 +152,20 @@ export const useApi = () => {
         }
       }
 
+      /*const sessionRes = await getSession();
+
+      if (!!sessionRes) {
+        return new Failure(
+          new AppError(AppErrorType.UNAUTHORIZED, "Session expired."),
+        );
+      }*/
+
       const reqHeaders: HeadersInit = {
         ...headers,
         ...(user()?.token && !skipAuth
           ? { Authorization: `Bearer ${user()!.token}` }
           : {}),
       };
-
-      console.log(reqHeaders);
 
       // const res = await fetch(`${baseUrl}${path}`, {
       const res = await fetch(`${baseUrl}${path}`, {
@@ -874,6 +880,22 @@ export const useApi = () => {
   };
 
   /**
+   * Fetch a class by its id
+   */
+  const fetchClassById = async (class_id: string): Promise<Class[]> => {
+    const res = await fetchApi<ClassResponseData[]>(
+      API_ENDPOINTS.ENTITY.CLASS + "/" + class_id,
+      "GET",
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(`Fetch class failed: ${res.error?.message}`);
+    }
+
+    return res.data.map((item) => new Class(item));
+  };
+
+  /**
    * Create a new class
    */
   const createClass = async (data: {
@@ -1177,6 +1199,21 @@ export const useApi = () => {
   };
 
   /**
+   * Get grades by trainee ID
+   */
+  const fetchGradesByTrainee = async (traineeId: string): Promise<Grade[]> => {
+    const res = await fetchApi<GradeResponseData[]>(
+      `${API_ENDPOINTS.ENTITY.GRADE}/trainee/${traineeId}`,
+      "GET",
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(`Fetch grades failed: ${res.error?.message}`);
+    }
+    return res.data.map((g) => new Grade(g));
+  };
+
+  /**
    * Fetch all rooms
    */
   const fetchRooms = async (): Promise<Room[]> => {
@@ -1281,6 +1318,22 @@ export const useApi = () => {
     );
     if (res.isError || !res.data) {
       throw new Error(`Fetch modules failed: ${res.error?.message}`);
+    }
+    const rooms = res.data.map((item) => new Module(item));
+    console.log(rooms);
+    return rooms;
+  };
+
+  /**
+   * Fetch all modules
+   */
+  const fetchModulesByClass = async (classId: string): Promise<Module[]> => {
+    const res = await fetchApi<ModuleResponseData[]>(
+      `${API_ENDPOINTS.ENTITY.MODULE}/class/${classId}`,
+      "GET",
+    );
+    if (res.isError || !res.data) {
+      throw new Error(`Fetch modules by class failed: ${res.error?.message}`);
     }
     const rooms = res.data.map((item) => new Module(item));
     console.log(rooms);
@@ -1894,6 +1947,7 @@ export const useApi = () => {
 
     // Classes
     fetchClasses,
+    fetchClassById,
     createClass,
     updateClass,
     deleteClass,
@@ -1912,6 +1966,7 @@ export const useApi = () => {
     batchUpsertGrades,
     finalizeGrades,
     fetchGradesByModule,
+    fetchGradesByTrainee,
 
     // Rooms
     fetchRooms,
@@ -1921,6 +1976,7 @@ export const useApi = () => {
 
     // Modules
     fetchModules,
+    fetchModulesByClass,
     createModule,
     updateModule,
     deleteModule,
