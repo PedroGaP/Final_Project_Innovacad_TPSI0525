@@ -4,7 +4,6 @@ Middleware corsMiddleware({
   List<String> allowedOrigins = const [
     'http://localhost:5000',
     'http://localhost:8080',
-    //'*',
   ],
   List<String> allowMethods = const ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   List<String> allowHeaders = const [
