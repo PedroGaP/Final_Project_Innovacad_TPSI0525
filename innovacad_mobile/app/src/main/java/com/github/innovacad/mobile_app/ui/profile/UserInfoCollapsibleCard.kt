@@ -94,8 +94,6 @@ fun UserInfoCollapsibleCard(
                         InfoRow(label = "Email", value = user.email)
                         Spacer(modifier = Modifier.height(12.dp))
                         InfoRow(label = "Role", value = user.role.replaceFirstChar { it.uppercase() })
-                        Spacer(modifier = Modifier.height(12.dp))
-                        InfoRow(label = "ID", value = user.id)
                     }
                 }
             }

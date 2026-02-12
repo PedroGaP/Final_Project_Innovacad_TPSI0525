@@ -14,12 +14,12 @@ class AttendanceRepositoryImpl extends IAttendanceRepository {
       return await MysqlConfiguration.executeWithConnection((db) async {
         final query = """
           SELECT 
-              a.trainee_id,
-              SUM(CASE WHEN a.is_absent = 0 THEN sch.total_hours ELSE 0 END) as attended_hours,
-              SUM(sch.total_hours) as total_hours
-          FROM attendances a
-          JOIN summaries s ON a.summary_id = s.summary_id
-          JOIN schedules sch ON s.schedule_id = sch.schedule_id
+            a.trainee_id,
+            SUM(CASE WHEN a.is_absent = 0 THEN sch.total_hours ELSE 0 END) as attended_hours,
+            SUM(sch.total_hours) as total_hours
+          FROM schedules sch
+          JOIN summaries s ON s.schedule_id = sch.schedule_id
+          JOIN attendances a ON a.summary_id = s.summary_id
           WHERE sch.class_module_id = ?
           GROUP BY a.trainee_id
         """;

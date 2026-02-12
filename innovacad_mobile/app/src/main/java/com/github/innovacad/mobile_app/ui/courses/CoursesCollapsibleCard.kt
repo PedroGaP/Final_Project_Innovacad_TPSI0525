@@ -164,9 +164,6 @@ fun IndividualCourseCard(
                     .fillMaxWidth()
                     .padding(start = 8.dp, top = 8.dp, bottom = 8.dp)
             ) {
-                InfoRow(label = "Course ID", value = course.courseId)
-                Spacer(modifier = Modifier.height(8.dp))
-
                 InfoRow(label = "Identifier", value = course.identifier)
 
                 if (course.coursesModules.isNotEmpty()) {

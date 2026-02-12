@@ -322,69 +322,82 @@ CREATE INDEX idx_availabilities_lookup ON availabilities (trainer_id, date_day, 
 CREATE INDEX idx_schedules_conflict ON schedules (trainer_id, start_date_timestamp, end_date_timestamp);
 CREATE INDEX idx_slots_lookup ON schedule_slots (schedule_id, availability_id);
 CREATE INDEX idx_classes_modules_lookup ON classes_modules (class_id, courses_modules_id);
+CREATE INDEX idx_availabilities_booking ON availabilities(availability_id, is_booked);
+CREATE INDEX idx_schedules_time_conflict ON schedules(trainer_id, start_date_timestamp, end_date_timestamp, schedule_id);
+CREATE INDEX idx_schedules_class_time ON schedules(class_module_id, start_date_timestamp, end_date_timestamp);
+CREATE INDEX idx_schedule_slots_availability ON schedule_slots(availability_id, schedule_id);
+CREATE INDEX idx_availabilities_lock_order ON availabilities(trainer_id, date_day, availability_id, is_booked);
+CREATE INDEX idx_schedule_slots_lock_order ON schedule_slots(schedule_id, availability_id);
+CREATE INDEX idx_user_email_username ON user(email, username);
+CREATE INDEX idx_schedules_class_module_lookup ON schedules(class_module_id, schedule_id);
 
 DELIMITER //
 
-CREATE PROCEDURE sp_refresh_attendance_grades(IN p_class_module_id VARCHAR(36))
+CREATE PROCEDURE sp_refresh_single_trainee_attendance(
+    IN p_class_module_id VARCHAR(36),
+    IN p_trainee_id VARCHAR(36)
+)
 BEGIN
-
     INSERT INTO grades (grade_id, class_module_id, trainee_id, grade, grade_type, status, created_at, updated_at)
     SELECT
-        UUID() as grade_id,
+        UUID(),
         p_class_module_id,
-        stats.trainee_id,
-        IF(stats.total_hours > 0, (stats.attended_hours / stats.total_hours) * 20, 20) as calculated_grade,
-        'attendance' as grade_type,
-        'draft' as status,
-        NOW() as created_at,
-        NOW() as updated_at
+        p_trainee_id,
+        IF(stats.total_hours > 0, (stats.attended_hours / stats.total_hours) * 20, 20),
+        'attendance',
+        'draft',
+        NOW(),
+        NOW()
     FROM (
         SELECT
-            a.trainee_id,
             SUM(CASE WHEN a.is_absent = 0 THEN sch.total_hours ELSE 0 END) as attended_hours,
             SUM(sch.total_hours) as total_hours
         FROM attendances a
         JOIN summaries s ON a.summary_id = s.summary_id
         JOIN schedules sch ON s.schedule_id = sch.schedule_id
         WHERE sch.class_module_id = p_class_module_id
-        GROUP BY a.trainee_id
+          AND a.trainee_id = p_trainee_id -- ATENÇÃO: Filtro por aluno específico
     ) AS stats
     ON DUPLICATE KEY UPDATE
         grade = VALUES(grade),
         updated_at = NOW();
 END //
 
-DELIMITER ;
-
-DELIMITER //
-
+-- Atualizar Triggers para usar a versão de Aluno Único
 CREATE TRIGGER tr_after_attendance_update
 AFTER INSERT ON attendances
 FOR EACH ROW
 BEGIN
-    SET @cm_id = (
-        SELECT sch.class_module_id
-        FROM summaries s
-        JOIN schedules sch ON s.schedule_id = sch.schedule_id
-        WHERE s.summary_id = NEW.summary_id
-        LIMIT 1
-    );
-
-    CALL sp_refresh_attendance_grades(@cm_id);
+    SET @cm_id = (SELECT sch.class_module_id FROM summaries s JOIN schedules sch ON s.schedule_id = sch.schedule_id WHERE s.summary_id = NEW.summary_id LIMIT 1);
+    CALL sp_refresh_single_trainee_attendance(@cm_id, NEW.trainee_id);
 END //
 
 CREATE TRIGGER tr_after_attendance_change
 AFTER UPDATE ON attendances
 FOR EACH ROW
 BEGIN
-    SET @cm_id = (
-        SELECT sch.class_module_id
-        FROM summaries s
-        JOIN schedules sch ON s.schedule_id = sch.schedule_id
-        WHERE s.summary_id = NEW.summary_id
-        LIMIT 1
-    );
-    CALL sp_refresh_attendance_grades(@cm_id);
+    SET @cm_id = (SELECT sch.class_module_id FROM summaries s JOIN schedules sch ON s.schedule_id = sch.schedule_id WHERE s.summary_id = NEW.summary_id LIMIT 1);
+    CALL sp_refresh_single_trainee_attendance(@cm_id, NEW.trainee_id);
 END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE TRIGGER tr_check_availability_consistency
+BEFORE UPDATE ON availabilities
+FOR EACH ROW
+BEGIN
+    -- Se está a marcar como booked, deve existir em schedule_slots
+    IF NEW.is_booked = 1 AND OLD.is_booked = 0 THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM schedule_slots
+            WHERE availability_id = NEW.availability_id
+        ) THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Cannot set is_booked=1 without schedule_slot';
+        END IF;
+    END IF;
+END//
 
 DELIMITER ;

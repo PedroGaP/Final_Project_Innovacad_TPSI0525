@@ -166,13 +166,7 @@ fun IndividualTrainerCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 8.dp, top = 8.dp, bottom = 8.dp)
-            ) {
-                InfoRow(label = "User ID", value = trainer.id)
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                InfoRow(label = "Trainer ID", value = trainer.trainerId)
-                Spacer(modifier = Modifier.height(8.dp))
-                
+            ) { 
                 InfoRow(
                     label = "Birthday",
                     value = Date(

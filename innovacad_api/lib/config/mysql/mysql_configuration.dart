@@ -59,7 +59,6 @@ class MysqlConfiguration {
       collation: "utf8mb4_uca1400_ai_ci",
       maxConnections: 20,
       timeoutMs: 10000,
-      
     );
 
     utils = MysqlUtils(

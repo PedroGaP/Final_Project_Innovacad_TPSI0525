@@ -1,6 +1,10 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:innovacad_api/config/mysql/mysql_configuration.dart';
 import 'package:innovacad_api/src/core/core.dart';
+import 'package:innovacad_api/src/core/extensions/mysql_utils_extension.dart';
 import 'package:innovacad_api/src/data/data.dart';
 import 'package:innovacad_api/src/domain/trainee/repository/i_trainee_repository.dart';
 import 'package:mysql_utils/mysql_utils.dart';
@@ -87,7 +91,7 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       if (checkExists.rows.isNotEmpty) {
         return Result.failure(
           AppError(
-            AppErrorType.internal,
+            AppErrorType.conflict,
             "A trainee with the username or email provided already exists.",
           ),
         );
@@ -97,6 +101,7 @@ class TraineeRepositoryImpl implements ITraineeRepository {
         dto.email,
         dto.name,
         dto.password,
+        dto.username,
       );
 
       if (responseUser.isFailure) {
@@ -109,43 +114,41 @@ class TraineeRepositoryImpl implements ITraineeRepository {
         );
       }
 
-      final role = "trainee";
       final userData = responseUser.data as Map<String, dynamic>;
-      userData["username"] = dto.username;
-      userData["role"] = role;
       createdUserId = userData["id"];
-
-      await db.startTrans();
-
-      final updateCount = await db.update(
-        table: "user",
-        updateData: {"username": dto.username, "role": role},
-        where: {"id": createdUserId},
-      );
-
-      if (updateCount < BigInt.from(0)) {
-        throw "Something went wrong while updating the role or username.";
-      }
-
       final traineeId = Uuid().v4();
 
-      await db.insert(
-        table: table,
-        insertData: {
-          "trainee_id": traineeId,
-          "user_id": createdUserId,
-          "birthday_date": dto.birthdayDate,
-        },
-      );
+      await db.transaction((txn) async {
+        final updateCount = await txn.update(
+          table: "user",
+          updateData: {"username": dto.username, "role": "trainee"},
+          where: {"id": createdUserId},
+        );
 
-      await db.commit();
+        if (updateCount <= BigInt.zero) {
+          throw Exception("User update failed.");
+        }
+
+        await txn.insert(
+          table: table,
+          insertData: {
+            "trainee_id": traineeId,
+            "user_id": createdUserId,
+            "birthday_date": dto.birthdayDate,
+          },
+        );
+      });
 
       return await getById(traineeId);
-    } catch (e) {
-      if (db != null) await db.rollback();
+    } catch (e, s) {
+      print("Create Trainee Error: $e\n$s");
 
       if (createdUserId != null) {
-        await _remoteUserService.deleteUserAsAdmin(createdUserId);
+        try {
+          await _remoteUserService.deleteUserAsAdmin(createdUserId);
+        } catch (cleanupError) {
+          print("Failed to cleanup remote user: $cleanupError");
+        }
       }
 
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
@@ -289,7 +292,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
 
       double sumGrades = 0;
       int totalModules = 0;
-
       final List<List<String>> tableData = [];
 
       for (var row in gradesData.rows) {
@@ -309,30 +311,13 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       final user = traineeData.rows.first;
       final now = DateTime.now();
       final dateFormatted =
-          "${now.day}/${now.month}/${now.year} às ${now.hour}:${now.minute}";
+          "${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} às ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
 
       pw.ImageProvider? profileImage;
       final imagePath = user['image']?.toString();
 
-      if (imagePath != null && imagePath.isNotEmpty) {
-        try {
-          final cleanPath = imagePath.startsWith('/')
-              ? imagePath.substring(1)
-              : imagePath;
-          final imageUrl = "http://localhost:8080/$cleanPath";
-
-          final response = await dio.get(
-            imageUrl,
-            options: Options(responseType: ResponseType.bytes),
-          );
-
-          if (response.statusCode == 200) {
-            profileImage = pw.MemoryImage(response.data);
-            print(response.data);
-          }
-        } catch (e) {
-          print("Erro ao processar imagem do formando com Dio: $e");
-        }
+      if (imagePath != null && imagePath.isNotEmpty && imagePath != 'null') {
+        profileImage = await _loadProfileImage(imagePath);
       }
 
       final pdf = pw.Document();
@@ -573,10 +558,49 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       );
 
       return Result.success(await pdf.save());
-    } catch (e) {
-      print("Erro ao gerar PDF Formando: $e");
+    } catch (e, s) {
+      print("Erro ao gerar PDF Formando: $e\n$s");
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
+  }
+
+  Future<pw.ImageProvider?> _loadProfileImage(String imagePath) async {
+    try {
+      if (!imagePath.startsWith('http')) {
+        final cleanPath = imagePath.startsWith('/')
+            ? imagePath.substring(1)
+            : imagePath;
+
+        final file = File(cleanPath);
+        if (await file.exists()) {
+          final bytes = await file.readAsBytes();
+          return pw.MemoryImage(bytes);
+        }
+
+        final fileFromPublic = File('public/$cleanPath');
+        if (await fileFromPublic.exists()) {
+          final bytes = await fileFromPublic.readAsBytes();
+          return pw.MemoryImage(bytes);
+        }
+      }
+
+      final imageUrl = imagePath.startsWith('http')
+          ? imagePath
+          : "http://localhost:8080/$imagePath";
+
+      final response = await dio.get(
+        imageUrl,
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      if (response.statusCode == 200 && response.data is List<int>) {
+        return pw.MemoryImage(Uint8List.fromList(response.data));
+      }
+    } catch (e) {
+      print("⚠️ Não foi possível carregar imagem: $e");
+    }
+
+    return null;
   }
 
   pw.Widget _buildInfoRow(String label, String value) {

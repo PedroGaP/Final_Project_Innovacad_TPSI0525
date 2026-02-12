@@ -18,9 +18,9 @@ type Props = {
   isEditable: boolean;
   events: EventInput[];
   loading?: boolean;
-  onCreateRequest: (start: string, end: string) => void;
-  onEditRequest: (event: any) => void;
-  onMoveRequest?: (id: string, start: Date, end: Date) => Promise<void>;
+  onCreateRequest: (start: string, end: string) => boolean;
+  onEditRequest: (event: any) => boolean;
+  onMoveRequest?: (id: string, start: Date, end: Date) => Promise<boolean>;
 };
 
 export const EventCalendar = (props: Props) => {
@@ -108,8 +108,6 @@ export const EventCalendar = (props: Props) => {
   const handleEventDrop = async (info: EventDropArg | EventResizeDoneArg) => {
     if (!props.onMoveRequest) return;
 
-    const revert = info.revert;
-
     const start = info.event.start!;
     let end = info.event.end;
 
@@ -117,13 +115,27 @@ export const EventCalendar = (props: Props) => {
       end = new Date(start.getTime() + 60 * 60 * 1000);
     }
 
+    info.revert();
+    const loadingToast = toast.loading("Moving session...");
+
     try {
-      await props.onMoveRequest(info.event.id, start, end);
-      toast.success("Schedule moved!");
-    } catch (e) {
-      console.error(e);
-      revert();
-      toast.error("Could not move session.");
+      const success = await props.onMoveRequest(info.event.id, start, end);
+
+      if (!success) {
+        toast.error("Could not move session.", { id: loadingToast });
+        return;
+      }
+
+      const event = calendar?.getEventById(info.event.id);
+      if (event) {
+        event.setStart(start);
+        event.setEnd(end);
+      }
+
+      toast.success("Schedule moved!", { id: loadingToast });
+    } catch (e: any) {
+      console.error("Move error:", e);
+      toast.error(e.message || "Could not move session.", { id: loadingToast });
     }
   };
 
@@ -140,7 +152,13 @@ export const EventCalendar = (props: Props) => {
       locale: "pt",
       firstDay: 1,
       selectMirror: true,
+      eventDragStart: (info) => {
+        info.el.style.opacity = "0.5";
+      },
 
+      eventDragStop: (info) => {
+        info.el.style.opacity = "1";
+      },
       eventOverlap: false,
       slotEventOverlap: false,
 

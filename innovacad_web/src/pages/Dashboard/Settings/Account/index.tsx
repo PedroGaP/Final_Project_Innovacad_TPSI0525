@@ -116,6 +116,7 @@ const AccountSettingsPage = () => {
       await new Promise((r) => setTimeout(r, 500));
 
       const updatedDocs = await fetchDocuments(u.id!);
+      console.log(`DOCS::: ${JSON.stringify(updatedDocs)}`);
       const newPic = updatedDocs.find((d) => d.type_code === "PROFILE_PIC");
 
       if (!newPic) throw new Error("Image uploaded but not found in list.");

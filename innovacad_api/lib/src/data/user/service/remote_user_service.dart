@@ -180,6 +180,7 @@ class RemoteUserService {
     String email,
     String name,
     String password,
+    String username,
   ) async {
     try {
       final uri = Uri(
@@ -191,8 +192,19 @@ class RemoteUserService {
 
       final response = await _dio.postUri(
         uri,
-        data: {"email": email, "name": name, "password": password},
+        data: {
+          "email": email,
+          "name": name,
+          "password": password,
+          "username": username,
+        },
       );
+
+      print(response.requestOptions.data);
+      print(response.requestOptions.headers);
+      print(response.data);
+      print(response.headers);
+      print(response.statusCode);
 
       if (response.statusCode != HttpStatus.ok)
         return Result.failure(

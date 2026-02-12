@@ -1,12 +1,9 @@
 import 'package:mysql_utils/mysql_utils.dart';
 
 extension MysqlTransactionExtension on MysqlUtils {
-  /// Executes an atomic transaction
-  /// If [action] is successful, it commits.
-  /// If [action] fails, it rolls back
+  /// Executes an atomic transaction with optimized lock handling
   Future<T> transaction<T>(Future<T> Function(MysqlUtils txn) action) async {
     bool isRootTransaction = false;
-
     try {
       await startTrans();
       isRootTransaction = true;
@@ -15,8 +12,10 @@ extension MysqlTransactionExtension on MysqlUtils {
         rethrow;
       }
     }
-
     try {
+      await query("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;");
+      await query("SET autocommit=0;");
+
       final result = await action(this);
 
       if (isRootTransaction) {
@@ -28,6 +27,8 @@ extension MysqlTransactionExtension on MysqlUtils {
         await rollback();
       }
       rethrow;
+    } finally {
+      await query("SET autocommit=1;");
     }
   }
 }
