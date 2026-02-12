@@ -87,4 +87,14 @@ class GradeController {
   @Delete('/<id>')
   Future<Response> delete(@Param("id") String id) async =>
       resultToResponse(await _service.delete(id));
+
+  @ApiParam(name: 'id', description: 'The trainee ID', required: true)
+  @ApiOperation(
+    summary: 'Fetch grades by Trainee Id',
+    description: 'Fetchesgrades by their trainee unique identifier',
+  )
+  @Get('/trainee/<traineeId>')
+  Future<Response> fetchGradesByTraineeId(
+    @Param("traineeId") String traineeId,
+  ) async => resultToResponse(await _service.fetchGradesByTraineeId(traineeId));
 }

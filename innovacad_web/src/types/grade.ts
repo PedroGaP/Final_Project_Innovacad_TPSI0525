@@ -21,6 +21,7 @@ export interface GradeResponseData {
   status: string;
   created_at?: string;
   updated_at?: string;
+  module_id?: string;
 }
 
 export class Grade {
@@ -31,6 +32,7 @@ export class Grade {
   grade: number;
   grade_type: GradeTypeEnum;
   status: GradeStatusEnum;
+  module_id: string;
 
   constructor(data: GradeResponseData) {
     this.grade_id = data.grade_id;
@@ -40,5 +42,6 @@ export class Grade {
     this.grade = Number(data.grade);
     this.grade_type = data.grade_type as GradeTypeEnum;
     this.status = (data.status as GradeStatusEnum) || GradeStatusEnum.DRAFT;
+    this.module_id = data.module_id || "";
   }
 }

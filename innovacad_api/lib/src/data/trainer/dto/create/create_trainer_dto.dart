@@ -46,6 +46,9 @@ class CreateTrainerDto extends CreateUserDto
   vaden.LucidValidator<CreateTrainerDto> validate(
     vaden.ValidatorBuilder<CreateTrainerDto> builder,
   ) {
+    final now = DateTime.now();
+    final minAgeDate = DateTime(now.year - 13, now.month, now.day);
+
     builder.ruleFor((e) => e.email, key: 'email').notEmptyOrNull().validEmail();
     builder
         .ruleFor((e) => e.password, key: 'password')
@@ -57,6 +60,13 @@ class CreateTrainerDto extends CreateUserDto
         .ruleFor((e) => e.username, key: 'username')
         .notEmptyOrNull()
         .minLength(4);
+    builder
+        .ruleFor((e) => e.birthdayDate, key: 'birthday_date')
+        .lessThanOrEqualTo(now, message: 'Birthday cannot be in the future')
+        .lessThanOrEqualTo(
+          minAgeDate,
+          message: 'You must be at least 13 years old',
+        );
     return builder;
   }
 }

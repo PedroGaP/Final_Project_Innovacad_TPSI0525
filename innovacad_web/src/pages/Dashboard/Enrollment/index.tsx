@@ -9,6 +9,7 @@ import EntityTable, { ActionsEnum } from "@/components/EntityTable";
 import type { ModalFieldDefinition } from "@/components/Modal/Edit";
 import type { Course } from "@/types/course";
 import { Icon } from "@/components/Icon";
+import EnrollmentDetailsModal from "@/components/Modal/EnrollmentDetails";
 
 const createEmptyEnrollment = (): Enrollment =>
   ({
@@ -68,6 +69,8 @@ const EnrollmentsPage = () => {
   const [trainees] = createResource<Trainee[]>(api.fetchTrainees);
   const [classes] = createResource<Class[]>(api.fetchClasses);
   const [courses] = createResource<Course[]>(api.fetchCourses);
+
+  const [selectedForDetails, setSelectedForDetails] = createSignal<any>(null);
 
   const isTrainee = () => user()?.role === "trainee";
 
@@ -199,112 +202,137 @@ const EnrollmentsPage = () => {
   );
 
   return (
-    <EntityTable<Enrollment>
-      title={isTrainee() ? "My Enrollments & Grades" : "Manage Enrollments"}
-      data={displayData}
-      handleAddClick={isTrainee() ? undefined : () => createEmptyEnrollment()}
-      handleEditClick={isTrainee() ? undefined : (e) => ({ ...e })}
-      confirmDelete={isTrainee() ? undefined : confirmDelete}
-      handleSave={handleSaveEnrollment}
-      formFields={formFieldsConfig()}
-      actions={tableActions()}
-      renderCustomAction={(e) => (
-        <button
-          class="btn btn-primary btn-sm tooltip tooltip-left z-10"
-          data-tip={"View Details"}
-          onClick={() => {}}
-        >
-          <Icon name="Eye" size={16} />
-        </button>
-      )}
-      filter={(e: Enrollment, search: string) => {
-        const s = search.toLowerCase();
-        const traineeName = getTraineeName(e.trainee_id)?.toLowerCase() || "";
-        const classIdent = getClassIdentifier(e.class_id)?.toLowerCase() || "";
-        return (
-          String(e.final_grade).toLowerCase().includes(s) ||
-          traineeName.includes(s) ||
-          classIdent.includes(s)
-        );
-      }}
-      fields={[
-        {
-          formattedName: "ID",
-          fieldName: "enrollment_id",
-          canCopy: true,
-          smaller: true,
-          hidden: isTrainee(),
-        },
-        {
-          formattedName: "Course",
-          fieldName: "class_id",
-          customGeneration: (e) => (
-            <div class="flex flex-col">
-              <span class="font-bold text-sm">
-                {
-                  courses()?.find(
-                    (c) =>
-                      c.course_id ===
-                      classes()!.find((cl) => cl.class_id === e.class_id)
-                        ?.course_id,
-                  )?.name
-                }
-              </span>
-              <Show when={!isTrainee()}>
-                <span class="text-[10px] opacity-50 font-mono">
-                  {e.class_id}
-                </span>
-              </Show>
-            </div>
-          ),
-        },
-        {
-          bigger: true,
-          formattedName: "Class",
-          fieldName: "class_id",
-          customGeneration: (e) => (
-            <div class="flex flex-col">
-              <span class="font-bold text-sm">
-                {getClassIdentifier(e.class_id)}
-              </span>
-              <Show when={!isTrainee()}>
-                <span class="text-[10px] opacity-50 font-mono">
-                  {e.class_id}
-                </span>
-              </Show>
-            </div>
-          ),
-        },
-        {
-          formattedName: "Trainee",
-          fieldName: "trainee_id",
-          hidden: isTrainee(),
-          customGeneration: (e) => (
-            <div class="flex flex-col">
-              <span class="font-medium">{getTraineeName(e.trainee_id)}</span>
-              <span class="text-[10px] opacity-50 font-mono">
-                {e.trainee_id?.substring(0, 8)}...
-              </span>
-            </div>
-          ),
-        },
-        {
-          formattedName: "Final Grade",
-          fieldName: "final_grade",
-          smaller: true,
-          customGeneration: (e) => {
-            const grade = Number(e.final_grade);
-            return (
-              <div
-                class={`badge ${grade >= 9.5 ? "badge-success" : "badge-error"} badge-md font-bold py-3 px-4`}
-              >
-                {grade > 0 ? grade.toFixed(2) : "Pending"}
-              </div>
-            );
+    <>
+      <EntityTable<Enrollment>
+        title={isTrainee() ? "My Enrollments & Grades" : "Manage Enrollments"}
+        data={displayData}
+        handleAddClick={isTrainee() ? undefined : () => createEmptyEnrollment()}
+        handleEditClick={isTrainee() ? undefined : (e) => ({ ...e })}
+        confirmDelete={isTrainee() ? undefined : confirmDelete}
+        handleSave={handleSaveEnrollment}
+        formFields={formFieldsConfig()}
+        actions={tableActions()}
+        renderCustomAction={(e) => (
+          <button
+            class="btn btn-primary btn-sm tooltip tooltip-left z-10"
+            data-tip={"View Details"}
+            onClick={() => {
+              const classObj = classes()?.find(
+                (cl) => cl.class_id === e.class_id,
+              );
+              const courseObj = courses()?.find(
+                (c) => c.course_id === classObj?.course_id,
+              );
+
+              setSelectedForDetails({
+                class_id: e.class_id,
+                trainee_id: e.trainee_id,
+                courseName: courseObj?.name || "Standard Course",
+                classIdentifier: getClassIdentifier(e.class_id),
+                finalGrade: e.final_grade,
+              });
+            }}
+          >
+            <Icon name="Eye" size={16} />
+          </button>
+        )}
+        filter={(e: Enrollment, search: string) => {
+          const s = search.toLowerCase();
+          const traineeName = getTraineeName(e.trainee_id)?.toLowerCase() || "";
+          const classIdent =
+            getClassIdentifier(e.class_id)?.toLowerCase() || "";
+          return (
+            String(e.final_grade).toLowerCase().includes(s) ||
+            traineeName.includes(s) ||
+            classIdent.includes(s)
+          );
+        }}
+        fields={[
+          {
+            formattedName: "ID",
+            fieldName: "enrollment_id",
+            canCopy: true,
+            smaller: true,
+            hidden: isTrainee(),
           },
-        },
-      ]}
-    />
+          {
+            formattedName: "Course",
+            fieldName: "class_id",
+            customGeneration: (e) => (
+              <div class="flex flex-col">
+                <span class="font-bold text-sm">
+                  {
+                    courses()?.find(
+                      (c) =>
+                        c.course_id ===
+                        classes()!.find((cl) => cl.class_id === e.class_id)
+                          ?.course_id,
+                    )?.name
+                  }
+                </span>
+                <Show when={!isTrainee()}>
+                  <span class="text-[10px] opacity-50 font-mono">
+                    {e.class_id}
+                  </span>
+                </Show>
+              </div>
+            ),
+          },
+          {
+            bigger: true,
+            formattedName: "Class",
+            fieldName: "class_id",
+            customGeneration: (e) => (
+              <div class="flex flex-col">
+                <span class="font-bold text-sm">
+                  {getClassIdentifier(e.class_id)}
+                </span>
+                <Show when={!isTrainee()}>
+                  <span class="text-[10px] opacity-50 font-mono">
+                    {e.class_id}
+                  </span>
+                </Show>
+              </div>
+            ),
+          },
+          {
+            formattedName: "Trainee",
+            fieldName: "trainee_id",
+            hidden: isTrainee(),
+            customGeneration: (e) => (
+              <div class="flex flex-col">
+                <span class="font-medium">{getTraineeName(e.trainee_id)}</span>
+                <span class="text-[10px] opacity-50 font-mono">
+                  {e.trainee_id?.substring(0, 8)}...
+                </span>
+              </div>
+            ),
+          },
+          {
+            formattedName: "Final Grade",
+            fieldName: "final_grade",
+            smaller: true,
+            customGeneration: (e) => {
+              const grade = Number(e.final_grade);
+              return (
+                <div
+                  class={`badge ${grade >= 9.5 ? "badge-success" : "badge-error"} badge-md font-bold py-3 px-4`}
+                >
+                  {grade > 0 ? grade.toFixed(2) : "Pending"}
+                </div>
+              );
+            },
+          },
+        ]}
+      />
+      <Show when={selectedForDetails()}>
+        <EnrollmentDetailsModal
+          isOpen={!!selectedForDetails()}
+          onClose={() => setSelectedForDetails(null)}
+          enrollment={selectedForDetails()}
+        />
+      </Show>
+    </>
   );
 };
 

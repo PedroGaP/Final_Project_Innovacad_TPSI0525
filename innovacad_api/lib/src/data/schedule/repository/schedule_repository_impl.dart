@@ -473,7 +473,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
           AND a.date_day = ?
           AND rs.start_time >= ?
           AND rs.end_time <= ?
-        ORDER BY a.availability_id  -- Consistent lock ordering to prevent deadlocks
+        ORDER BY a.availability_id
         FOR UPDATE SKIP LOCKED
       """;
 
@@ -632,10 +632,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
           JOIN courses co ON c.course_id = co.course_id
           LEFT JOIN rooms r ON s.room_id = r.room_id
           WHERE 
-            -- CONDIÇÃO A: O utilizador logado é o formador desta aula
             t.user_id = ? 
-            OR 
-            -- CONDIÇÃO B: O utilizador logado está inscrito nesta turma como aluno
+            OR
             classm.class_id IN (
               SELECT e.class_id 
               FROM enrollments e 

@@ -21,4 +21,5 @@ abstract class IGradeRepository {
     required String classModuleId,
   });
   Future<Result<bool>> finalizeGrades(String classModuleId);
+  Future<Result<List<OutputGradeDao>>> fetchGradesByTraineeId(String traineeId);
 }

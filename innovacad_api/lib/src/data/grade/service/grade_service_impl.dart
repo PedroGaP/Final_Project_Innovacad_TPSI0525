@@ -80,4 +80,15 @@ class GradeServiceImpl implements IGradeService {
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
+
+  @override
+  Future<Result<List<OutputGradeDao>>> fetchGradesByTraineeId(
+    String traineeId,
+  ) async {
+    try {
+      return await _repository.fetchGradesByTraineeId(traineeId);
+    } catch (e) {
+      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    }
+  }
 }

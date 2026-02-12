@@ -193,4 +193,45 @@ class ModuleRepositoryImpl implements IModuleRepository {
       );
     }
   }
+
+  @override
+  Future<Result<List<OutputModuleDao>>> getByClassId(String classId) async {
+    try {
+      return await MysqlConfiguration.executeWithConnection((db) async {
+        final result = await db.query(
+          """
+          SELECT m.module_id as module_id,
+                 m.name as name,
+                 m.duration as duration,
+                 m.has_computers as has_computers,
+                 m.has_whiteboard as has_whiteboard,
+                 m.has_projector as has_projector,
+                 m.has_smartboard as has_smartboard
+          FROM classes_modules cm
+                  JOIN courses_modules crm USING (courses_modules_id)
+                  JOIN modules m USING (module_id)
+          WHERE cm.class_id = ?;
+          """,
+          whereValues: [classId],
+          isStmt: true,
+        );
+
+        if (result.numOfRows == 0) return Result.success([]);
+
+        final modules = result.rowsAssoc
+            .map((row) => OutputModuleDao.fromJson(row.assoc()))
+            .toList();
+
+        return Result.success(modules);
+      });
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Something went wrong while fetching the module...",
+          details: {"error": e.toString(), "stackTrace": s.toString()},
+        ),
+      );
+    }
+  }
 }
