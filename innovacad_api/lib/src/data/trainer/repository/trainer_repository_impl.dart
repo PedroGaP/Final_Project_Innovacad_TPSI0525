@@ -38,37 +38,43 @@ class TrainerRepositoryImpl implements ITrainerRepository {
     try {
       return await MysqlConfiguration.executeWithConnection((db) async {
         final query = """
-          SELECT t.trainer_id, t.user_id, t.birthday_date, t.is_coordinator,
-                 u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt, u.emailVerified 
+          SELECT 
+            t.trainer_id, t.user_id, t.birthday_date, t.is_coordinator,
+            u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt, u.emailVerified,
+            GROUP_CONCAT(DISTINCT CONCAT(ts.module_id, ':', ts.competence_level) SEPARATOR '|') as skills_data,
+            GROUP_CONCAT(DISTINCT tcc.class_id SEPARATOR ',') as coordinated_class_ids
           FROM `trainers` t 
           JOIN `user` u ON t.user_id = u.id
+          LEFT JOIN trainer_skills ts ON t.trainer_id = ts.trainer_id
+          LEFT JOIN trainers_classes_coordinator tcc ON t.trainer_id = tcc.trainer_id
+          GROUP BY t.trainer_id, t.user_id, t.birthday_date, t.is_coordinator,
+                   u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt, u.emailVerified
         """;
+        
         final results = await db.query(query);
         final List<OutputTrainerDao> daos = [];
 
         for (var row in results.rows) {
-          final skillQuery =
-              "SELECT module_id, competence_level FROM trainer_skills WHERE trainer_id = ?";
-          final skillResults = await db.query(
-            skillQuery,
-            whereValues: [row['trainer_id']],
-            isStmt: true,
-          );
-          row['skills'] = skillResults.rows;
-
           final isCoordinator = _parseBool(row['is_coordinator']);
-          print("COORDENAODR? $isCoordinator");
           row['is_coordinator'] = isCoordinator;
 
-          if (isCoordinator) {
-            final classResults = await db.query(
-              "SELECT class_id FROM trainers_classes_coordinator WHERE trainer_id = ?",
-              whereValues: [row['trainer_id']],
-              isStmt: true,
-            );
-            row['coordinated_class_ids'] = classResults.rows
-                .map((c) => c['class_id'].toString())
-                .toList();
+          final skillsData = row['skills_data']?.toString();
+          if (skillsData != null && skillsData.isNotEmpty && skillsData != 'null') {
+            final skillsList = skillsData.split('|').map((skill) {
+              final parts = skill.split(':');
+              return {
+                'module_id': parts[0],
+                'competence_level': parts.length > 1 ? parts[1] : null,
+              };
+            }).toList();
+            row['skills'] = skillsList;
+          } else {
+            row['skills'] = [];
+          }
+
+          final classIdsData = row['coordinated_class_ids']?.toString();
+          if (isCoordinator && classIdsData != null && classIdsData.isNotEmpty && classIdsData != 'null') {
+            row['coordinated_class_ids'] = classIdsData.split(',');
           } else {
             row['coordinated_class_ids'] = [];
           }
@@ -375,7 +381,11 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       await db.commit();
       return await getById(trainerId);
     } catch (e) {
-      if (db != null) await db.rollback();
+      if (db != null) {
+        try {
+          await db.rollback();
+        } catch (_) {}
+      }
       print("🔥 [Update Error]: $e");
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     } finally {
