@@ -1,4 +1,4 @@
-import { onMount, onCleanup, createEffect, Show } from "solid-js";
+import { onMount, onCleanup, createEffect, Show, createSignal } from "solid-js";
 import {
   Calendar,
   type EventInput,
@@ -35,16 +35,21 @@ type Props = {
 
 export const EventCalendar = (props: Props) => {
   let calendarEl: HTMLDivElement | undefined;
-  let calendar: Calendar | undefined;
+
+  // FIX 1: Use a signal for the calendar instance so effects can track it
+  const [calendar, setCalendar] = createSignal<Calendar | undefined>(undefined);
+
   const { t } = useI18n();
 
+  // Effect 1: Handle Events
   createEffect(() => {
     const rawEvents = props.events;
+    const cal = calendar(); // Access signal
 
-    if (calendar) {
+    if (cal) {
       const cleanEvents = JSON.parse(JSON.stringify(rawEvents));
-      calendar.removeAllEvents();
-      calendar.addEventSource(cleanEvents);
+      cal.removeAllEvents();
+      cal.addEventSource(cleanEvents);
 
       if (cleanEvents.length > 0) {
         const firstEventDate = new Date(cleanEvents[0].start);
@@ -52,38 +57,49 @@ export const EventCalendar = (props: Props) => {
           !isNaN(firstEventDate.getTime()) &&
           firstEventDate.getFullYear() > 2000
         ) {
-          calendar.gotoDate(firstEventDate);
+          cal.gotoDate(firstEventDate);
         }
       } else {
-        calendar.today();
+        cal.today();
       }
     }
   });
 
+  // Effect 2: Handle Editable State
   createEffect(() => {
     const editable = props.isEditable;
-    if (calendar) {
-      calendar.setOption("editable", editable);
-      calendar.setOption("selectable", editable);
-      calendar.setOption("eventStartEditable", editable);
-      calendar.setOption("eventDurationEditable", editable);
+    const cal = calendar(); // Access signal
+
+    if (cal) {
+      cal.setOption("editable", editable);
+      cal.setOption("selectable", editable);
+      cal.setOption("eventStartEditable", editable);
+      cal.setOption("eventDurationEditable", editable);
     }
   });
 
+  // Effect 3: Handle Custom Buttons (The Fix)
   createEffect(() => {
-    if (calendar) {
+    const cal = calendar(); // Access signal
+
+    // Only run if calendar exists
+    if (cal) {
       if (props.customButtons) {
-        console.log("EventCalendar: Setting customButtons", props.customButtons);
-        calendar.setOption("customButtons", props.customButtons);
+        // Register the buttons
+        cal.setOption("customButtons", props.customButtons);
+
+        // Construct the toolbar string dynamically
         const customBtnNames = Object.keys(props.customButtons).join(" ");
-        console.log("EventCalendar: customBtnNames", customBtnNames);
-        calendar.setOption("headerToolbar", {
+
+        // Force update the header toolbar
+        cal.setOption("headerToolbar", {
           left: "prev,next today",
           center: "title",
           right: `${customBtnNames} dayGridMonth,timeGridWeek,timeGridDay`,
         });
       } else {
-        calendar.setOption("headerToolbar", {
+        // Revert to standard toolbar if no buttons
+        cal.setOption("headerToolbar", {
           left: "prev,next today",
           center: "title",
           right: "dayGridMonth,timeGridWeek,timeGridDay",
@@ -95,7 +111,7 @@ export const EventCalendar = (props: Props) => {
   const handleDateSelect = (selectInfo: DateSelectArg) => {
     if (!props.isEditable) return;
     props.onCreateRequest(selectInfo.startStr, selectInfo.endStr);
-    calendar?.unselect();
+    calendar()?.unselect();
   };
 
   const handleEventClick = (clickInfo: EventClickArg) => {
@@ -159,7 +175,7 @@ export const EventCalendar = (props: Props) => {
         return;
       }
 
-      const event = calendar?.getEventById(info.event.id);
+      const event = calendar()?.getEventById(info.event.id);
       if (event) {
         event.setStart(start);
         event.setEnd(end);
@@ -179,7 +195,8 @@ export const EventCalendar = (props: Props) => {
 
     const initialEvents = JSON.parse(JSON.stringify(props.events || []));
 
-    calendar = new Calendar(calendarEl, {
+    // Initialize calendar instance
+    const calInstance = new Calendar(calendarEl, {
       plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
       customButtons: props.customButtons,
       editable: props.isEditable,
@@ -191,7 +208,6 @@ export const EventCalendar = (props: Props) => {
       eventDragStart: (info) => {
         info.el.style.opacity = "0.5";
       },
-
       eventDragStop: (info) => {
         info.el.style.opacity = "1";
       },
@@ -214,6 +230,8 @@ export const EventCalendar = (props: Props) => {
       slotMinTime: "08:00:00",
       slotMaxTime: "23:00:00",
       initialView: "timeGridWeek",
+
+      // Initialize toolbar immediately on mount as well to prevent flicker
       headerToolbar: {
         left: "prev,next today",
         center: "title",
@@ -242,11 +260,15 @@ export const EventCalendar = (props: Props) => {
         };
       },
     });
-    calendar.render();
+
+    calInstance.render();
+
+    // FIX 2: Set the signal, triggering the effects
+    setCalendar(calInstance);
   });
 
   onCleanup(() => {
-    calendar?.destroy();
+    calendar()?.destroy();
   });
 
   return (

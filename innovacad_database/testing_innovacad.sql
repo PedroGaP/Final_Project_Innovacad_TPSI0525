@@ -106,10 +106,48 @@ CROSS JOIN (
 CROSS JOIN ref_slots s
 WHERE WEEKDAY(DATE_ADD(CURDATE(), INTERVAL seq.n DAY)) < 5;
 
+SET @uid_tr1 = UUID();
+SET @uid_tr2 = UUID();
+SET @uid_tr3 = UUID();
+
+INSERT INTO user (id, name, email, username, role, emailVerified, twoFactorEnabled, createdAt, updatedAt) VALUES
+(@uid_tr1, 'Daniel Trainee', 'daniel.tr@test.com', 'danieltr', 'trainee', 1, 0, NOW(), NOW()),
+(@uid_tr2, 'Elena Trainee', 'elena.tr@test.com', 'elenatr', 'trainee', 1, 0, NOW(), NOW()),
+(@uid_tr3, 'Filipe Trainee', 'filipetr@test.com', 'filipetr', 'trainee', 1, 0, NOW(), NOW());
+
+INSERT INTO trainees (trainee_id, user_id, birthday_date) VALUES
+(UUID(), @uid_tr1, '2000-01-01'),
+(UUID(), @uid_tr2, '2001-02-02'),
+(UUID(), @uid_tr3, '2002-03-03');
+
+SELECT trainee_id INTO @trid1 FROM trainees WHERE user_id = @uid_tr1;
+SELECT trainee_id INTO @trid2 FROM trainees WHERE user_id = @uid_tr2;
+SELECT trainee_id INTO @trid3 FROM trainees WHERE user_id = @uid_tr3;
+
+INSERT INTO trainers_classes_coordinator (trainers_classes_coordinator_id, trainer_id, class_id) VALUES
+(UUID(), @tid1, @class_id);
+
+INSERT INTO enrollments (enrollment_id, class_id, trainee_id) VALUES
+(UUID(), @class_id, @trid1),
+(UUID(), @class_id, @trid2),
+(UUID(), @class_id, @trid3);
+
+SELECT classes_modules_id INTO @cm_sql_id FROM classes_modules WHERE class_id = @class_id AND courses_modules_id = @cm_sql;
+SELECT classes_modules_id INTO @cm_java_id FROM classes_modules WHERE class_id = @class_id AND courses_modules_id = @cm_java;
+
+INSERT INTO grades (grade_id, class_module_id, trainee_id, grade, grade_type, status) VALUES
+(UUID(), @cm_sql_id, @trid1, 15.5, 'test', 'finalized'),
+(UUID(), @cm_sql_id, @trid2, 18.0, 'test', 'finalized'),
+(UUID(), @cm_sql_id, @trid3, 12.0, 'test', 'finalized'),
+(UUID(), @cm_java_id, @trid1, 14.0, 'work', 'draft');
+
 COMMIT;
 
 SELECT 'Dados gerados com sucesso!' as Status;
 SELECT * FROM classes;
+SELECT * FROM trainees;
+SELECT * FROM enrollments;
+SELECT * FROM grades;
 SELECT CONCAT('ID Turma para Payload: ', @class_id) as Info;
 SELECT
     m.name as Module,
