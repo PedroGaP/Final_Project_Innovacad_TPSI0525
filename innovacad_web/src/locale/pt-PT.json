@@ -29,7 +29,30 @@
   },
   "general": {
     "name": "Nome",
-    "lectured_hours": "Horas Lecionadas"
+    "email": "Email",
+    "username": "Utilizador",
+    "birthday_date": "Data de Nascimento",
+    "verified": "Verificado",
+    "profile_pic": "Fotografia de Perfil",
+    "cv": "Curriculum Vitae",
+    "diploma": "Diploma",
+    "certificate": "Certificado",
+    "id_card": "Cartão de Identidade",
+    "other": "Outro",
+    "lectured_hours": "Horas Lecionadas",
+    "loading": "A Carregar",
+    "delete": "Apagar",
+    "download_file": "Exportar ficheiro",
+    "view_file": "Ver ficheiro",
+    "upload_file": "Enviar ficheiro"
+  },
+  "fields": {
+    "required_name": "O nome é obrigatório.",
+    "required_email": "O email é obrigatório.",
+    "invalid_email": "O email é inválido.",
+    "required_username": "O utilizador é obrigatório.",
+    "length_username": "O utilizador deve ter no mínimo 3 caracteres.",
+    "required_birthday_date": "A data de nascimento é obrigatório."
   },
   "not_found": {
     "are_you_lost": "Estás Perdido?",
@@ -50,6 +73,12 @@
       "sign_in_google": "Entrar com o Google"
     },
     "password": "Palavra-passe"
+  },
+  "entity_table": {},
+  "event_calendar": {
+    "move_fail": "Não foi possível realocar o evento.",
+    "move_successful": "Evento realocado com sucesso!",
+    "move_moving": "A realocar o evento..."
   },
   "dashboard": {
     "dashboard": "Painel",
@@ -84,6 +113,45 @@
       "delete_schedule": "Remover Sessão",
       "delete_schedule_desc_q": "Tens a certeza que queres remover esta sessão do horário?",
       "force_trainer_change_q": "Forçar substituição de Formador?"
+    },
+    "documents": {
+      "upload_successful_profile_pic": "Fotografia de Perfil inserida com sucesso!",
+      "upload_fail_profile_pic": "Não foi possível inserir a fotografia de peril.",
+      "upload_successful_cv": "Currículo inserido com sucesso!",
+      "upload_fail_cv": "Não foi possível inserir o currículo.",
+      "upload_successful_diploma": "Diploma inserido com sucesso!",
+      "upload_fail_diploma": "Não foi possível inserir o diploma.",
+      "upload_successful_certificate": "Certificado inserido com sucesso.",
+      "upload_fail_certificate": "Não foi possível inserir o certificado.",
+      "upload_successful_id_card": "Cartão de identidade inserido com sucesso!",
+      "upload_fail_id_card": "Não foi possível inserir o cartão de identidade.",
+      "upload_successful_other": "Documento inserido com sucesso!",
+      "upload_fail_other": "Não foi possível inserir o documento.",
+      "delete_successful": "Documento removido com sucesso!",
+      "delete_fail": "Não foi possível remover o documento.",
+      "are_you_sure": "Tens a certeza que queres apagar este documento?",
+      "missing": "Em falta",
+      "title": "Documentos de Utilizador"
+    },
+    "users": {
+      "email_new_password_subject": "Criação de Conta - Nova Palavra-Passe - Innovacad",
+      "send_email_fail": "Não foi possível enviar o email.",
+      "send_email_successful": "Email enviado com sucesso!",
+      "pdf_generating": "A exportar ficheiro PDF...",
+      "pdf_fail": "Não foi possível exportar o ficheiro PDF.",
+      "pdf_successful": "Ficheiro PDF do utilizador exportado com sucesso!",
+      "trainees": {},
+      "trainers": {
+        "validate_fail": "Não foi possível validar o formando.",
+        "update_successful": "Formando atualizado com sucesso!",
+        "create_successful": "Formando criado com sucesso! Credenciais de login enviados por email.",
+        "create_fail": "Não foi possível criar formando.",
+        "delete_successful": "Formando apagado com sucesso!",
+        "delete_fail": "Não foi possível apagar o formando.",
+        "update_fail": "Não foi possível atualizar o formando.",
+        "title": "Gerir Formandos",
+        "save_to_upload_documents": "Crie o formando primeiro para inserir documentos."
+      }
     }
   }
 }

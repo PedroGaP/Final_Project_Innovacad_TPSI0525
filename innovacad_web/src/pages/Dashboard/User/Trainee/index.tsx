@@ -5,6 +5,9 @@ import toast from "solid-toast";
 import { newPasswordEmail } from "@/components/NewPasswordEmail";
 import EntityTable from "@/components/EntityTable";
 import UserDocumentsManager from "@/components/DocumentManager";
+import useI18n from "@/hooks/useL18N";
+
+const { t } = useI18n();
 
 const createEmptyTrainee = (): Trainee =>
   ({
@@ -41,24 +44,24 @@ const validateTrainee = (
   const errors: string[] = [];
 
   const name = String(trainee.name || "").trim();
-  if (!name) errors.push("Name is required");
+  if (!name) errors.push(t("fields.required_name"));
 
   const email = String(trainee.email || "").trim();
   if (!email) {
-    errors.push("Email is required");
+    errors.push(t("fields.required_email"));
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errors.push("Email is invalid");
+    errors.push(t("fields.invalid_email"));
   }
 
   const username = String(trainee.username || "").trim();
   if (!username) {
-    errors.push("Username is required");
+    errors.push(t("fields.required_username"));
   } else if (username.length < 3) {
-    errors.push("Username must be at least 3 characters");
+    errors.push(t("fields.length_username"));
   }
 
   const birthdayDate = String(trainee.birthdayDate || "").trim();
-  if (!birthdayDate) errors.push("Birthday date is required");
+  if (!birthdayDate) errors.push(t("fields.required_birthday_date"));
 
   return {
     valid: errors.length === 0,
@@ -93,7 +96,6 @@ const getChangedFields = (
   return changes;
 };
 
-
 const TraineePage = () => {
   const api = useApi();
 
@@ -107,7 +109,7 @@ const TraineePage = () => {
       const validation = validateTrainee(trainee);
       if (!validation.valid) {
         validation.errors.forEach((error) => toast.error(error));
-        throw new Error("Validation failed");
+        throw new Error(t("dashboard.users.trainers.validate_fail"));
       }
 
       if (original) {
@@ -123,7 +125,7 @@ const TraineePage = () => {
             ) || [],
         );
 
-        toast.success(`Trainee updated successfully`);
+        toast.success(t("dashboard.users.trainers.update_successful"));
       } else {
         const traineeObj = {
           name: String(trainee.name),
@@ -138,7 +140,7 @@ const TraineePage = () => {
         try {
           await api.sendEmail({
             to: trainee.email!,
-            subject: "Account Creation - New Password Innovacad",
+            subject: t("dashboard.users.email_new_password_subject"),
             body: newPasswordEmail(traineeObj.password),
           });
         } catch (error) {
@@ -146,34 +148,43 @@ const TraineePage = () => {
             `Something went wrong sending an email for ${trainee.email}`,
             error,
           );
-          toast.error("User created but failed to send email.");
+          toast.error(t("dashboard.users.send_email_fail"));
         }
 
         mutate((prev) => [...(prev || []), newTrainee]);
-        toast.success(
-          "Trainee created successfully. Credentials sent via email.",
-        );
+        toast.success(t("dashboard.users.trainers.create_successful"));
       }
     } catch (error) {
-      if (error instanceof Error && error.message !== "Validation failed") {
-        toast.error(error.message || "Failed to save trainee");
+      if (original) {
+        if (error instanceof Error && error.message !== "Validation failed") {
+          toast.error(t("dashboard.users.trainers.update_fail"));
+        } else {
+          toast.error(t("dashboard.users.trainers.create_fail"));
+        }
       }
       throw error;
     }
   };
 
   const confirmDelete = async (userToDelete: Trainee) => {
-    await api.deleteTrainee(String(userToDelete.traineeId));
-    mutate(
-      (prev) =>
-        prev?.filter((u) => u.traineeId !== userToDelete.traineeId) || [],
-    );
-    toast.success("Trainee deleted");
+    try {
+      await api.deleteTrainee(String(userToDelete.traineeId));
+      mutate(
+        (prev) =>
+          prev?.filter((u) => u.traineeId !== userToDelete.traineeId) || [],
+      );
+      toast.success(t("dashboard.users.trainers.delete_successful"));
+    } catch (e) {
+      toast.error(t("dashboard.users.trainers.delete_fail"));
+      throw e;
+    }
   };
 
   const handleExport = async (trainee: Trainee) => {
     try {
-      toast.loading("Generating PDF...", { id: "export-loading" });
+      toast.loading(t("dashboard.users.trainers.pdf_generating"), {
+        id: "export-loading",
+      });
 
       await api.exportTraineeSheet(
         String(trainee.traineeId),
@@ -181,17 +192,17 @@ const TraineePage = () => {
       );
 
       toast.dismiss("export-loading");
-      toast.success("Download started!");
+      toast.success(t("dashboard.users.trainers.pdf_successful"));
     } catch (error: any) {
       toast.dismiss("export-loading");
       console.error(error);
-      toast.error(error.message || "Failed to export document.");
+      toast.error(t("dashboard.users.trainers.pdf_fail"));
     }
   };
 
   return (
     <EntityTable<Trainee>
-      title="Manage Trainees"
+      title={t("dashboard.users.trainers.title")}
       data={usersData}
       handleExportClick={handleExport}
       handleAddClick={() => createEmptyTrainee()}
@@ -218,20 +229,20 @@ const TraineePage = () => {
           smaller: true,
         },
         {
-          formattedName: "Name",
+          formattedName: t("general.name"),
           fieldName: "name",
         },
         {
-          formattedName: "Email",
+          formattedName: t("general.email"),
           fieldName: "email",
           canCopy: true,
         },
         {
-          formattedName: "Username",
+          formattedName: t("general.username"),
           fieldName: "username",
         },
         {
-          formattedName: "Birth Date",
+          formattedName: t("general.birthday_date"),
           fieldName: "birthdayDate",
           customGeneration: (e: Trainee) => {
             const d = epochToDateTime(e.birthdayDate!);
@@ -240,32 +251,32 @@ const TraineePage = () => {
           smaller: true,
         },
         {
-          formattedName: "Verified",
+          formattedName: t("general.verified"),
           fieldName: "verified",
           smaller: true,
         },
       ]}
       formFields={[
         {
-          label: "Name",
+          label: t("general.name"),
           name: "name",
           required: true,
           type: "text",
         },
         {
-          label: "Email",
+          label: t("general.email"),
           name: "email",
           required: true,
           type: "email",
         },
         {
-          label: "Username",
+          label: t("general.username"),
           name: "username",
           required: true,
           type: "text",
         },
         {
-          label: "Birthday Date",
+          label: t("general.birthday_date"),
           name: "birthdayDate",
           required: true,
           type: "date",
@@ -276,7 +287,9 @@ const TraineePage = () => {
           when={formData.id}
           fallback={
             <div class="alert alert-info text-xs mt-4">
-              <span>Save the trainee first to upload documents.</span>
+              <span>
+                {t("dashboard.users.trainers.save_to_upload_documents")}
+              </span>
             </div>
           }
         >

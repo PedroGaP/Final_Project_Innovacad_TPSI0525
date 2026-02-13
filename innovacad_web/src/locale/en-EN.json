@@ -29,7 +29,30 @@
   },
   "general": {
     "name": "Name",
-    "lectured_hours": "Lectured Hours"
+    "email": "Email",
+    "username": "Username",
+    "birthday_date": "Birthday Date",
+    "verified": "Verified",
+    "profile_pic": "Profile Picture",
+    "cv": "Curriculum Vitae",
+    "diploma": "Diploma",
+    "certificate": "Certificate",
+    "id_card": "ID Card",
+    "other": "Other",
+    "lectured_hours": "Lectured Hours",
+    "loading": "Loading",
+    "delete": "Delete",
+    "download_file": "Download File",
+    "view_file": "View file",
+    "upload_file": "Upload file"
+  },
+  "fields": {
+    "required_name": "Name is required",
+    "required_email": "Email is required",
+    "invalid_email": "Email is invalid",
+    "required_username": "Username is required",
+    "length_username": "Username must be at least 3 characters",
+    "required_birthday_date": "Birthday date is required"
   },
   "not_found": {
     "are_you_lost": "Are You Lost?",
@@ -54,7 +77,7 @@
   "entity_table": {},
   "event_calendar": {
     "move_fail": "Failed to move event.",
-    "move_successful": "Moved event successfuly!",
+    "move_successful": "Moved event successfully!",
     "move_moving": "Moving event..."
   },
   "dashboard": {
@@ -73,14 +96,14 @@
       "no_data": "No data found"
     },
     "schedule": {
-      "update_successful": "Updated schedule successfuly!",
+      "update_successful": "Updated schedule successfully!",
       "update_fail": "Failed to update schedule.",
-      "create_successful": "Created schedule successfuly!",
+      "create_successful": "Created schedule successfully!",
       "create_fail": "Failed to create schedule.",
-      "delete_successful": "Deleted schedule successfuly!",
+      "delete_successful": "Deleted schedule successfully!",
       "delete_fail": "Failed to delete schedule.",
       "move_fail": "Failed to move event",
-      "move_successful": "Moved event successfuly!",
+      "move_successful": "Moved event successfully!",
       "select_class": "Select a Class",
       "my_schedule": "My Schedule",
       "read_only": "Read Only",
@@ -90,6 +113,61 @@
       "delete_schedule": "Delete Schedule",
       "delete_schedule_desc_q": "Are you sure you want to remove this session from the calendar?",
       "force_trainer_change_q": "Force Trainer Change?"
+    },
+    "documents": {
+      "upload_successful_profile_pic": "Uploaded profile picture successfully!",
+      "upload_fail_profile_pic": "Failed to upload profile picture.",
+      "upload_successful_cv": "Uploaded resume successfully!",
+      "upload_fail_cv": "Failed to upload curriculum citae.",
+      "upload_successful_diploma": "Uploaded diploma successfully!",
+      "upload_fail_diploma": "Failed to upload diploma.",
+      "upload_successful_certificate": "Uploaded certificate successfully!",
+      "upload_fail_certificate": "Failed to upload certificate.",
+      "upload_successful_id_card": "Uploaded ID card successfully!",
+      "upload_fail_id_card": "Failed to upload ID card",
+      "upload_successful_other": "Uploaded document successfully!",
+      "upload_fail_other": "Failed to upload document.",
+      "delete_successful": "Document deleted successfully!",
+      "delete_fail": "Failed to delete document",
+      "are_you_sure": "Are you sure you want to delete this file?",
+      "missing": "Missing",
+      "title": "User Documents"
+    },
+    "users": {
+      "email_new_password_subject": "Account Creation - New Password - Innovacad",
+      "send_email_fail": "Failed to send email",
+      "send_email_successful": "Email sent successfully!",
+      "pdf_generating": "Generating user PDF...",
+      "pdf_fail": "Failed to generate user PDF.",
+      "pdf_successful": "Generated and exported user PDF successfully!",
+      "trainees": {
+        "validate_fail": "Trainee validation failed",
+        "update_successful": "Trainee updated successfully!",
+        "create_successful": "Trainee created successfully. Sign In credentials sent via email.",
+        "create_fail": "Failed to create trainee.",
+        "delete_successful": "Trainee deleted successfully!",
+        "delete_fail": "Failed to delete trainee.",
+        "update_fail": "Failed to update trainee.",
+        "title": "Manage Trainees",
+        "save_to_upload_documents": "Save the trainee first to upload documents."
+      },
+      "trainers": {
+        "required_name": "Name is required",
+        "required_email": "Email is required",
+        "invalid_email": "Email is invalid",
+        "required_username": "Username is required",
+        "length_username": "Username must be at least 3 characters",
+        "required_birthday_date": "Birthday date is required",
+        "validate_fail": "Trainee validation failed",
+        "update_successful": "Trainee updated successfully!",
+        "create_successful": "Trainee created successfully. Sign In credentials sent via email.",
+        "create_fail": "Failed to create trainee.",
+        "delete_successful": "Trainee deleted successfully!",
+        "delete_fail": "Failed to delete trainee.",
+        "update_fail": "Failed to update trainee.",
+        "title": "Manage Trainees",
+        "save_to_upload_documents": "Save the trainee first to upload documents."
+      }
     }
   }
 }
