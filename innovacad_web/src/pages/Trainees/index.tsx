@@ -2,9 +2,11 @@ import { createResource, createSignal, For, Show } from "solid-js";
 import { useApi } from "@/hooks/useApi";
 import type { Trainee } from "@/types/user";
 import { Icon } from "@/components/Icon";
+import { useI18n } from "@/hooks/useL18N";
 
 const Trainees = () => {
   const api = useApi();
+  const { t } = useI18n();
   const [traineesData] = createResource<Trainee[]>(api.fetchTrainees);
   const [searchQuery, setSearchQuery] = createSignal("");
 
@@ -33,10 +35,10 @@ const Trainees = () => {
       <div class="w-full p-6">
         <div class="mb-8">
           <h1 class="text-4xl font-bold mb-2 text-primary">
-            Trainees
+            {t("public.trainees.title")}
           </h1>
           <p class="text-base-content/60">
-            View all trainees and their information
+            {t("public.trainees.desc")}
           </p>
         </div>
 
@@ -49,7 +51,7 @@ const Trainees = () => {
             />
             <input
               type="text"
-              placeholder="Search by name, email, or username..."
+              placeholder={t("public.trainees.search_placeholder")}
               class="input input-bordered w-full pl-12 bg-base-100 shadow-sm"
               value={searchQuery()}
               onInput={(e) => setSearchQuery(e.currentTarget.value)}
@@ -66,7 +68,7 @@ const Trainees = () => {
         <Show when={traineesData.error}>
           <div class="alert alert-error shadow-lg">
             <Icon name="CircleAlert" size={24} />
-            <span>Failed to load trainees. Please try again later.</span>
+            <span>{t("common.error_loading")}</span>
           </div>
         </Show>
 
@@ -83,8 +85,8 @@ const Trainees = () => {
                   />
                   <p class="text-lg text-base-content/60">
                     {searchQuery()
-                      ? "No trainees found matching your search"
-                      : "No trainees available"}
+                      ? t("public.trainees.no_results")
+                      : t("public.trainees.no_data")}
                   </p>
                 </div>
               }
@@ -93,7 +95,7 @@ const Trainees = () => {
                 <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
                   <div class="card-body">
                     <div class="flex items-start justify-between mb-3">
-                      <div class="badge badge-ghost badge-lg">Trainee</div>
+                      <div class="badge badge-ghost badge-lg">{t("entity.trainee")}</div>
                       <Show when={trainee.verified}>
                         <div class="badge badge-success badge-sm gap-1">
                           <Icon name="CircleCheck" size={12} />
@@ -146,8 +148,10 @@ const Trainees = () => {
 
           <Show when={filteredTrainees().length > 0}>
             <div class="mt-6 text-center text-sm text-base-content/60">
-              Showing {filteredTrainees().length} of{" "}
-              {traineesData()?.length || 0} trainees
+              {t("public.trainees.showing_results", {
+                count: filteredTrainees().length,
+                total: traineesData()?.length || 0,
+              })}
             </div>
           </Show>
         </Show>

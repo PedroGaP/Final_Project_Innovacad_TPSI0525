@@ -2,9 +2,11 @@ import { createResource, createSignal, For, Show } from "solid-js";
 import { useApi } from "@/hooks/useApi";
 import type { Trainer } from "@/types/user";
 import { Icon } from "@/components/Icon";
+import { useI18n } from "@/hooks/useL18N";
 
 const Trainers = () => {
   const api = useApi();
+  const { t } = useI18n();
   const [trainersData] = createResource<Trainer[]>(api.fetchTrainers);
   const [searchQuery, setSearchQuery] = createSignal("");
 
@@ -33,10 +35,10 @@ const Trainers = () => {
       <div class="w-full p-6">
         <div class="mb-8">
           <h1 class="text-4xl font-bold mb-2 text-primary">
-            Trainers
+            {t("public.trainers.title")}
           </h1>
           <p class="text-base-content/60">
-            View all trainers and their information
+            {t("public.trainers.desc")}
           </p>
         </div>
 
@@ -49,7 +51,7 @@ const Trainers = () => {
             />
             <input
               type="text"
-              placeholder="Search by name, email, or username..."
+              placeholder={t("public.trainers.search_placeholder")}
               class="input input-bordered w-full pl-12 bg-base-100 shadow-sm"
               value={searchQuery()}
               onInput={(e) => setSearchQuery(e.currentTarget.value)}
@@ -66,7 +68,7 @@ const Trainers = () => {
         <Show when={trainersData.error}>
           <div class="alert alert-error shadow-lg">
             <Icon name="CircleAlert" size={24} />
-            <span>Failed to load trainers. Please try again later.</span>
+            <span>{t("common.error_loading")}</span>
           </div>
         </Show>
 
@@ -83,8 +85,8 @@ const Trainers = () => {
                   />
                   <p class="text-lg text-base-content/60">
                     {searchQuery()
-                      ? "No trainers found matching your search"
-                      : "No trainers available"}
+                      ? t("public.trainers.no_results")
+                      : t("public.trainers.no_data")}
                   </p>
                 </div>
               }
@@ -96,7 +98,7 @@ const Trainers = () => {
                       <div
                         class={`badge ${trainer.is_coordinator ? "badge-primary" : "badge-ghost"} badge-lg`}
                       >
-                        {trainer.is_coordinator ? "Coordinator" : "Trainer"}
+                        {trainer.is_coordinator ? t("entity.coordinator") : t("entity.trainer")}
                       </div>
                       <Show when={trainer.verified}>
                         <div class="badge badge-success badge-sm gap-1">
@@ -144,13 +146,13 @@ const Trainers = () => {
                     </div>
 
                     <Show when={trainer.skills && trainer.skills.length > 0}>
-                      <div class="divider my-2">Skills</div>
+                      <div class="divider my-2">{t("entity.modules")}</div>
                       <div class="space-y-2 max-h-32 overflow-y-auto">
                         <For each={trainer.skills}>
                           {(skill) => (
                             <div class="flex items-center justify-between p-2 rounded-lg bg-base-200/50">
                               <span class="text-xs font-medium truncate">
-                                Module: {skill.module_id}
+                                {t("entity.module")}: {skill.module_id}
                               </span>
                               <div class="badge badge-outline badge-xs">
                                 Level {skill.competence_level}
@@ -168,7 +170,7 @@ const Trainers = () => {
                         Object.keys(trainer.coordinated_class_ids).length > 0
                       }
                     >
-                      <div class="divider my-2">Coordinated Classes</div>
+                      <div class="divider my-2">{t("public.trainers.coordinated_classes")}</div>
                       <div class="flex flex-wrap gap-1">
                         <For each={Object.entries(trainer.coordinated_class_ids)}>
                           {([classId, className]) => (
@@ -187,8 +189,10 @@ const Trainers = () => {
 
           <Show when={filteredTrainers().length > 0}>
             <div class="mt-6 text-center text-sm text-base-content/60">
-              Showing {filteredTrainers().length} of{" "}
-              {trainersData()?.length || 0} trainers
+              {t("public.trainers.showing_results", {
+                count: filteredTrainers().length,
+                total: trainersData()?.length || 0,
+              })}
             </div>
           </Show>
         </Show>

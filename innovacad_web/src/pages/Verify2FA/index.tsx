@@ -9,11 +9,13 @@ import { useNavigate } from "@solidjs/router";
 import { useApi } from "@/hooks/useApi";
 import toast from "solid-toast";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
+import { useI18n } from "@/hooks/useL18N";
 
 const Verify2FA = () => {
   const { user } = useUserDetails();
   const { send2FA, verify2FA } = useApi();
-  const navigate = useNavigate();;
+  const navigate = useNavigate();
+  const { t } = useI18n();
 
   console.log(user());
 
@@ -67,13 +69,13 @@ const Verify2FA = () => {
       const res = await send2FA();
 
       if (!res) {
-        toast.error("Failed to send 2FA verification email...");
+        toast.error(t("auth.verify_2fa.toast_send_fail"));
         return;
       }
-      toast.success("2FA verification email sent!");
+      toast.success(t("auth.verify_2fa.toast_sent"));
     } catch (e) {
       console.error(e);
-      toast.error("Error sending 2FA verification email");
+      toast.error(t("auth.verify_2fa.toast_send_fail"));
     }
   };
 
@@ -91,13 +93,13 @@ const Verify2FA = () => {
       const res = await verify2FA(code());
 
       if (!res) {
-        toast.error("Failed to verify 2FA, try again later.");
+        toast.error(t("auth.verify_2fa.toast_verify_fail"));
         return;
       }
 
-      toast.success("The 2FA was verified!");
+      toast.success(t("auth.verify_2fa.toast_verify_success"));
     } catch (e) {
-      toast.error("Failed to verify 2FA, try again later.");
+      toast.error(t("auth.verify_2fa.toast_verify_fail"));
     } finally {
       setLoading(false);
       countdown();
@@ -112,16 +114,16 @@ const Verify2FA = () => {
             <Mail size={40} class="text-primary" />
           </div>
 
-          <h1 class="text-3xl font-bold mb-2">Verify your account </h1>
+          <h1 class="text-3xl font-bold mb-2">{t("auth.verify_2fa.title")}</h1>
           <p class="text-base-content/70 mb-8">
-            We sent a code to your email
+            {t("auth.verify_2fa.desc")}
           </p>
 
           <form onSubmit={handleVerify} class="w-full">
             <div class="flex justify-between gap-2 mb-8" onPaste={handlePaste}>
               <input
                 class="input input-primary w-full"
-                placeholder="Paste the code here..."
+                placeholder={t("auth.verify_2fa.paste_placeholder")}
                 value={code()}
                 onInput={(e) => {
                   e.preventDefault();
@@ -138,30 +140,30 @@ const Verify2FA = () => {
               {loading() ? (
                 <span class="loading loading-spinner"></span>
               ) : (
-                "Verify"
+                t("auth.verify_2fa.verify_btn")
               )}
             </button>
           </form>
 
           <div class="flex flex-col gap-4 items-center">
             <p class="text-sm">
-              Did you not receive the code?{" "}
+              {t("auth.verify_2fa.did_not_receive")}{" "}
               <button
                 class="link link-primary font-bold no-underline hover:underline"
                 onclick={() => handleResend()}
               >
                 <Show
                   when={seconds() == 0}
-                  fallback={`Wait for ${seconds()} seconds...`}
+                  fallback={t("auth.verify_2fa.wait_msg", { seconds: seconds() })}
                 >
-                  Resend
+                  {t("auth.verify_2fa.resend_btn")}
                 </Show>
               </button>
             </p>
 
             <button class="btn btn-ghost btn-sm gap-2">
               <ArrowLeft size={16} />
-              Back to Sign In
+              {t("auth.verify_2fa.back_to_login")}
             </button>
           </div>
         </div>

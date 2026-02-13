@@ -2,9 +2,11 @@ import { createResource, createSignal, For, Show } from "solid-js";
 import { useApi } from "@/hooks/useApi";
 import type { Course } from "@/types/course";
 import { Icon } from "@/components/Icon";
+import { useI18n } from "@/hooks/useL18N";
 
 const CoursesPage = () => {
   const api = useApi();
+  const { t } = useI18n();
   const [coursesData] = createResource<Course[]>(api.fetchCourses);
   const [searchQuery, setSearchQuery] = createSignal("");
 
@@ -27,10 +29,10 @@ const CoursesPage = () => {
       <div class="w-full">
         <div class="mb-8">
           <h1 class="text-4xl font-bold mb-2 text-primary">
-            Courses
+            {t("public.courses.title")}
           </h1>
           <p class="text-base-content/60">
-            Browse all available courses and their modules
+            {t("public.courses.desc")}
           </p>
         </div>
 
@@ -43,7 +45,7 @@ const CoursesPage = () => {
             />
             <input
               type="text"
-              placeholder="Search by identifier, name, or area..."
+              placeholder={t("public.courses.search_placeholder")}
               class="input input-bordered w-full pl-12 bg-base-100 shadow-sm"
               value={searchQuery()}
               onInput={(e) => setSearchQuery(e.currentTarget.value)}
@@ -60,7 +62,7 @@ const CoursesPage = () => {
         <Show when={coursesData.error}>
           <div class="alert alert-error shadow-lg">
             <Icon name="CircleAlert" size={24} />
-            <span>Failed to load courses. Please try again later.</span>
+            <span>{t("common.error_loading")}</span>
           </div>
         </Show>
 
@@ -77,8 +79,8 @@ const CoursesPage = () => {
                   />
                   <p class="text-lg text-base-content/60">
                     {searchQuery()
-                      ? "No courses found matching your search"
-                      : "No courses available"}
+                      ? t("public.courses.no_results")
+                      : t("public.courses.no_data")}
                   </p>
                 </div>
               }
@@ -91,7 +93,7 @@ const CoursesPage = () => {
                         {course.identifier}
                       </div>
                       <div class="badge badge-ghost badge-sm">
-                        {course.modules?.length || 0} modules
+                        {course.modules?.length || 0} {t("public.courses.modules")}
                       </div>
                     </div>
 
@@ -107,7 +109,7 @@ const CoursesPage = () => {
                     </div>
 
                     <Show when={course.modules && course.modules.length > 0}>
-                      <div class="divider my-2">Modules</div>
+                      <div class="divider my-2">{t("public.courses.modules_title")}</div>
                       <div class="space-y-2 max-h-48 overflow-y-auto">
                         <For each={course.modules}>
                           {(module) => (
@@ -129,7 +131,7 @@ const CoursesPage = () => {
                     <Show when={!course.modules || course.modules.length === 0}>
                       <div class="alert alert-info text-xs mt-2">
                         <Icon name="Info" size={14} />
-                        <span>No modules assigned yet</span>
+                        <span>{t("public.courses.no_modules")}</span>
                       </div>
                     </Show>
                   </div>
@@ -140,8 +142,10 @@ const CoursesPage = () => {
 
           <Show when={filteredCourses().length > 0}>
             <div class="mt-6 text-center text-sm text-base-content/60">
-              Showing {filteredCourses().length} of {coursesData()?.length || 0}{" "}
-              courses
+              {t("public.courses.showing_results", {
+                count: filteredCourses().length,
+                total: coursesData()?.length || 0,
+              })}
             </div>
           </Show>
         </Show>

@@ -31,6 +31,8 @@ import { TransProvider } from "@mbarzda/solid-i18next";
 import Trainers from "./pages/Trainers";
 import Trainees from "./pages/Trainees";
 import Classes from "./pages/Classes";
+import Schedules from "./pages/Schedules";
+import Rooms from "./pages/Rooms";
 
 const routes: RouteDefinition[] = [
   {
@@ -54,6 +56,15 @@ const routes: RouteDefinition[] = [
         path: "/classes",
         component: Classes,
       },
+      {
+        path: "/schedules",
+        component: Schedules,
+      },
+      {
+        path: "/rooms",
+        component: Rooms,
+      },
+
     ],
   },
 

@@ -4,10 +4,12 @@ import { Mail, ArrowLeft } from "lucide-solid";
 import { Toaster } from "solid-toast";
 import toast from "solid-toast";
 import { useApi } from "@/hooks/useApi";
+import { useI18n } from "@/hooks/useL18N";
 
 const ResetPasswordPage = () => {
   const api = useApi();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [isLoading, setIsLoading] = createSignal(false);
   const [password, setPassword] = createSignal("");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -21,7 +23,7 @@ const ResetPasswordPage = () => {
 
   const handleResetPassword = async (e: Event) => {
     e.preventDefault();
-    if (!password()) return toast.error("Please enter your email");
+    if (!password()) return toast.error(t("auth.reset_password.toast_empty"));
 
     setIsLoading(true);
     try {
@@ -35,10 +37,10 @@ const ResetPasswordPage = () => {
         password(),
       );
 
-      toast.success("Password reset successful!");
+      toast.success(t("auth.reset_password.toast_success"));
       navigate("/");
     } catch (error: any) {
-      toast.error(error.message || "Failed to reset password.");
+      toast.error(error.message || t("auth.reset_password.toast_fail"));
     } finally {
       setIsLoading(false);
     }
@@ -53,21 +55,21 @@ const ResetPasswordPage = () => {
         <div class="card-body pt-4">
           <form onSubmit={handleResetPassword} class="flex flex-col gap-4">
             <div class="text-center mb-2">
-              <h2 class="text-2xl font-bold">Reset Password</h2>
+              <h2 class="text-2xl font-bold">{t("auth.reset_password.title")}</h2>
               <p class="text-base-content/60 text-sm">
-                Create a new password for your account.
+                {t("auth.reset_password.desc")}
               </p>
             </div>
 
             <div class="form-control ">
               <label class="label">
-                <span class="label-text font-medium">New Password</span>
+                <span class="label-text font-medium">{t("auth.reset_password.new_password")}</span>
               </label>
               <label class="input input-bordered flex items-center gap-2">
                 <Mail size={16} class="opacity-70" />
                 <input
                   type="password"
-                  placeholder="Enter you new password"
+                  placeholder={t("auth.reset_password.password_placeholder")}
                   class="grow"
                   value={password()}
                   onInput={(e) => setPassword(e.currentTarget.value)}
@@ -83,7 +85,7 @@ const ResetPasswordPage = () => {
               {isLoading() ? (
                 <span class="loading loading-spinner"></span>
               ) : (
-                "Create new Password"
+                t("auth.reset_password.submit_btn")
               )}
             </button>
           </form>
@@ -95,7 +97,7 @@ const ResetPasswordPage = () => {
               class="link link-hover text-sm flex items-center justify-center gap-2 text-base-content/70 hover:text-primary transition-colors"
             >
               <ArrowLeft size={16} />
-              Back to Login
+              {t("auth.reset_password.back_to_login")}
             </A>
           </div>
         </div>

@@ -9,9 +9,11 @@ import { Mail, ArrowLeft } from "lucide-solid";
 import { useNavigate } from "@solidjs/router";
 import { useApi } from "@/hooks/useApi";
 import toast from "solid-toast";
+import { useI18n } from "@/hooks/useL18N";
 
 const VerifyEmail = () => {
   const { getSession } = useApi();
+  const { t } = useI18n();
   const [session, { refetch }] = createResource(async () => {
     const data = await getSession();
     return data;
@@ -76,13 +78,13 @@ const VerifyEmail = () => {
       );
 
       if (!res?.status) {
-        toast.error("Failed to send email");
+        toast.error(t("auth.verify_email.toast_send_fail"));
         return;
       }
-      toast.success("Verification email sent!");
+      toast.success(t("auth.verify_email.toast_sent"));
     } catch (e) {
       console.error(e);
-      toast.error("Error sending email");
+      toast.error(t("auth.verify_email.toast_send_fail"));
     }
   };
 
@@ -100,13 +102,13 @@ const VerifyEmail = () => {
       const res = await verifyEmail(code());
 
       if (!res) {
-        toast.error("Failed to verify email, try again later.");
+        toast.error(t("auth.verify_email.toast_verify_fail"));
         return;
       }
 
-      toast.success("The email was verified!");
+      toast.success(t("auth.verify_email.toast_verify_success"));
     } catch (e) {
-      toast.error("Failed to verify email, try again later.");
+      toast.error(t("auth.verify_email.toast_verify_fail"));
     } finally {
       setLoading(false);
       countdown();
@@ -121,9 +123,9 @@ const VerifyEmail = () => {
             <Mail size={40} class="text-primary" />
           </div>
 
-          <h1 class="text-3xl font-bold mb-2">Verify your account </h1>
+          <h1 class="text-3xl font-bold mb-2">{t("auth.verify_email.title")}</h1>
           <p class="text-base-content/70 mb-8">
-            We sent a code to{" "}
+            {t("auth.verify_email.desc")}{" "}
             <span class="font-semibold text-base-content">
               {session()?.email}
             </span>
@@ -133,7 +135,7 @@ const VerifyEmail = () => {
             <div class="flex justify-between gap-2 mb-8" onPaste={handlePaste}>
               <input
                 class="input input-primary w-full"
-                placeholder="Paste the token here..."
+                placeholder={t("auth.verify_email.paste_placeholder")}
                 value={code()}
                 onInput={(e) => {
                   e.preventDefault();
@@ -150,30 +152,30 @@ const VerifyEmail = () => {
               {loading() ? (
                 <span class="loading loading-spinner"></span>
               ) : (
-                "Verify"
+                t("auth.verify_email.verify_btn")
               )}
             </button>
           </form>
 
           <div class="flex flex-col gap-4 items-center">
             <p class="text-sm">
-              Did you not receive the token?{" "}
+              {t("auth.verify_email.did_not_receive")}{" "}
               <button
                 class="link link-primary font-bold no-underline hover:underline"
                 onclick={() => handleResend()}
               >
                 <Show
                   when={seconds() == 0}
-                  fallback={`Wait for ${seconds()} seconds...`}
+                  fallback={t("auth.verify_email.wait_msg", { seconds: seconds() })}
                 >
-                  Resend
+                  {t("auth.verify_email.resend_btn")}
                 </Show>
               </button>
             </p>
 
             <button class="btn btn-ghost btn-sm gap-2">
               <ArrowLeft size={16} />
-              Back to Sign In
+              {t("auth.verify_email.back_to_login")}
             </button>
           </div>
         </div>
