@@ -2,6 +2,9 @@ import { useNavigate } from "@solidjs/router";
 import { Show, createEffect, onMount, createSignal, type JSX } from "solid-js";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import { useApi } from "@/hooks/useApi";
+import useI18n from "@/hooks/useL18N";
+
+const { t } = useI18n();
 
 interface ProtectedRouteProps {
   children: JSX.Element;
@@ -24,14 +27,12 @@ export const ProtectedRoute = (props: ProtectedRouteProps) => {
 
   onMount(async () => {
     try {
-      console.log("Checking session...");
       const res = await api.getSession();
 
       if (res) {
         setUser(res);
       }
     } catch (error) {
-      console.error("Failed to validate session:", error);
     } finally {
       setIsLoading(false);
     }
@@ -48,9 +49,6 @@ export const ProtectedRoute = (props: ProtectedRouteProps) => {
     }
 
     if (props.role && currentUser.role !== props.role) {
-      console.warn(
-        `Access denied: User role '${currentUser.role}' does not match required '${props.role}'`,
-      );
       navigate("/", { replace: true });
     }
   });
@@ -58,7 +56,7 @@ export const ProtectedRoute = (props: ProtectedRouteProps) => {
   return (
     <Show
       when={!isLoading()}
-      fallback={<div class="p-4">Loading session...</div>}
+      fallback={<div class="p-4">{t("general.loading")}</div>}
     >
       <Show when={isAuthorized()}>{props.children}</Show>
     </Show>

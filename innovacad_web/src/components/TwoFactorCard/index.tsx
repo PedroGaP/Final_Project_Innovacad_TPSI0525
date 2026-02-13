@@ -3,8 +3,11 @@ import { useUserDetails } from "@/providers/UserDetailsProvider";
 import { createEffect, createSignal } from "solid-js";
 import { Icon } from "../Icon";
 import toast from "solid-toast";
+import useI18n from "@/hooks/useL18N";
 
-const TwoFactorCard = () => {
+const { t } = useI18n();
+
+let TwoFactorCard = () => {
   const { user } = useUserDetails();
   const { enable2FA, disable2FA, is2FAEnabled } = useApi();
 
@@ -21,14 +24,12 @@ const TwoFactorCard = () => {
     try {
       const status = await is2FAEnabled(userId);
       setIs2FA(status);
-    } catch (e) {
-      console.error("Failed to fetch 2FA status", e);
-    }
+    } catch (e) {}
   });
 
-  const handle2FA = async () => {
+  let handle2FA = async () => {
     if (password() === "") {
-      toast.error("Please enter your password first.");
+      toast.error(t("fields.enter_password_first"));
       return;
     }
 
@@ -38,16 +39,15 @@ const TwoFactorCard = () => {
       if (is2FA()) {
         await disable2FA(password());
         setIs2FA(false);
-        toast.success("2FA Disabled!");
+        toast.success(t("two_factor.disabled"));
       } else {
         await enable2FA(password());
         setIs2FA(true);
-        toast.success("2FA Enabled!");
+        toast.success(t("two_factor.enabled"));
       }
       setPassword("");
     } catch (error) {
-      console.log(password());
-      toast.error("Operation failed. Check your password.");
+      toast.error(t("two_factor.fail"));
     } finally {
       setIsLoading(false);
     }
@@ -64,11 +64,11 @@ const TwoFactorCard = () => {
           </div>
 
           <div class="flex flex-col">
-            <span class="font-bold text-sm">Two-Factor Authentication</span>
+            <span class="font-bold text-sm">{t("two_factor.title")}</span>
             <span class="text-xs opacity-60">
               {is2FA()
-                ? "Your account is secure."
-                : "Secure your account with 2FA."}
+                ? t("two_factor.enabled_desc")
+                : t("two_factor.disabled_desc")}
             </span>
           </div>
         </div>
@@ -84,11 +84,15 @@ const TwoFactorCard = () => {
       <div class="border-t border-base-300 bg-base-100/50 p-4 rounded-b-lg animate-in slide-in-from-top-2">
         <div class="flex flex-col gap-3">
           <div class="text-sm">
-            <span class="opacity-70">Please enter your password to </span>
+            <span class="opacity-70">
+              {t("two_factor.please_enter_password")}
+            </span>
             <span
               class={`font-bold ${is2FA() ? "text-error" : "text-primary"}`}
             >
-              {is2FA() ? "disable" : "enable"}
+              {is2FA()
+                ? t("general.disable").toLowerCase()
+                : t("general.enable").toLowerCase()}
             </span>
             <span class="opacity-70"> 2FA.</span>
           </div>
@@ -100,7 +104,7 @@ const TwoFactorCard = () => {
               </div>
               <input
                 type="password"
-                placeholder="Current Password"
+                placeholder={t("two_factor.current_password")}
                 class="input input-bordered join-item w-full pl-10 focus:outline-offset-0"
                 value={password()}
                 disabled={isLoading()}
@@ -116,9 +120,9 @@ const TwoFactorCard = () => {
               {isLoading() ? (
                 <span class="loading loading-spinner loading-xs"></span>
               ) : is2FA() ? (
-                "Disable"
+                t("general.disable")
               ) : (
-                "Enable"
+                t("general.enable")
               )}
             </button>
           </div>

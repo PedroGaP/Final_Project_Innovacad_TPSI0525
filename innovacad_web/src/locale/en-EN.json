@@ -40,7 +40,8 @@
     "online": "Online",
     "start": "Start",
     "end": "End",
-    "description": "Description"
+    "description": "Description",
+    "settings": "Settings"
   },
   "class_status": {
     "starting": "Starting",
@@ -61,7 +62,7 @@
     "id_card": "ID Card",
     "other": "Other",
     "lectured_hours": "Lectured Hours",
-    "loading": "Loading",
+    "loading": "Loading...",
     "delete": "Delete",
     "download_file": "Download File",
     "view_file": "View file",
@@ -82,7 +83,21 @@
     "after": "After",
     "course_name": "Course Name",
     "area": "Area",
-    "identifier": "Identifier"
+    "identifier": "Identifier",
+    "start_date": "Start Date",
+    "end_date": "End Date",
+    "has_computers": "Has Computers?",
+    "has_projector": "Has Projector?",
+    "has_whiteboard": "Has Whiteboard?",
+    "has_smartboard": "Has Smartboard?",
+    "duration": "Duration",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "enable": "Enable",
+    "disable": "Disable",
+    "link": "Link"
   },
   "fields": {
     "required_name": "Name is required",
@@ -99,7 +114,14 @@
     "required_regime": "Regime is required",
     "required_duration": "Duration is required",
     "required_area": "Area is required",
-    "no_changes_found": "No changes detected."
+    "required_location": "Location is required",
+    "required_course": "Course is required",
+    "no_changes_found": "No changes detected.",
+    "invalid_status": "Status is invalid.",
+    "required_start_date": "Start date is required",
+    "required_end_date": "End date is required",
+    "invalid_duration": "Duration is invalid",
+    "enter_password_first": "Please enter your password first."
   },
   "not_found": {
     "are_you_lost": "Are You Lost?",
@@ -144,6 +166,20 @@
     "user": "Users",
     "trainers": "Trainers",
     "trainees": "Trainees",
+    "profiles": {
+      "personal_info": "Personal Information",
+      "update_details": "Update your personal information"
+    },
+    "setting": {
+      "linked_accounts": "Linked accounts"
+    },
+    "modules": {
+      "title": "Manage Modules",
+      "update_successful": "Module updated successfully!",
+      "update_fail": "Failed to update module.",
+      "create_successful": "Module created successfully!",
+      "create_fail": "Failed to create module."
+    },
     "modal": {
       "delete_title": "Delete Item",
       "delete_desc": "Are you sure you want to delete this item?",
@@ -180,7 +216,7 @@
       "upload_successful_profile_pic": "Uploaded profile picture successfully!",
       "upload_fail_profile_pic": "Failed to upload profile picture.",
       "upload_successful_cv": "Uploaded resume successfully!",
-      "upload_fail_cv": "Failed to upload curriculum citae.",
+      "upload_fail_cv": "Failed to upload curriculum vitae.",
       "upload_successful_diploma": "Uploaded diploma successfully!",
       "upload_fail_diploma": "Failed to upload diploma.",
       "upload_successful_certificate": "Uploaded certificate successfully!",
@@ -193,7 +229,11 @@
       "delete_fail": "Failed to delete document",
       "are_you_sure": "Are you sure you want to delete this file?",
       "missing": "Missing",
-      "title": "User Documents"
+      "title": "User Documents",
+      "manage_desc": "Manager your resumes, certificates and documents.",
+      "file_too_large": "File is too large. Max. 5MB.",
+      "updating_profile_pic": "Updating profile picture...",
+      "upload_successful": "Document uploaded successfully!"
     },
     "users": {
       "email_new_password_subject": "Account Creation - New Password - Innovacad",
@@ -211,7 +251,7 @@
         "delete_fail": "Failed to delete trainer.",
         "update_fail": "Failed to update trainer.",
         "title": "Manage Trainers",
-        "save_to_upload_documents": "Save the trainee first to upload documents.",
+        "save_to_upload_documents": "Save the trainer first to upload documents.",
         "coordination_classes": "Coordination Classes",
         "promote_coordinator": "Selecting classes will automatically promote this user to Coordinator."
       },
@@ -237,7 +277,32 @@
       "delete_successful": "Course deleted successfully!",
       "delete_fail": "Failed to delete course.",
       "courses_modules_title": "Course Modules",
-      "modules_selected": "{{count}} modules selected"
+      "modules_selected": "{{count}} modules selected",
+      "select_course": "Select a Course"
+    },
+    "classes": {
+      "title": "Manage Classes",
+      "validate_fail": "Class validation failed",
+      "update_successful": "Class updated successfully!",
+      "update_fail": "Failed to update classes.",
+      "create_successful": "Class created successfully!",
+      "create_fail": "Failed to create classes.",
+      "delete_successful": "Class deleted successfully!",
+      "delete_fail": "Failed to delete classes.",
+      "courses_modules_title": "Class Modules",
+      "modules_selected": "{{count}} modules selected",
+      "identifier": "Class Identifier",
+      "location": "Location",
+      "status": "Current Status",
+      "modules_trainers_title": "Class Modules & Trainers",
+      "modules_trainers_desc": "Select modules to include and assign a default trainer.",
+      "select_blueprint": "Please select a Course Blueprint above first.",
+      "no_modules": "This course has no modules defined.",
+      "assigned_trainer": "Assigned Trainer",
+      "no_trainer": "-- No Default Trainer --",
+      "selected_modules": "Selected Modules",
+      "total": "Total",
+      "with_trainer": "w/ Trainer"
     }
   },
   "auth": {
@@ -382,5 +447,18 @@
     "title": "Home",
     "desc": "This is the home page.",
     "count": "Count: {{count}}"
+  },
+  "social": {
+    "connect_account": "Connect your {{account}} account."
+  },
+  "two_factor": {
+    "disabled": "Two factor disabled.",
+    "enabled": "Two factor enabled.",
+    "fail": "Operation failed, check your password.",
+    "title": "Two-Factor Authentication",
+    "disabled_desc": "Secure your account with 2FA.",
+    "enabled_desc": "Your account is secure.",
+    "please_enter_password": "Please enter your password to ",
+    "current_password": "Current password"
   }
 }

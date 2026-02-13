@@ -40,7 +40,8 @@
     "online": "Online",
     "start": "Início",
     "end": "Fim",
-    "description": "Descrição"
+    "description": "Descrição",
+    "settings": "Definições"
   },
   "class_status": {
     "starting": "A Iniciar",
@@ -82,7 +83,21 @@
     "after": "Depois de",
     "course_name": "Nome do Curso",
     "area": "Área",
-    "identifier": "Identificador"
+    "identifier": "Identificador",
+    "start_date": "Data Início",
+    "end_date": "Data Fim",
+    "has_computers": "Tem Computadores?",
+    "has_projector": "Tem Projetor?",
+    "has_whiteboard": "Tem Quadro Branco?",
+    "has_smartboard": "Tem Quadro Interativo?",
+    "duration": "Duração",
+    "connect": "Conectart",
+    "disconnect": "Desconectar",
+    "enabled": "Ativado",
+    "disabled": "Desativado",
+    "enable": "Ativar",
+    "disable": "Desativar",
+    "link": "Associar"
   },
   "fields": {
     "required_name": "O nome é obrigatório.",
@@ -99,7 +114,14 @@
     "required_regime": "O regime é obrigatório.",
     "required_duration": "A duração é obrigatória.",
     "required_area": "A área é obrigatória.",
-    "no_changes_found": "Nenhuma alteração detetada."
+    "required_location": "A localização é obrigatória.",
+    "required_course": "O curso é obrigatório.",
+    "no_changes_found": "Nenhuma alteração detetada.",
+    "invalid_status": "O estado é inválido.",
+    "required_start_date": "A data de início é obrigatória.",
+    "required_end_date": "A data de término é obrigatória.",
+    "invalid_duration": "A duração é inválida.",
+    "enter_password_first": "Por favor insere a tua palavra-passe primeiro."
   },
   "not_found": {
     "are_you_lost": "Estás Perdido?",
@@ -144,6 +166,20 @@
     "user": "Utilizadores",
     "trainers": "Formadores",
     "trainees": "Formandos",
+    "profiles": {
+      "personal_info": "Informações Pessoais",
+      "update_details": "Atualize os seus dados pessoais"
+    },
+    "setting": {
+      "linked_accounts": "Contas associadas"
+    },
+    "modules": {
+      "title": "Gerir Módulos",
+      "update_successful": "Módulo atualizado com sucesso!",
+      "update_fail": "Não foi possível atualizar o módulo.",
+      "create_successful": "Módulo criado com sucesso!",
+      "create_fail": "Não foi possível criar o módulo."
+    },
     "modal": {
       "delete_title": "Apagar Item",
       "delete_desc": "Tens a certeza que queres apagar este item?",
@@ -193,7 +229,11 @@
       "delete_fail": "Não foi possível remover o documento.",
       "are_you_sure": "Tens a certeza que queres apagar este documento?",
       "missing": "Em falta",
-      "title": "Documentos de Utilizador"
+      "title": "Documentos de Utilizador",
+      "manage_desc": "Gere os teus currículos, certificados e documentos de identidade.",
+      "file_too_large": "O ficheiro é demasiado grande. Máx. 5MB.",
+      "updating_profile_pic": "A atualizar a fotografia de perfil...",
+      "upload_successful": "Documento enviado com sucesso!"
     },
     "users": {
       "email_new_password_subject": "Criação de Conta - Nova Palavra-Passe - Innovacad",
@@ -237,7 +277,32 @@
       "delete_successful": "Curso apagado com sucesso!",
       "delete_fail": "Falha ao apagar o curso.",
       "courses_modules_title": "Módulos do Curso",
-      "modules_selected": "{{count}} módulos selecionados"
+      "modules_selected": "{{count}} módulos selecionados",
+      "select_course": "Selecionar um Curso"
+    },
+    "classes": {
+      "title": "Gerir Turmas",
+      "validate_fail": "Não foi possível validar a turma.",
+      "update_successful": "Turma atualizada com sucesso!",
+      "update_fail": "Falha ao atualizar a turma.",
+      "create_successful": "Turma criada com sucesso!",
+      "create_fail": "Falha ao criar a turma.",
+      "delete_successful": "Turma apagada com sucesso!",
+      "delete_fail": "Falha ao apagar a turma.",
+      "courses_modules_title": "Módulos da Turma",
+      "modules_selected": "{{count}} módulos selecionados",
+      "identifier": "Identificador da Turma",
+      "location": "Localização",
+      "status": "Estado Atual",
+      "modules_trainers_title": "Módulos & Formadores da Turma",
+      "modules_trainers_desc": "Seleciona os módulos e atribui um formador padrão.",
+      "select_blueprint": "Por favor, seleciona primeiro um curso acima.",
+      "no_modules": "Este curso não tem módulos definidos.",
+      "assigned_trainer": "Formador Atribuído",
+      "no_trainer": "-- Sem Formador Padrão --",
+      "selected_modules": "Módulos Selecionados",
+      "total": "Total",
+      "with_trainer": "com Formador"
     }
   },
   "auth": {
@@ -382,5 +447,18 @@
     "title": "Início",
     "desc": "Esta é a página inicial.",
     "count": "Contagem: {{count}}"
+  },
+  "social": {
+    "connect_account": "Connect your {{account}} account."
+  },
+  "two_factor": {
+    "disabled": "Autenticação de dois fatores desativada.",
+    "enabled": "Autenticação de dois fatores ativada.",
+    "fail": "Não foi possível realizar esta operação, verifique a sua palavra-passe.",
+    "title": "Autenticação de dois fatores",
+    "disabled_desc": "Proteja a sua conta com 2FA.",
+    "enabled_desc": "A sua conta está segura.",
+    "please_enter_password": "Por favor insira a palavra-passe para ",
+    "current_password": "Palavra-passe atual"
   }
 }

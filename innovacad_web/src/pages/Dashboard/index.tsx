@@ -144,10 +144,6 @@ const DashboardLayout = (props: any) => {
                     <li>{t("dashboard.dashboard")}</li>
                     <For each={currentPathArray()}>
                       {(segment) => {
-                        console.log(`PATH: ${segment}`);
-                        console.log(
-                          `TRANSLATION: ${t(`dashboard.${segment.toLowerCase()}`)}`,
-                        );
                         return (
                           <li class="font-bold opacity-100 text-base-content uppercase">
                             {t(`entity.${segment.toLowerCase()}`)}
