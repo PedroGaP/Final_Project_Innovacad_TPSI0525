@@ -6,6 +6,7 @@ import { newPasswordEmail } from "@/components/NewPasswordEmail";
 import EntityTable from "@/components/EntityTable";
 import UserDocumentsManager from "@/components/DocumentManager";
 import type { Class } from "@/types/class";
+import { useUserDetails } from "@/providers/UserDetailsProvider";
 
 const createEmptyTrainer = (): Trainer =>
   ({
@@ -22,7 +23,7 @@ const createEmptyTrainer = (): Trainer =>
     session_token: "",
     skills: [],
     is_coordinator: false,
-    coordinated_class_ids: [],
+    coordinated_class_ids: {},
   }) as unknown as Trainer;
 
 const epochToDateTime = (epoch: number | string): string => {
@@ -63,7 +64,7 @@ const TrainerPage = () => {
         throw new Error("Validation failed");
       }
 
-      const currentClassIds = trainer.coordinated_class_ids || [];
+      const currentClassIds = Object.keys(trainer.coordinated_class_ids) || [];
       const isCoordinator = currentClassIds.length > 0;
 
       if (original) {
@@ -76,11 +77,17 @@ const TrainerPage = () => {
         if (String(original.birthdayDate) !== String(trainer.birthdayDate))
           changes.birthday_date = epochToDateTime(trainer.birthdayDate!);
 
-        const oldIds = original.coordinated_class_ids || [];
+        const oldIds = Object.keys(original.coordinated_class_ids || {});
         const newIds = currentClassIds;
+
+        console.log('DEBUG: oldIds:', oldIds);
+        console.log('DEBUG: newIds:', newIds);
 
         const toAdd = newIds.filter((id) => !oldIds.includes(id));
         const toRemove = oldIds.filter((id) => !newIds.includes(id));
+
+        console.log('DEBUG: toAdd:', toAdd);
+        console.log('DEBUG: toRemove:', toRemove);
 
         if (toAdd.length > 0) changes.class_ids_to_add = toAdd;
         if (toRemove.length > 0) changes.class_ids_to_remove = toRemove;
@@ -89,6 +96,8 @@ const TrainerPage = () => {
           changes.is_coordinator = isCoordinator;
         }
 
+        console.log('DEBUG: changes being sent:', changes);
+
         if (Object.keys(changes).length === 0) return;
 
         const idToUpdate = String(trainer.trainerId || trainer.id);
@@ -96,11 +105,12 @@ const TrainerPage = () => {
 
         mutate(
           (prev) =>
-            prev?.map((u) =>
-              u.trainerId === trainer.trainerId
-                ? ({ ...trainer, is_coordinator: isCoordinator } as Trainer)
-                : u,
-            ) || [],
+            prev?.map((u) => {
+              if (u.trainerId === trainer.trainerId) {
+                Object.assign(u, trainer, { is_coordinator: isCoordinator });
+              }
+              return u;
+            }) || [],
         );
         toast.success(`Trainer updated successfully`);
       } else {
@@ -145,6 +155,9 @@ const TrainerPage = () => {
     toast.success("Trainer deleted");
   };
 
+  const { user } = useUserDetails();
+  const isTrainee = () => user()?.role === "trainee";
+
   return (
     <EntityTable<Trainer>
       title="Manage Trainers"
@@ -152,7 +165,7 @@ const TrainerPage = () => {
       handleEditClick={(user) => ({
         ...user,
         birthdayDate: epochToDateTime(user.birthdayDate!),
-        coordinated_class_ids: user.coordinated_class_ids || [],
+        coordinated_class_ids: user.coordinated_class_ids || {},
       })}
       handleAddClick={() => createEmptyTrainer()}
       confirmDelete={confirmDelete}
@@ -166,6 +179,7 @@ const TrainerPage = () => {
           fieldName: "trainer_id",
           canCopy: true,
           bigger: true,
+          hidden: isTrainee(),
         },
         { formattedName: "Name", fieldName: "name" },
         { formattedName: "Email", fieldName: "email" },
@@ -218,31 +232,30 @@ const TrainerPage = () => {
                     <input
                       type="checkbox"
                       class="checkbox checkbox-sm checkbox-primary"
-                      checked={formData.coordinated_class_ids?.includes(
-                        String(cls.class_id),
-                      )}
+                      checked={Object.keys(
+                        formData.coordinated_class_ids || {},
+                      ).includes(String(cls.class_id))}
                       onChange={(e) => {
                         const checked = e.currentTarget.checked;
                         const clsId = String(cls.class_id);
                         const current =
-                          (formData as any).coordinated_class_ids || [];
+                          formData.coordinated_class_ids || {};
 
-                        let updated: string[];
+                        let updated: Record<string, string>;
                         if (checked) {
-                          updated = [...current, clsId];
+                          updated = { ...current, [clsId]: cls.identifier } as Record<string, string>;
                         } else {
-                          updated = current.filter(
-                            (id: string) => id !== clsId,
-                          );
+                          const { [clsId]: _, ...rest } = current;
+                          updated = rest as Record<string, string>;
                         }
 
                         setFormData((prev) => {
-                          const newState = {
+                          const newFormData = {
                             ...prev,
                             coordinated_class_ids: updated,
-                            is_coordinator: updated.length > 0,
+                            is_coordinator: Object.keys(updated).length > 0,
                           };
-                          return newState as Trainer;
+                          return newFormData as any;
                         });
                       }}
                     />

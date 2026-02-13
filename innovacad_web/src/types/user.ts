@@ -14,7 +14,7 @@ export type UserResponseData = {
   trainee_id?: string | undefined;
   skills?: TrainerSkill[];
   is_coordinator?: boolean;
-  coordinated_class_ids?: string[];
+  coordinated_class_ids?: Record<string, string>;
 
   image?: string | undefined;
   birthday_date?: number | undefined;
@@ -77,7 +77,7 @@ class Trainer extends User {
   skills: TrainerSkill[] = [];
 
   is_coordinator: boolean = false;
-  coordinated_class_ids: string[] = [];
+  coordinated_class_ids: Record<string, string> = {};
 
   constructor(
     data: UserResponseData,
@@ -97,6 +97,8 @@ class Trainer extends User {
       this.coordinated_class_ids = data.coordinated_class_ids;
     } else if ((data as any).user?.coordinated_class_ids) {
       this.coordinated_class_ids = (data as any).user.coordinated_class_ids;
+    } else {
+      this.coordinated_class_ids = {};
     }
 
     if (data.is_coordinator !== undefined) {

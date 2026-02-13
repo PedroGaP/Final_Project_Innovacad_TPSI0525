@@ -3,6 +3,7 @@ import type { Module } from "@/types/module";
 import { useApi } from "@/hooks/useApi";
 import toast from "solid-toast";
 import EntityTable from "@/components/EntityTable";
+import { useUserDetails } from "@/providers/UserDetailsProvider";
 
 const createEmptyModule = (): Module =>
   ({
@@ -134,6 +135,9 @@ const ModulesPage = () => {
     );
   };
 
+  const { user } = useUserDetails();
+  const isTrainee = () => user()?.role === "trainee";
+
   return (
     <EntityTable<Module>
       title="Manage Modules"
@@ -186,6 +190,7 @@ const ModulesPage = () => {
           fieldName: "module_id",
           canCopy: true,
           smaller: true,
+          hidden: isTrainee(),
         },
         {
           formattedName: "Name",

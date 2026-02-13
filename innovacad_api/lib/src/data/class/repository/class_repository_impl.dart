@@ -16,7 +16,7 @@ class ClassRepositoryImpl implements IClassRepository {
     try {
       return await MysqlConfiguration.executeWithConnection((db) async {
         final query = """
-          SELECT c.*, co.identifier AS course_identifier
+          SELECT c.*, CONCAT(co.identifier, ' ', c.identifier) AS identifier, co.identifier AS course_identifier
           FROM classes c
           JOIN courses co ON c.course_id = co.course_id
         """;
@@ -109,7 +109,7 @@ class ClassRepositoryImpl implements IClassRepository {
     try {
       return await MysqlConfiguration.executeWithConnection((db) async {
         final query = """
-          SELECT c.*, co.identifier AS course_identifier
+          SELECT c.*, CONCAT(co.identifier, ' ', c.identifier) AS identifier, co.identifier AS course_identifier
           FROM classes c
           JOIN courses co ON c.course_id = co.course_id
           WHERE c.class_id = ?

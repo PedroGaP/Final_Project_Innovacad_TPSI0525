@@ -28,17 +28,35 @@ import AvailabilitiesPage from "./pages/Dashboard/Availability";
 import Calendar from "./pages/Dashboard/Calendar";
 import Courses from "./pages/Courses";
 import { TransProvider } from "@mbarzda/solid-i18next";
+import Trainers from "./pages/Trainers";
+import Trainees from "./pages/Trainees";
+import Classes from "./pages/Classes";
 
 const routes: RouteDefinition[] = [
   {
     path: "/",
     component: PublicLayout,
-    children: [{ path: "/", component: SignIn }],
+    children: [
+      { path: "/", component: SignIn },
+      {
+        path: "/courses",
+        component: Courses,
+      },
+      {
+        path: "/trainers",
+        component: Trainers,
+      },
+      {
+        path: "/trainees",
+        component: Trainees,
+      },
+      {
+        path: "/classes",
+        component: Classes,
+      },
+    ],
   },
-  {
-    path: "/courses",
-    component: Courses,
-  },
+
   {
     path: "/reset-password",
     component: ResetPasswordPage,

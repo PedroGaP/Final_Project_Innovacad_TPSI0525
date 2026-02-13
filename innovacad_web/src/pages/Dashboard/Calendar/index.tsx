@@ -100,8 +100,8 @@ const Calendar = () => {
     }
 
     if (((u as any).role === "coordinator" || (u as any).is_coordinator) && c) {
-      const coordinatedIds = ((u as any).coordinated_class_ids || []).map(
-        (id: any) => String(id),
+      const coordinatedIds = Object.keys(
+        (u as any).coordinated_class_ids || {},
       );
       if (coordinatedIds.includes(String(c.class_id))) {
         setCanEdit(true);
@@ -142,9 +142,7 @@ const Calendar = () => {
     if (u.role === "admin") return remote;
 
     if (u.role === "coordinator" || (u as any).is_coordinator) {
-      const ids = ((u as any).coordinated_class_ids || []).map((id: any) =>
-        String(id),
-      );
+      const ids = Object.keys((u as any).coordinated_class_ids || {});
       return remote.filter((c) => ids.includes(String(c.class_id)));
     }
 
