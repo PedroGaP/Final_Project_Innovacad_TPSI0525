@@ -4,6 +4,7 @@ import ModalDelete from "@/components/Modal/Delete";
 import ModalEdit from "@/components/Modal/Edit";
 import ScheduleInfoModal from "@/components/Modal/ScheduleInfo";
 import SummaryModal from "@/components/Modal/Summary";
+import AutoScheduleModal from "./components/AutoScheduleModal";
 import { useApi } from "@/hooks/useApi";
 import useI18n from "@/hooks/useL18N";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
@@ -68,6 +69,7 @@ const Calendar = () => {
     createSignal<SummaryTargetData | null>(null);
   const [isInfoModalOpen, setIsInfoModalOpen] = createSignal(false);
   const [infoTarget, setInfoTarget] = createSignal<any>(null);
+  const [isAutoScheduleModalOpen, setIsAutoScheduleModalOpen] = createSignal(false);
 
   const [modalMode, setModalMode] = createSignal<"create" | "edit">("create");
   const [formData, setFormData] = createSignal<ScheduleFormData>({
@@ -268,7 +270,7 @@ const Calendar = () => {
     console.log("Event Trainer ID: " + eventTrainerId);
     console.log(
       "Current Trainer ID: " +
-        (u && "trainer_id" in u! ? String((u as any).trainer_id) : ""),
+      (u && "trainer_id" in u! ? String((u as any).trainer_id) : ""),
     );
     console.log("Has Started: " + hasStarted);
     console.log("EVENT: " + Object.keys(event));
@@ -407,9 +409,22 @@ const Calendar = () => {
     }
   };
 
+  const customButtons = createMemo(() => {
+    if (canEdit() && selectedClass() !== null) {
+      return {
+        autoSchedule: {
+          text: "Auto Schedule",
+          click: () => setIsAutoScheduleModalOpen(true),
+        },
+      };
+    }
+    return undefined;
+  });
+
   return (
     <div class="card w-full h-[80vh] bg-base-100 shadow-xl border border-base-300">
       <div class="card-body p-4 relative flex flex-col gap-4">
+
         <div class="flex justify-between items-center gap-4">
           <div class="flex items-center gap-3">
             <select
@@ -442,11 +457,10 @@ const Calendar = () => {
           </div>
 
           <div
-            class={`badge gap-2 py-4 px-4 font-bold border transition-all ${
-              canEdit() && selectedClass() !== null
-                ? "badge-success border-success/20 text-success-content"
-                : "badge-ghost border-base-300 opacity-70"
-            }`}
+            class={`badge gap-2 py-4 px-4 font-bold border transition-all ${canEdit() && selectedClass() !== null
+              ? "badge-success border-success/20 text-success-content"
+              : "badge-ghost border-base-300 opacity-70"
+              }`}
           >
             <Show
               when={canEdit() && selectedClass() !== null}
@@ -474,6 +488,7 @@ const Calendar = () => {
             events={calendarEvents()}
             isEditable={true}
             loading={schedules.loading}
+            customButtons={customButtons()}
             onCreateRequest={(start, end) => {
               if (!canEdit()) return false;
               setModalMode("create");
@@ -528,10 +543,10 @@ const Calendar = () => {
             onDelete={
               modalMode() === "edit"
                 ? () => {
-                    setItemToDelete({ id: currentScheduleId() });
-                    setIsEditModalOpen(false);
-                    return Promise.resolve();
-                  }
+                  setItemToDelete({ id: currentScheduleId() });
+                  setIsEditModalOpen(false);
+                  return Promise.resolve();
+                }
                 : undefined
             }
             fields={[
@@ -614,8 +629,17 @@ const Calendar = () => {
           />
         </Show>
 
+        <AutoScheduleModal
+          isOpen={isAutoScheduleModalOpen()}
+          onClose={() => setIsAutoScheduleModalOpen(false)}
+          classId={selectedClass()?.class_id || ""}
+          onSuccess={() => {
+            refetchSchedules();
+          }}
+        />
+
         <ModalDelete
-          onCancel={() => {}}
+          onCancel={() => { }}
           value={itemToDelete}
           setValue={setItemToDelete}
           onConfirm={handleConfirmDelete}

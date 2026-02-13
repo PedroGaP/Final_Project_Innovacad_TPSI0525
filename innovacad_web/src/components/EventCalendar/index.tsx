@@ -22,6 +22,15 @@ type Props = {
   onCreateRequest: (start: string, end: string) => boolean;
   onEditRequest: (event: any) => boolean;
   onMoveRequest?: (id: string, start: Date, end: Date) => Promise<boolean>;
+  customButtons?: Record<
+    string,
+    {
+      text?: string;
+      hint?: string;
+      click: () => void;
+      bootstrapFontAwesome?: string;
+    }
+  >;
 };
 
 export const EventCalendar = (props: Props) => {
@@ -58,6 +67,28 @@ export const EventCalendar = (props: Props) => {
       calendar.setOption("selectable", editable);
       calendar.setOption("eventStartEditable", editable);
       calendar.setOption("eventDurationEditable", editable);
+    }
+  });
+
+  createEffect(() => {
+    if (calendar) {
+      if (props.customButtons) {
+        console.log("EventCalendar: Setting customButtons", props.customButtons);
+        calendar.setOption("customButtons", props.customButtons);
+        const customBtnNames = Object.keys(props.customButtons).join(" ");
+        console.log("EventCalendar: customBtnNames", customBtnNames);
+        calendar.setOption("headerToolbar", {
+          left: "prev,next today",
+          center: "title",
+          right: `${customBtnNames} dayGridMonth,timeGridWeek,timeGridDay`,
+        });
+      } else {
+        calendar.setOption("headerToolbar", {
+          left: "prev,next today",
+          center: "title",
+          right: "dayGridMonth,timeGridWeek,timeGridDay",
+        });
+      }
     }
   });
 
@@ -150,6 +181,7 @@ export const EventCalendar = (props: Props) => {
 
     calendar = new Calendar(calendarEl, {
       plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
+      customButtons: props.customButtons,
       editable: props.isEditable,
       selectable: props.isEditable,
       timeZone: "local",
@@ -185,7 +217,9 @@ export const EventCalendar = (props: Props) => {
       headerToolbar: {
         left: "prev,next today",
         center: "title",
-        right: "dayGridMonth,timeGridWeek,timeGridDay",
+        right: props.customButtons
+          ? `${Object.keys(props.customButtons).join(" ")} dayGridMonth,timeGridWeek,timeGridDay`
+          : "dayGridMonth,timeGridWeek,timeGridDay",
       },
       height: "100%",
       allDaySlot: false,
