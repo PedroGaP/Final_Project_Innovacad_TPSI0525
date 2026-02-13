@@ -72,9 +72,7 @@ class UserDetailsServiceImpl implements UserDetailsService {
 
         return details;
       });
-    } catch (e, s) {
-      print(e);
-      print(s);
+    } catch (e) {
       return null;
     }
   }

@@ -32,7 +32,6 @@ class AttendanceRepositoryImpl extends IAttendanceRepository {
 
         final list = results.rowsAssoc.map((row) {
           final data = row.assoc();
-          print(data);
           return OutputModuleAttendanceDao.fromJson(data);
         }).toList();
 

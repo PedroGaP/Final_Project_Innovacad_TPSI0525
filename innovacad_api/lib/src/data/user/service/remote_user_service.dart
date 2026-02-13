@@ -90,7 +90,6 @@ class RemoteUserService {
 
       return userData;
     } catch (e) {
-      print("[Enrichment Error] Failed to fetch local data: $e");
       return userData;
     }
   }
@@ -197,12 +196,6 @@ class RemoteUserService {
           "username": username,
         },
       );
-
-      print(response.requestOptions.data);
-      print(response.requestOptions.headers);
-      print(response.data);
-      print(response.headers);
-      print(response.statusCode);
 
       if (response.statusCode != HttpStatus.ok)
         return Result.failure(
@@ -345,7 +338,6 @@ class RemoteUserService {
 
       return Result.success(userData, headers: {"set-cookie": allCookies});
     } catch (e, s) {
-      print(s);
       return Result.failure(
         AppError(
           AppErrorType.external,
@@ -401,15 +393,11 @@ class RemoteUserService {
         );
       }
 
-      print(response.data);
-      print(response.headers);
-
       return Result.success(
         response.data,
         headers: {"set-cookie": response.headers["set-cookie"]![0]},
       );
-    } catch (e, s) {
-      print(s);
+    } catch (e, _) {
       return Result.failure(
         AppError(AppErrorType.external, "SignIn error: $e"),
       );
@@ -433,11 +421,6 @@ class RemoteUserService {
         data: {"provider": dto.provider, "callbackURL": dto.callback},
       );
 
-      print(response.statusCode);
-      print(response.data);
-      print(response.requestOptions.data);
-      print(response.requestOptions.headers);
-
       if (response.statusCode != HttpStatus.ok)
         return Result.failure(
           AppError(
@@ -447,14 +430,11 @@ class RemoteUserService {
           ),
         );
 
-      print(response.headers["set-cookie"]![0]);
-
       return Result.success(
         response.data,
         headers: {"set-cookie": response.headers["set-cookie"]![0]},
       );
     } catch (e, s) {
-      print(s);
       return Result.failure(
         AppError(
           AppErrorType.internal,
@@ -506,8 +486,6 @@ class RemoteUserService {
 
   Future<Result<bool>> verifyEmail(VerifyEmailDto dto) async {
     try {
-      print(dto.callback);
-
       final uri = Uri(
         scheme: _settings["auth"]["protocol"],
         host: _settings["auth"]["host"],
@@ -552,7 +530,7 @@ class RemoteUserService {
       final res = await db.getOne(
         table: 'user',
         where: {'id': dto.userId},
-        debug: true,
+        debug: false,
       );
 
       if (res.isEmpty) {
@@ -585,8 +563,6 @@ class RemoteUserService {
 
   Future<Result<OutputUserDao>> getSession(String sessionCookie) async {
     try {
-      print("🔍 GetSession Cookie received from Frontend: $sessionCookie");
-
       final res = await _dio.get(
         "http://localhost:10000/api/auth/get-session",
         options: Options(
@@ -597,9 +573,6 @@ class RemoteUserService {
           validateStatus: (status) => true,
         ),
       );
-
-      print("🔍 Better Auth Response Status: ${res.statusCode}");
-      print("🔍 Better Auth Response Data: ${res.data}");
 
       if (res.statusCode != 200 || res.data == null) {
         return Result.failure(
@@ -641,11 +614,6 @@ class RemoteUserService {
 
       final role = userData['role'];
 
-      print("USER DATA: ");
-      print(userData);
-      print("ROLE: $role");
-      print("TRAINER ID: ${userData['trainer_id']}");
-
       if ((role == 'trainer' || role == 'coordinator') &&
           userData.containsKey('trainer_id') &&
           userData['trainer_id'] != null) {
@@ -657,15 +625,11 @@ class RemoteUserService {
           userData['trainee_id'] != null) {
         try {
           return Result.success(OutputTraineeDao.fromJson(userData));
-        } catch (e) {
-          print("⚠️ Falha DAO Trainee: $e");
-        }
+        } catch (_) {}
       }
 
       return Result.success(OutputUserDao.fromJson(userData));
-    } catch (e, s) {
-      print("🔥 Erro crítico no getSession: $e");
-      print(s);
+    } catch (e, _) {
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -681,22 +645,17 @@ class RemoteUserService {
 
       if (data.length == 0) return Result.success(true);
 
-      print(table);
-
       final res = await db.update(
         table: table,
         updateData: data,
         where: {"id": id},
-        debug: true,
+        debug: false,
       );
-
-      print(res);
 
       if (res < BigInt.one) return Result.success(true);
 
       return Result.success(true);
     } catch (e, s) {
-      print(s);
       return Result.failure(
         AppError(
           AppErrorType.internal,
@@ -757,9 +716,6 @@ class RemoteUserService {
 
   Future<Result<bool>> sendOTP(dynamic cookies) async {
     try {
-      print("aquiiiii");
-      print("COOKIES: $cookies");
-
       final uri = Uri(
         scheme: _settings["auth"]["protocol"],
         host: _settings["auth"]["host"],
@@ -926,12 +882,6 @@ class RemoteUserService {
           },
         ),
       );
-
-      print(response.data);
-      print(response.statusCode);
-      print(response.headers);
-      print(response.requestOptions.data);
-      print(response.requestOptions.headers);
 
       if (response.statusCode != HttpStatus.ok)
         return Result.failure(

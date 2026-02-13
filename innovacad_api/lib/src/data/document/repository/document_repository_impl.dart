@@ -45,23 +45,11 @@ class DocumentRepositoryImpl {
         );
       }
 
-      print(bg);
-      print({
-        'document_id': Uuid().v4(),
-        'file_name': originalName,
-        'file_path': filePath,
-        'mime_type': mimeType,
-        'file_size_bytes': size,
-        'type_code': typeCode,
-        'user_id': userId,
-      });
-
       await db.commit();
 
       return Result.success("Upload successful");
     } catch (e, s) {
       if (db != null) await db.rollback();
-      print("Upload Error: $e");
       return Result.failure(
         AppError(
           AppErrorType.internal,
@@ -110,7 +98,6 @@ class DocumentRepositoryImpl {
         return Result.success(list);
       });
     } catch (e, s) {
-      print("Error fetching documents: $e");
       return Result.failure(
         AppError(
           AppErrorType.internal,

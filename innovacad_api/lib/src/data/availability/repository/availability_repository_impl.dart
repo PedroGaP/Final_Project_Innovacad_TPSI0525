@@ -84,7 +84,9 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
         dto.dateDay.year,
         dto.dateDay.month,
         dto.dateDay.day,
-        0, 0, 0,
+        0,
+        0,
+        0,
       ).toIso8601String();
 
       return await db.transaction((txn) async {
@@ -104,8 +106,6 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
           where: {"availability_id": availabilityId},
         );
 
-        print("DEBUG: Created availability data: $created");
-        
         if (created.isEmpty) {
           throw Exception("Failed to retrieve created availability");
         }
@@ -149,13 +149,14 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
             dto.dateDay!.year,
             dto.dateDay!.month,
             dto.dateDay!.day,
-            0, 0, 0,
+            0,
+            0,
+            0,
           ).toIso8601String();
           updateData["date_day"] = dateDay;
         }
         if (dto.slotNumber != null) updateData["slot_number"] = dto.slotNumber;
-        if (dto.isBooked != null)
-          updateData["is_booked"] = dto.isBooked;
+        if (dto.isBooked != null) updateData["is_booked"] = dto.isBooked;
 
         if (updateData.isEmpty) {
           return Result.success(

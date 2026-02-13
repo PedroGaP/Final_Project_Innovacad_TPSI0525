@@ -32,7 +32,6 @@ class AuthService extends JwtService {
 
   @override
   Map<String, dynamic>? verifyToken(String token) {
-    print("A verificar...");
     String cleaned = token.trim().replaceAll('"', '');
 
     if (cleaned.toLowerCase().startsWith('bearer ')) {

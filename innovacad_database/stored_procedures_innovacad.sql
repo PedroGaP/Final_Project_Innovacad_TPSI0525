@@ -104,7 +104,7 @@ BEGIN
                     AND av_linked.slot_number = p_slot_number
                 )
             )
-        ORDER BY IF(p_is_online, 0, r.capacity) ASC
+        ORDER BY ts.competence_level DESC, IF(p_is_online, 0, r.capacity) ASC, RAND()
         LIMIT 1;
 
         IF v_trainer_id IS NOT NULL THEN
