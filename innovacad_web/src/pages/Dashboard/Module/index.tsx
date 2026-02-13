@@ -4,6 +4,9 @@ import { useApi } from "@/hooks/useApi";
 import toast from "solid-toast";
 import EntityTable from "@/components/EntityTable";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
+import useI18n from "@/hooks/useL18N";
+
+const { t } = useI18n();
 
 const createEmptyModule = (): Module =>
   ({
@@ -22,12 +25,14 @@ const validateModule = (
 
   const name = String(module.name || "").trim();
   if (!name) {
-    errors.push("Name is required");
+    errors.push(t("fields.required_name"));
   }
 
   const duration = String(module.duration || "").trim();
   if (!duration) {
-    errors.push("Duration is required");
+    errors.push(t("fields.required_duration"));
+  } else if (isNaN(Number(duration))) {
+    errors.push(t("fields.invalid_duration"));
   }
 
   return {
@@ -102,8 +107,7 @@ const ModulesPage = () => {
             [],
         );
 
-        const changedFieldNames = Object.keys(changedFields).join(", ");
-        toast.success(`Module updated successfully (${changedFieldNames})`);
+        toast.success(t("dashboard.modules.update_successful"));
       } else {
         const moduleObj = {
           name: String(module.name),
@@ -117,12 +121,19 @@ const ModulesPage = () => {
         const newModule = await api.createModule(moduleObj);
 
         mutate((prev) => [...(prev || []), newModule]);
-        toast.success("Module created successfully.");
+        toast.success(t("dashboard.modules.create_successful"));
       }
     } catch (error) {
-      if (error instanceof Error && error.message !== "Validation failed") {
-        toast.error(error.message || "Failed to save module");
+      if (original) {
+        if (error instanceof Error && error.message !== "Validation failed") {
+          toast.error(t("dashboard.modules.update_fail"));
+        }
+      } else {
+        if (error instanceof Error && error.message !== "Validation failed") {
+          toast.error(t("dashboard.modules.create_fail"));
+        }
       }
+
       throw error;
     }
   };
@@ -140,7 +151,7 @@ const ModulesPage = () => {
 
   return (
     <EntityTable<Module>
-      title="Manage Modules"
+      title={t("dashboard.modules.title")}
       data={usersData}
       handleEditClick={(module) => ({
         ...module,
@@ -155,31 +166,31 @@ const ModulesPage = () => {
       formFields={[
         {
           name: "duration",
-          label: "Duration",
+          label: t("general.duration"),
           type: "number",
         },
         {
           name: "name",
-          label: "Name",
+          label: t("general.name"),
           type: "text",
         },
         {
-          label: "Has Computers ?",
+          label: t("general.has_computers"),
           name: "has_computers",
           type: "checkbox",
         },
         {
-          label: "Has Projector ?",
+          label: t("general.has_projector"),
           name: "has_projector",
           type: "checkbox",
         },
         {
-          label: "Has Whiteboard ?",
+          label: t("general.has_whiteboard"),
           name: "has_whiteboard",
           type: "checkbox",
         },
         {
-          label: "Has Smartboard ?",
+          label: t("general.has_smartboard"),
           name: "has_smartboard",
           type: "checkbox",
         },
@@ -193,34 +204,32 @@ const ModulesPage = () => {
           hidden: isTrainee(),
         },
         {
-          formattedName: "Name",
+          formattedName: t("general.name"),
           fieldName: "name",
-          canCopy: true,
           smaller: true,
         },
         {
-          formattedName: "Duration",
+          formattedName: t("general.duration"),
           fieldName: "duration",
-          canCopy: true,
           smaller: true,
         },
         {
-          formattedName: "Has Computers ?",
+          formattedName: t("general.has_computers"),
           fieldName: "has_computers",
           smaller: true,
         },
         {
-          formattedName: "Has Projector ?",
+          formattedName: t("general.has_projector"),
           fieldName: "has_projector",
           smaller: true,
         },
         {
-          formattedName: "Has Whiteboard ?",
+          formattedName: t("general.has_whiteboard"),
           fieldName: "has_whiteboard",
           smaller: true,
         },
         {
-          formattedName: "Has Smartboard ?",
+          formattedName: t("general.has_smartboard"),
           fieldName: "has_smartboard",
           smaller: true,
         },

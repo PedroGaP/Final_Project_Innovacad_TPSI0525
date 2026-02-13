@@ -1,7 +1,9 @@
 import { Check } from "lucide-solid";
 import { Show } from "solid-js";
 import { useApi } from "@/hooks/useApi";
+import useI18n from "@/hooks/useL18N";
 
+const { t } = useI18n();
 interface Props {
   logo: string;
   logo_alt: string;
@@ -27,7 +29,7 @@ export default function SocialAuthCard(props: Props) {
           <div class="flex flex-col">
             <span class="font-bold text-sm">{props.title}</span>
             <span class="text-xs opacity-60">
-              Connect your {props.title} account
+              {t("social.connect_account").replace("{{account}}", props.title)}
             </span>
           </div>
         </div>
@@ -40,7 +42,7 @@ export default function SocialAuthCard(props: Props) {
                 await linkSocial(props.provider, "/dashboard/settings")
               }
             >
-              Connect
+              {t("general.link")}
             </button>
           }
         >

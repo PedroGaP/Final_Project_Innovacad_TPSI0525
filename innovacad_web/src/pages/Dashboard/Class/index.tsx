@@ -5,8 +5,10 @@ import { type Course } from "@/types/course";
 import { type ModalFieldDefinition } from "@/components/Modal/Edit";
 import { createResource, For, Show, createMemo } from "solid-js";
 import toast from "solid-toast";
-import capitalize from "@/utils/capitalize";
 import type { Trainer } from "@/types/user";
+import useI18n from "@/hooks/useL18N";
+
+// --- HELPERS ---
 
 const createEmptyClass = (): Class =>
   ({
@@ -28,28 +30,36 @@ const epochToDateTime = (epoch: number | string): string => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
-const validateClass = (klass: Class): { valid: boolean; errors: string[] } => {
+const validateClass = (
+  klass: Class,
+  t: any,
+): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
-  if (!String(klass.course_id || "").trim()) errors.push("Course is required");
-  if (!String(klass.location || "").trim()) errors.push("Location is required");
+  if (!String(klass.course_id || "").trim())
+    errors.push(t("fields.required_course"));
+  if (!String(klass.location || "").trim())
+    errors.push(t("fields.required_location"));
   if (!String(klass.identifier || "").trim())
-    errors.push("Identifier is required");
+    errors.push(t("fields.required_identifier"));
 
   const status = String(klass.status || "")
     .trim()
     .toLowerCase();
   if (!status || !["starting", "ongoing", "finished"].includes(status)) {
-    errors.push("Status is invalid");
+    errors.push(t("fields.invalid_status"));
   }
 
-  if (!klass.start_date_timestamp) errors.push("Start Date is required");
-  if (!klass.end_date_timestamp) errors.push("End Date is required");
+  if (!klass.start_date_timestamp) errors.push(t("fields.required_start_date"));
+  if (!klass.end_date_timestamp) errors.push(t("fields.required_end_date"));
 
   return { valid: errors.length === 0, errors };
 };
 
+// --- COMPONENT ---
+
 const ClassesPage = () => {
   const api = useApi();
+  const { t } = useI18n(); // Reatividade garantida aqui dentro
 
   const [classesData, { mutate }] = createResource<Class[]>(api.fetchClasses);
   const [courses] = createResource<Course[]>(api.fetchCourses);
@@ -76,46 +86,48 @@ const ClassesPage = () => {
   const formFieldsConfig = createMemo<ModalFieldDefinition<Class>[]>(() => [
     {
       name: "course_id",
-      label: "Course",
+      label: t("entity.course"),
       type: "select",
       options: courseOptions(),
       required: true,
-      placeholder: courses.loading ? "Loading courses..." : "Select a Course",
+      placeholder: courses.loading
+        ? t("general.loading")
+        : t("dashboard.courses.select_course"),
     },
     {
       name: "identifier",
-      label: "Class Identifier",
+      label: t("dashboard.classes.identifier"),
       required: true,
     },
     {
       name: "location",
-      label: "Location",
+      label: t("dashboard.classes.location"),
     },
     {
       name: "status",
-      label: "Current Status",
+      label: t("dashboard.classes.status"),
       type: "select",
       options: [
-        { label: "Starting", value: "starting" },
-        { label: "On Going", value: "ongoing" },
-        { label: "Finished", value: "finished" },
+        { label: t("class_status.starting"), value: "starting" },
+        { label: t("class_status.ongoing"), value: "ongoing" },
+        { label: t("class_status.finished"), value: "finished" },
       ],
     },
     {
       name: "start_date_timestamp",
-      label: "Start Date",
+      label: t("general.start_date"),
       type: "datetime-local",
     },
     {
       name: "end_date_timestamp",
-      label: "End Date",
+      label: t("general.end_date"),
       type: "datetime-local",
     },
   ]);
 
   const handleSaveClass = async (klass: Class, original: Class | null) => {
     try {
-      const validation = validateClass(klass);
+      const validation = validateClass(klass, t);
       if (!validation.valid) {
         validation.errors.forEach((error) => toast.error(error));
         throw new Error("Validation failed");
@@ -153,20 +165,18 @@ const ClassesPage = () => {
         const originalIds = (original.modules || []).map(
           (m) => m.courses_modules_id,
         );
-
         const removeModulesIds = originalIds.filter(
           (id) => !currentIds.includes(id),
         );
 
-        if (modulesDto.length > 0) {
-          changedFields.add_modules = modulesDto;
-        }
-
-        if (removeModulesIds.length > 0) {
+        if (modulesDto.length > 0) changedFields.add_modules = modulesDto;
+        if (removeModulesIds.length > 0)
           changedFields.remove_modules_ids = removeModulesIds;
-        }
 
-        if (Object.keys(changedFields).length === 0) return;
+        if (Object.keys(changedFields).length === 0) {
+          toast.error(t("fields.no_changes_found"));
+          return;
+        }
 
         await api.updateClass(String(klass.class_id), changedFields);
 
@@ -174,7 +184,7 @@ const ClassesPage = () => {
           (prev) =>
             prev?.map((u) => (u.class_id === klass.class_id ? klass : u)) || [],
         );
-        toast.success(`Class updated successfully`);
+        toast.success(t("dashboard.classes.update_successful"));
       } else {
         const classObj = {
           course_id: String(klass.course_id),
@@ -190,29 +200,33 @@ const ClassesPage = () => {
 
         const newClass = await api.createClass(classObj);
         mutate((prev) => [...(prev || []), newClass]);
-        toast.success("Class created successfully.");
+        toast.success(t("dashboard.classes.create_successful"));
       }
-    } catch (error) {
-      if (error instanceof Error && error.message !== "Validation failed") {
-        toast.error(error.message || "Failed to save class");
+    } catch (error: any) {
+      if (error.message !== "Validation failed") {
+        toast.error(error.message || t("dashboard.classes.update_fail"));
       }
       throw error;
     }
   };
 
   const confirmDelete = async (classToDelete: Class) => {
-    await api.deleteClass(String(classToDelete.class_id));
-    mutate(
-      (prev) =>
-        prev?.filter((c) => c.class_id !== classToDelete.class_id) || [],
-    );
+    try {
+      await api.deleteClass(String(classToDelete.class_id));
+      mutate(
+        (prev) =>
+          prev?.filter((c) => c.class_id !== classToDelete.class_id) || [],
+      );
+      toast.success(t("dashboard.classes.delete_successful"));
+    } catch (e: any) {
+      toast.error(t("dashboard.classes.delete_fail"));
+    }
   };
 
   const renderModulesManager = (formData: Class, setFormData: any) => {
     const availableModules = createMemo(() => {
       const allCourses = courses();
       if (!allCourses || !formData.course_id) return [];
-
       const selectedCourse = allCourses.find(
         (c) => c.course_id === formData.course_id,
       );
@@ -262,9 +276,11 @@ const ClassesPage = () => {
       <div class="form-control w-full border p-4 rounded-xl bg-base-100 shadow-sm mt-6">
         <header class="mb-4 flex justify-between items-center">
           <div>
-            <h3 class="text-lg font-bold">Class Modules & Trainers</h3>
+            <h3 class="text-lg font-bold">
+              {t("dashboard.classes.modules_trainers_title")}
+            </h3>
             <p class="text-xs opacity-60">
-              Select modules to include and assign a default trainer.
+              {t("dashboard.classes.modules_trainers_desc")}
             </p>
           </div>
           <Show when={courses.loading || trainers.loading}>
@@ -276,7 +292,7 @@ const ClassesPage = () => {
           when={formData.course_id}
           fallback={
             <div class="alert alert-info text-xs">
-              Please select a Course Blueprint above first.
+              {t("dashboard.classes.select_blueprint")}
             </div>
           }
         >
@@ -285,7 +301,7 @@ const ClassesPage = () => {
               each={availableModules()}
               fallback={
                 <div class="text-sm opacity-50 p-2">
-                  This course has no modules defined.
+                  {t("dashboard.classes.no_modules")}
                 </div>
               }
             >
@@ -309,10 +325,14 @@ const ClassesPage = () => {
                         />
                         <div class="flex flex-col">
                           <span class="font-medium text-sm">
-                            {mod.module_name || "Unnamed Module"}
+                            {mod.module_name ||
+                              t("public.classes.unnamed_module")}
                           </span>
                           <div class="flex gap-2 text-[10px] font-mono opacity-50">
-                            <span>{mod.duration}h</span>
+                            <span>
+                              {mod.duration}
+                              {t("general.hour_s")}
+                            </span>
                           </div>
                         </div>
                       </label>
@@ -322,7 +342,7 @@ const ClassesPage = () => {
                       <div class="pl-8 mt-3 animate-fadeIn">
                         <div class="flex flex-col gap-1">
                           <span class="text-[10px] font-bold opacity-60 uppercase">
-                            Assigned Trainer
+                            {t("dashboard.classes.assigned_trainer")}
                           </span>
                           <select
                             class="select select-bordered select-xs w-full max-w-xs"
@@ -334,7 +354,9 @@ const ClassesPage = () => {
                               )
                             }
                           >
-                            <option value="">-- No Default Trainer --</option>
+                            <option value="">
+                              {t("dashboard.classes.no_trainer")}
+                            </option>
                             <For each={trainerOptions()}>
                               {(t) => (
                                 <option value={t.value}>{t.label}</option>
@@ -352,15 +374,15 @@ const ClassesPage = () => {
 
           <div class="mt-4 pt-2 border-t border-base-300 flex justify-between items-center">
             <span class="text-xs font-semibold uppercase opacity-50">
-              Selected Modules
+              {t("dashboard.classes.selected_modules")}
             </span>
             <div class="flex gap-2">
               <div class="badge badge-neutral badge-outline text-xs">
-                {formData.modules?.length || 0} Total
+                {formData.modules?.length || 0} {t("dashboard.classes.total")}
               </div>
               <div class="badge badge-primary badge-outline text-xs">
                 {formData.modules?.filter((m: any) => m.trainer_id).length || 0}{" "}
-                w/ Trainer
+                {t("dashboard.classes.with_trainer")}
               </div>
             </div>
           </div>
@@ -371,7 +393,7 @@ const ClassesPage = () => {
 
   return (
     <EntityTable<Class>
-      title="Manage Classes"
+      title={t("dashboard.classes.title")}
       data={classesData}
       handleEditClick={(klass) => ({ ...klass })}
       handleAddClick={() => createEmptyClass()}
@@ -389,10 +411,18 @@ const ClassesPage = () => {
         );
       }}
       fields={[
-        { formattedName: "Identifier", fieldName: "identifier", bigger: true },
-        { formattedName: "Location", fieldName: "location" },
         {
-          formattedName: "Status",
+          formattedName: t("general.identifier"),
+          fieldName: "identifier",
+          bigger: true,
+        },
+        {
+          formattedName: t("dashboard.classes.location"),
+          fieldName: "location",
+          smaller: true,
+        },
+        {
+          formattedName: t("dashboard.classes.status"),
           fieldName: "status",
           capitalizeValue: false,
           smaller: true,
@@ -406,35 +436,38 @@ const ClassesPage = () => {
               colors[String(e.status).toLowerCase()] || "badge-ghost";
             return (
               <div class={`badge ${color} badge-sm`}>
-                {capitalize(e.status?.toString() || "")}
+                {t(`class_status.${String(e.status).toLowerCase()}`)}
               </div>
             );
           },
         },
         {
-          formattedName: "Modules Info",
+          formattedName: t("dashboard.classes.courses_modules_title"),
           fieldName: "modules",
+          smaller: true,
           customGeneration: (e: Class) => (
             <div class="flex flex-col items-end gap-1">
               <span class="badge badge-neutral badge-sm">
-                {e.modules?.length || 0} Mods
+                {e.modules?.length || 0} {t("public.classes.assigned")}
               </span>
               <span class="text-[9px] opacity-50">
                 {e.modules?.filter((m: any) => m.trainer_id).length || 0}{" "}
-                Assigned
+                {t("dashboard.classes.with_trainer")}
               </span>
             </div>
           ),
         },
         {
-          formattedName: "Start Date",
+          formattedName: t("general.start_date"),
           fieldName: "start_date_timestamp",
+          smaller: true,
           customGeneration: (e) =>
             epochToDateTime(String(e.start_date_timestamp!)).split("T")[0],
         },
         {
-          formattedName: "End Date",
+          formattedName: t("general.end_date"),
           fieldName: "end_date_timestamp",
+          smaller: true,
           customGeneration: (e) =>
             epochToDateTime(String(e.end_date_timestamp!)).split("T")[0],
         },

@@ -12,6 +12,8 @@ import { Icon } from "../Icon";
 import ModalDelete from "../Modal/Delete";
 import ModalEdit, { type ModalFieldDefinition } from "../Modal/Edit";
 import { Toaster } from "solid-toast";
+import useI18n from "@/hooks/useL18N";
+const { t } = useI18n();
 
 const PAGE_SIZE = 10;
 
@@ -127,7 +129,7 @@ export default function EntityTable<T>(props: Props<T>) {
               "badge-success": fieldValue,
             }}
           >
-            {fieldValue ? "Yes" : "No"}
+            {fieldValue ? t("general.yes") : t("general.no")}
           </div>
         </td>
       );
@@ -170,7 +172,7 @@ export default function EntityTable<T>(props: Props<T>) {
                   setOriginalEntity(null);
                 }}
               >
-                <Icon name="Plus" size={16} /> Add
+                <Icon name="Plus" size={16} /> {t("entity_table.add")}
               </button>
             </Show>
           </div>
@@ -178,7 +180,7 @@ export default function EntityTable<T>(props: Props<T>) {
           <div class="shrink-0">
             <input
               type="text"
-              placeholder="Search..."
+              placeholder={t("general.search")}
               class="input input-bordered input-sm w-full max-w-xs"
               onInput={(e) => setSearch(e.currentTarget.value)}
             />
@@ -217,7 +219,7 @@ export default function EntityTable<T>(props: Props<T>) {
                         colspan={props.fields.length + 1}
                         class="text-center py-10 opacity-50"
                       >
-                        No data found
+                        {t("general.no_data")}
                       </td>
                     </tr>
                   }
@@ -306,7 +308,9 @@ export default function EntityTable<T>(props: Props<T>) {
 
           <div class="flex justify-between items-center shrink-0 pt-2 text-sm">
             <span class="opacity-60">
-              Page {page()} of {totalPages()}
+              {t("entity_table.page_of")
+                .replace("{{page}}", page().toString())
+                .replace("{{total}}", totalPages().toString())}
             </span>
             <div class="join">
               <button
@@ -339,7 +343,11 @@ export default function EntityTable<T>(props: Props<T>) {
                 setEditingEntity(null);
               }}
               onCancel={() => setEditingEntity(null)}
-              title={originalEntity() ? "Edit Entry" : "New Entry"}
+              title={
+                originalEntity()
+                  ? t("entity_table.edit_entry")
+                  : t("entity_table.new_entry")
+              }
               fields={props.formFields}
               renderCustomFields={props.renderCustomFields}
             />
@@ -356,8 +364,8 @@ export default function EntityTable<T>(props: Props<T>) {
                 setDeletingEntity(null);
               }}
               onCancel={() => setDeletingEntity(null)}
-              title="Delete Confirmation"
-              description="Are you sure you want to delete this record?"
+              title={t("entity_table.delete_entry")}
+              description={t("entity_table.delete_entry_confirm")}
             />
           )}
         </Show>

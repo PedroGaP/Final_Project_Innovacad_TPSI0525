@@ -7,6 +7,9 @@ import EntityTable from "@/components/EntityTable";
 import UserDocumentsManager from "@/components/DocumentManager";
 import type { Class } from "@/types/class";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
+import useI18n from "@/hooks/useL18N";
+
+const { t } = useI18n();
 
 const createEmptyTrainer = (): Trainer =>
   ({
@@ -38,10 +41,14 @@ const validateTrainer = (
   trainer: Trainer,
 ): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
-  if (!trainer.name) errors.push("Name is required");
-  if (!trainer.email) errors.push("Email is required");
-  if (!trainer.username) errors.push("Username is required");
-  if (!trainer.birthdayDate) errors.push("Birthday date is required");
+  if (!trainer.name) errors.push(t(`fields.required_name`));
+  if (!trainer.email) errors.push("fields.required_email");
+  if (!trainer.username) {
+    errors.push("fields.required_username");
+  } else if (trainer.username.length < 3) {
+    errors.push(t(`fields.length_username`));
+  }
+  if (!trainer.birthdayDate) errors.push("fields.required_birtday_date");
   return { valid: errors.length === 0, errors };
 };
 
@@ -61,7 +68,7 @@ const TrainerPage = () => {
       const validation = validateTrainer(trainer);
       if (!validation.valid) {
         validation.errors.forEach((error) => toast.error(error));
-        throw new Error("Validation failed");
+        throw new Error(t("dashboard.user.trainers.validate_fail"));
       }
 
       const currentClassIds = Object.keys(trainer.coordinated_class_ids) || [];
@@ -80,14 +87,8 @@ const TrainerPage = () => {
         const oldIds = Object.keys(original.coordinated_class_ids || {});
         const newIds = currentClassIds;
 
-        console.log('DEBUG: oldIds:', oldIds);
-        console.log('DEBUG: newIds:', newIds);
-
         const toAdd = newIds.filter((id) => !oldIds.includes(id));
         const toRemove = oldIds.filter((id) => !newIds.includes(id));
-
-        console.log('DEBUG: toAdd:', toAdd);
-        console.log('DEBUG: toRemove:', toRemove);
 
         if (toAdd.length > 0) changes.class_ids_to_add = toAdd;
         if (toRemove.length > 0) changes.class_ids_to_remove = toRemove;
@@ -95,8 +96,6 @@ const TrainerPage = () => {
         if (original.is_coordinator !== isCoordinator) {
           changes.is_coordinator = isCoordinator;
         }
-
-        console.log('DEBUG: changes being sent:', changes);
 
         if (Object.keys(changes).length === 0) return;
 
@@ -112,7 +111,7 @@ const TrainerPage = () => {
               return u;
             }) || [],
         );
-        toast.success(`Trainer updated successfully`);
+        toast.success(t("dashboard.user.trainers.update_successful"));
       } else {
         const tempPassword = "T" + Math.random().toString(36).slice(-10) + "1@";
 
@@ -131,28 +130,37 @@ const TrainerPage = () => {
         try {
           await api.sendEmail({
             to: trainer.email!,
-            subject: "Welcome - Trainer Credentials",
+            subject: t("dashboard.user.email_new_password_subject"),
             body: newPasswordEmail(tempPassword),
           });
         } catch (e) {
-          console.error(e);
+          toast.error(t("dashboard.user.send_email_fail"));
         }
 
         mutate((prev) => [...(prev || []), newTrainer]);
-        toast.success("Trainer created successfully.");
+        toast.success(t("dashboard.user.trainers.create_successful"));
       }
     } catch (error: any) {
-      if (error.message !== "Validation failed")
-        toast.error(error.message || "Failed to save");
+      if (original) {
+        if (error.message !== "Validation failed")
+          toast.error(t("dashboard.user.trainers.update_fail"));
+      } else {
+        if (error.message !== "Validation failed")
+          toast.error(t("dashboard.user.trainers.create_fail"));
+      }
     }
   };
 
   const confirmDelete = async (trainer: Trainer) => {
-    await api.deleteTrainer(String(trainer.trainerId || trainer.id));
-    mutate(
-      (prev) => prev?.filter((u) => u.trainerId !== trainer.trainerId) || [],
-    );
-    toast.success("Trainer deleted");
+    try {
+      await api.deleteTrainer(String(trainer.trainerId || trainer.id));
+      mutate(
+        (prev) => prev?.filter((u) => u.trainerId !== trainer.trainerId) || [],
+      );
+      toast.success(t("dashboard.user.trainers.delete_successful"));
+    } catch (e) {
+      toast.error(t("dashboard.user.trainers.delete_fail"));
+    }
   };
 
   const { user } = useUserDetails();
@@ -160,7 +168,7 @@ const TrainerPage = () => {
 
   return (
     <EntityTable<Trainer>
-      title="Manage Trainers"
+      title={t("dashboard.users.trainers.title")}
       data={trainersData}
       handleEditClick={(user) => ({
         ...user,
@@ -181,36 +189,53 @@ const TrainerPage = () => {
           bigger: true,
           hidden: isTrainee(),
         },
-        { formattedName: "Name", fieldName: "name" },
-        { formattedName: "Email", fieldName: "email" },
-        { formattedName: "Username", fieldName: "username" },
+        { formattedName: t("general.name"), fieldName: "name" },
+        { formattedName: t("general.email"), fieldName: "email" },
+        { formattedName: t("general.username"), fieldName: "username" },
         {
-          formattedName: "Birth Date",
+          formattedName: t("general.birthday_date"),
           fieldName: "birthdayDate",
           customGeneration: (t) => epochToDateTime(t.birthdayDate!),
         },
         {
-          formattedName: "Role",
+          formattedName: t("general.role"),
           fieldName: "role",
-          customGeneration: (t) => (
+          customGeneration: (tr) => (
             <span
-              class={`badge ${t.is_coordinator ? "badge-primary" : "badge-ghost"}`}
+              class={`badge ${tr.is_coordinator ? "badge-primary" : "badge-ghost"}`}
             >
-              {t.is_coordinator ? "Coordinator" : "Trainer"}
+              {tr.is_coordinator
+                ? t("entity.coordinator")
+                : t("entity.trainer")}
             </span>
           ),
         },
         {
-          formattedName: "Verified",
+          formattedName: t("general.verified"),
           fieldName: "verified",
         },
       ]}
       formFields={[
-        { label: "Name", name: "name", required: true, type: "text" },
-        { label: "Email", name: "email", required: true, type: "email" },
-        { label: "Username", name: "username", required: true, type: "text" },
         {
-          label: "Birth Date",
+          label: t("general.name"),
+          name: "name",
+          required: true,
+          type: "text",
+        },
+        {
+          label: t("general.email"),
+          name: "email",
+          required: true,
+          type: "email",
+        },
+        {
+          label: t("general.username"),
+          name: "username",
+          required: true,
+          type: "text",
+        },
+        {
+          label: t("general.birthday_date"),
           name: "birthdayDate",
           required: true,
           type: "date",
@@ -220,7 +245,9 @@ const TrainerPage = () => {
         <div class="flex flex-col gap-4 mt-2">
           <div class="form-control w-full">
             <label class="label">
-              <span class="label-text font-bold">Coordination Classes</span>
+              <span class="label-text font-bold">
+                {t("dashboard.users.trainers.coordination_classes")}
+              </span>
             </label>
             <div class="h-48 overflow-y-auto border rounded-lg p-2 bg-base-100">
               <Show
@@ -238,12 +265,14 @@ const TrainerPage = () => {
                       onChange={(e) => {
                         const checked = e.currentTarget.checked;
                         const clsId = String(cls.class_id);
-                        const current =
-                          formData.coordinated_class_ids || {};
+                        const current = formData.coordinated_class_ids || {};
 
                         let updated: Record<string, string>;
                         if (checked) {
-                          updated = { ...current, [clsId]: cls.identifier } as Record<string, string>;
+                          updated = {
+                            ...current,
+                            [clsId]: cls.identifier,
+                          } as Record<string, string>;
                         } else {
                           const { [clsId]: _, ...rest } = current;
                           updated = rest as Record<string, string>;
@@ -260,22 +289,21 @@ const TrainerPage = () => {
                       }}
                     />
                     <span class="label-text">
-                      {cls.identifier} - {cls.location}
+                      {cls.course_identifier} {cls.location} {cls.identifier}
                     </span>
                   </label>
                 ))}
               </Show>
             </div>
             <label class="label">
-              <span class="label-text-alt text-warning">
-                Selecting classes will automatically promote this user to
-                Coordinator.
+              <span class="label-text-alt text-warning text-wrap">
+                {t("dashboard.users.trainers.promote_coordinator")}
               </span>
             </label>
           </div>
 
           <Show when={formData.id}>
-            <div class="divider">Documents</div>
+            <div class="divider">{t("dashboard.documents.title")}</div>
             <UserDocumentsManager userId={String(formData.id)} />
           </Show>
         </div>

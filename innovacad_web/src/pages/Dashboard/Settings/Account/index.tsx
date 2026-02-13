@@ -9,9 +9,11 @@ import { API_ENDPOINTS, useApi } from "@/hooks/useApi";
 import { type Document, DocumentTypeLabels } from "@/types/document";
 import toast from "solid-toast";
 import type { Trainee, Trainer, User } from "@/types/user";
+import useI18n from "@/hooks/useL18N";
 
 const AccountSettingsPage = () => {
   const { user, setUser } = useUserDetails();
+  const { t } = useI18n();
   const {
     listAccounts,
     fetchDocuments,
@@ -22,14 +24,9 @@ const AccountSettingsPage = () => {
   } = useApi();
 
   const [imageKey, setImageKey] = createSignal(Date.now());
-
   const [accounts] = createResource(async () => listAccounts());
 
-  const getOwnerId = () => {
-    const u = user();
-    if (!u) return "";
-    return u.id;
-  };
+  const getOwnerId = () => user()?.id || "";
 
   const [documents, { refetch: refetchDocs }] = createResource(
     getOwnerId,
@@ -72,7 +69,9 @@ const AccountSettingsPage = () => {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("File is too large. Max 5MB.");
+      toast.error(
+        t("dashboard.documents.file_too_large") || "File too large (Max 5MB)",
+      );
       return;
     }
 
@@ -83,11 +82,11 @@ const AccountSettingsPage = () => {
 
     try {
       await uploadDocument(getOwnerId()!, formData);
-      toast.success("Document uploaded successfully!");
+      toast.success(t("dashboard.documents.upload_successful"));
       refetchDocs();
       if (fileInputRef) fileInputRef.value = "";
     } catch (error: any) {
-      toast.error(error.message || "Failed to upload document");
+      toast.error(error.message || t("dashboard.documents.upload_fail_other"));
     } finally {
       setIsUploading(false);
     }
@@ -99,31 +98,30 @@ const AccountSettingsPage = () => {
     const u = user();
 
     if (!file || !u) return;
-
     if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file.");
+      toast.error(t("dashboard.documents.upload_fail_profile_pic"));
       return;
     }
 
-    const toastId = toast.loading("Updating profile picture...");
+    const toastId = toast.loading(
+      t("dashboard.documents.updating_profile_pic") || "Updating...",
+    );
     const formData = new FormData();
     formData.append("file", file);
     formData.append("type", "PROFILE_PIC");
 
     try {
       await uploadDocument(u.id!, formData);
-
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 800));
 
       const updatedDocs = await fetchDocuments(u.id!);
-      console.log(`DOCS::: ${JSON.stringify(updatedDocs)}`);
       const newPic = updatedDocs.find((d) => d.type_code === "PROFILE_PIC");
 
-      if (!newPic) throw new Error("Image uploaded but not found in list.");
+      if (!newPic) throw new Error("Image uploaded but not found.");
 
-      let imagePath = newPic.file_path;
-
-      imagePath = imagePath.replace(/^public[\\/]/, "").replace(/\\/g, "/");
+      let imagePath = newPic.file_path
+        .replace(/^public[\\/]/, "")
+        .replace(/\\/g, "/");
 
       if (u.role === "trainer" || u.role === "coordinator") {
         await updateTrainer((u as Trainer).trainerId!, {
@@ -142,18 +140,13 @@ const AccountSettingsPage = () => {
       updatedUser.image = imagePath;
 
       setUser(updatedUser as User | Trainer | Trainee);
-
       setImageKey(Date.now());
-
-      toast.success("Profile picture updated!", { id: toastId });
+      toast.success(t("dashboard.documents.upload_successful_profile_pic"), {
+        id: toastId,
+      });
       refetchDocs();
-
-      toast.success("Profile picture updated!", { id: toastId });
-
-      // await refreshSession();
     } catch (error: any) {
-      console.error(error);
-      toast.error(error.message || "Failed to update profile picture", {
+      toast.error(t("dashboard.documents.upload_fail_profile_pic"), {
         id: toastId,
       });
     } finally {
@@ -162,21 +155,18 @@ const AccountSettingsPage = () => {
   };
 
   const handleDeleteDoc = async (docId: string) => {
-    if (!confirm("Are you sure you want to delete this document?")) return;
+    if (!confirm(t("dashboard.documents.are_you_sure"))) return;
     try {
       await deleteDocument(docId);
-      toast.success("Document deleted");
+      toast.success(t("dashboard.documents.delete_successful"));
       refetchDocs();
     } catch (error: any) {
-      toast.error("Failed to delete document");
+      toast.error(t("dashboard.documents.delete_fail"));
     }
   };
 
-  const openFileSelector = () => fileInputRef?.click();
-  const openAvatarSelector = () => avatarInputRef?.click();
-
   const handleDownload = async (doc: Document) => {
-    const toastId = toast.loading(`Downloading ${doc.file_name}...`);
+    const toastId = toast.loading(t("general.loading"));
     try {
       const cleanPath = doc.file_path.replace(/^public[\\/]/, "");
       const fileUrl = `${API_ENDPOINTS.BASE}/resource/${cleanPath}`;
@@ -194,29 +184,28 @@ const AccountSettingsPage = () => {
       toast.dismiss(toastId);
     } catch (error) {
       toast.dismiss(toastId);
-      toast.error("Failed to download file.");
+      toast.error(t("common.error_loading"));
     }
   };
-
-  console.log(
-    `URL::: ${API_ENDPOINTS.BASE}/resource/${user()?.image}?t=${imageKey()}`,
-  );
-  console.log(`IMAGE::: ${user()?.image}`);
 
   return (
     <>
       <div class="w-full flex-1 min-h-full border-base-300 bg-base-100">
         <div class="flex justify-between items-center p-6 border-b border-base-200">
           <div>
-            <h3 class="text-lg font-bold">Personal Info</h3>
-            <p class="text-sm opacity-60">Update your personal details</p>
+            <h3 class="text-lg font-bold">
+              {t("dashboard.profiles.personal_info")}
+            </h3>
+            <p class="text-sm opacity-60">
+              {t("dashboard.profiles.update_details")}
+            </p>
           </div>
           <div class="flex gap-3">
             <button class="btn btn-sm btn-ghost opacity-70 hover:opacity-100">
-              Cancel
+              {t("general.cancel")}
             </button>
             <button class="btn btn-sm btn-accent text-white px-6 shadow-md">
-              Save
+              {t("general.save")}
             </button>
           </div>
         </div>
@@ -224,7 +213,9 @@ const AccountSettingsPage = () => {
         <div class="p-6 space-y-8">
           <div class="form-control">
             <label class="label pt-0">
-              <span class="label-text opacity-70 font-medium">Your photo</span>
+              <span class="label-text opacity-70 font-medium">
+                {t("general.profile_pic")}
+              </span>
             </label>
             <div class="flex items-center gap-6">
               <div class="avatar">
@@ -234,19 +225,13 @@ const AccountSettingsPage = () => {
                     fallback={
                       <img
                         src={`https://ui-avatars.com/api/?name=${user()?.name || "User"}&background=random&color=fff`}
-                        alt="Default Avatar"
+                        alt="Avatar"
                       />
                     }
                   >
                     <img
                       src={`${API_ENDPOINTS.BASE}/resource/${user()?.image}?t=${imageKey()}`}
                       alt="Avatar"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                        e.currentTarget.parentElement?.classList.add(
-                          "bg-base-300",
-                        );
-                      }}
                     />
                   </Show>
                 </div>
@@ -261,12 +246,12 @@ const AccountSettingsPage = () => {
                     onChange={handleAvatarChange}
                   />
                   <button
-                    onClick={openAvatarSelector}
+                    onClick={() => avatarInputRef?.click()}
                     class="btn btn-sm btn-outline border-base-300 normal-case font-normal"
                   >
-                    <Upload size={14} class="mr-1" /> Upload Image
+                    <Upload size={14} class="mr-1" /> {t("general.upload_file")}
                   </button>
-                  <span class="text-xs opacity-50">JPG or PNG. 1MB max</span>
+                  <span class="text-xs opacity-50">JPG, PNG. 1MB max</span>
                 </div>
               </div>
             </div>
@@ -275,17 +260,21 @@ const AccountSettingsPage = () => {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="form-control w-full">
               <label class="label">
-                <span class="label-text opacity-70 font-medium">Full name</span>
+                <span class="label-text opacity-70 font-medium">
+                  {t("general.name")}
+                </span>
               </label>
               <input
                 type="text"
                 value={user()?.name || ""}
-                class="input input-bordered w-full bg-base-200 focus:bg-base-100 focus:border-primary transition-colors"
+                class="input input-bordered w-full bg-base-200 focus:bg-base-100 transition-colors"
               />
             </div>
             <div class="form-control w-full">
               <label class="label">
-                <span class="label-text opacity-70 font-medium">Username</span>
+                <span class="label-text opacity-70 font-medium">
+                  {t("general.username")}
+                </span>
               </label>
               <input
                 type="text"
@@ -296,7 +285,9 @@ const AccountSettingsPage = () => {
             </div>
             <div class="form-control w-full">
               <label class="label">
-                <span class="label-text opacity-70 font-medium">Email</span>
+                <span class="label-text opacity-70 font-medium">
+                  {t("general.email")}
+                </span>
               </label>
               <input
                 type="email"
@@ -308,13 +299,13 @@ const AccountSettingsPage = () => {
             <div class="form-control w-full">
               <label class="label">
                 <span class="label-text opacity-70 font-medium">
-                  Date of birth
+                  {t("general.birthday_date")}
                 </span>
               </label>
               <input
                 type="date"
                 value={getUserBirthday()}
-                class="input input-bordered w-full bg-base-200 focus:bg-base-100 focus:border-primary"
+                class="input input-bordered w-full bg-base-200 focus:bg-base-100"
               />
             </div>
           </div>
@@ -325,10 +316,11 @@ const AccountSettingsPage = () => {
             <div class="flex justify-between items-end mb-4">
               <div>
                 <h3 class="text-md font-bold flex items-center gap-2">
-                  <FileCheck size={18} class="text-primary" /> Documents
+                  <FileCheck size={18} class="text-primary" />{" "}
+                  {t("entity.documents")}
                 </h3>
                 <p class="text-xs opacity-60 mt-1">
-                  Manage your CVs, Certificates, and IDs.
+                  {t("dashboard.documents.manage_desc")}
                 </p>
               </div>
               <div class="flex items-center gap-2">
@@ -338,7 +330,9 @@ const AccountSettingsPage = () => {
                   onInput={(e) => setSelectedDocType(e.currentTarget.value)}
                 >
                   {Object.entries(DocumentTypeLabels).map(([key, label]) => (
-                    <option value={key}>{label}</option>
+                    <option value={key}>
+                      {t(`general.${key.toLowerCase()}`) || label}
+                    </option>
                   ))}
                 </select>
                 <input
@@ -349,13 +343,13 @@ const AccountSettingsPage = () => {
                 />
                 <button
                   class="btn btn-sm btn-primary"
-                  onClick={openFileSelector}
+                  onClick={() => fileInputRef?.click()}
                   disabled={isUploading()}
                 >
                   <Show when={isUploading()} fallback={<Upload size={14} />}>
                     <span class="loading loading-spinner loading-xs"></span>
                   </Show>{" "}
-                  Upload
+                  {t("general.upload_file")}
                 </button>
               </div>
             </div>
@@ -364,7 +358,7 @@ const AccountSettingsPage = () => {
                 when={!documents.loading}
                 fallback={
                   <div class="p-8 text-center text-sm opacity-50">
-                    Loading documents...
+                    {t("general.loading")}
                   </div>
                 }
               >
@@ -373,7 +367,7 @@ const AccountSettingsPage = () => {
                   fallback={
                     <div class="p-8 text-center flex flex-col items-center gap-2 opacity-50">
                       <FileText size={32} class="opacity-30" />
-                      <span class="text-sm">No documents uploaded yet.</span>
+                      <span>{t("general.no_data")}</span>
                     </div>
                   }
                 >
@@ -392,8 +386,9 @@ const AccountSettingsPage = () => {
                                 </span>
                                 <div class="flex gap-2 text-[10px] opacity-60 font-mono uppercase">
                                   <span class="badge badge-xs badge-ghost font-normal">
-                                    {DocumentTypeLabels[doc.type_code] ||
-                                      doc.type_code}
+                                    {t(
+                                      `general.${doc.type_code.toLowerCase()}`,
+                                    ) || doc.type_code}
                                   </span>
                                   <span>
                                     {formatFileSize(doc.file_size_bytes)}
@@ -411,12 +406,14 @@ const AccountSettingsPage = () => {
                               <button
                                 class="btn btn-ghost btn-sm btn-square"
                                 onClick={() => handleDownload(doc)}
+                                title={t("general.download_file")}
                               >
                                 <Download size={16} />
                               </button>
                               <button
                                 class="btn btn-ghost btn-sm btn-square text-error"
                                 onClick={() => handleDeleteDoc(doc.document_id)}
+                                title={t("general.delete")}
                               >
                                 <Trash2 size={16} />
                               </button>
@@ -436,7 +433,7 @@ const AccountSettingsPage = () => {
           <div class="form-control w-full">
             <label class="label">
               <span class="label-text opacity-70 font-medium">
-                Linked Accounts
+                {t("dashboard.setting.linked_accounts")}
               </span>
             </label>
             <div class="flex flex-col gap-4">

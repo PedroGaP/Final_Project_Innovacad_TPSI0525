@@ -110,7 +110,7 @@ const TraineePage = () => {
       const validation = validateTrainee(trainee);
       if (!validation.valid) {
         validation.errors.forEach((error) => toast.error(error));
-        throw new Error(t("dashboard.users.trainers.validate_fail"));
+        throw new Error(t("dashboard.users.trainees.validate_fail"));
       }
 
       if (original) {
@@ -126,7 +126,7 @@ const TraineePage = () => {
             ) || [],
         );
 
-        toast.success(t("dashboard.users.trainers.update_successful"));
+        toast.success(t("dashboard.users.trainees.update_successful"));
       } else {
         const traineeObj = {
           name: String(trainee.name),
@@ -153,14 +153,14 @@ const TraineePage = () => {
         }
 
         mutate((prev) => [...(prev || []), newTrainee]);
-        toast.success(t("dashboard.users.trainers.create_successful"));
+        toast.success(t("dashboard.users.trainees.create_successful"));
       }
     } catch (error) {
       if (original) {
         if (error instanceof Error && error.message !== "Validation failed") {
-          toast.error(t("dashboard.users.trainers.update_fail"));
+          toast.error(t("dashboard.users.trainees.update_fail"));
         } else {
-          toast.error(t("dashboard.users.trainers.create_fail"));
+          toast.error(t("dashboard.users.trainees.create_fail"));
         }
       }
       throw error;
@@ -174,16 +174,16 @@ const TraineePage = () => {
         (prev) =>
           prev?.filter((u) => u.traineeId !== userToDelete.traineeId) || [],
       );
-      toast.success(t("dashboard.users.trainers.delete_successful"));
+      toast.success(t("dashboard.users.trainees.delete_successful"));
     } catch (e) {
-      toast.error(t("dashboard.users.trainers.delete_fail"));
+      toast.error(t("dashboard.users.trainees.delete_fail"));
       throw e;
     }
   };
 
   const handleExport = async (trainee: Trainee) => {
     try {
-      toast.loading(t("dashboard.users.trainers.pdf_generating"), {
+      toast.loading(t("dashboard.users.trainees.pdf_generating"), {
         id: "export-loading",
       });
 
@@ -193,11 +193,11 @@ const TraineePage = () => {
       );
 
       toast.dismiss("export-loading");
-      toast.success(t("dashboard.users.trainers.pdf_successful"));
+      toast.success(t("dashboard.users.trainees.pdf_successful"));
     } catch (error: any) {
       toast.dismiss("export-loading");
       console.error(error);
-      toast.error(t("dashboard.users.trainers.pdf_fail"));
+      toast.error(t("dashboard.users.trainees.pdf_fail"));
     }
   };
 
@@ -206,7 +206,7 @@ const TraineePage = () => {
 
   return (
     <EntityTable<Trainee>
-      title={t("dashboard.users.trainers.title")}
+      title={t("dashboard.users.trainees.title")}
       data={usersData}
       handleExportClick={handleExport}
       handleAddClick={() => createEmptyTrainee()}
@@ -293,7 +293,7 @@ const TraineePage = () => {
           fallback={
             <div class="alert alert-info text-xs mt-4">
               <span>
-                {t("dashboard.users.trainers.save_to_upload_documents")}
+                {t("dashboard.users.trainees.save_to_upload_documents")}
               </span>
             </div>
           }
