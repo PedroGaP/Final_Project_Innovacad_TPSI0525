@@ -9,10 +9,11 @@ import { API_ENDPOINTS } from "@/hooks/useApi";
 import ChangeLanguage from "@/components/ChangeLanguage";
 import useI18n from "@/hooks/useL18N";
 
+const { t } = useI18n();
+
 const DashboardLayout = (props: any) => {
   const { user, logout } = useUserDetails();
   const { theme, toggleTheme } = useTheme();
-  const { t } = useI18n();
   const [isCollapsed, setIsCollapsed] = createSignal(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ const DashboardLayout = (props: any) => {
     return path.split("/").filter(Boolean);
   });
 
-  const NavItems: NavProps[] = [
+  const NavItems = createMemo((): NavProps[] => [
     {
       icon: "LayoutDashboard",
       size: 22,
@@ -109,7 +110,7 @@ const DashboardLayout = (props: any) => {
       title: t("entity.availabilities"),
       role: ["admin", "trainer", "coordinator"],
     },
-  ];
+  ]);
 
   return (
     <>
@@ -142,11 +143,17 @@ const DashboardLayout = (props: any) => {
                   <ul>
                     <li>{t("dashboard.dashboard")}</li>
                     <For each={currentPathArray()}>
-                      {(segment) => (
-                        <li class="font-bold opacity-100 text-base-content uppercase">
-                          {t(`dashboard.${segment.toLowerCase()}`)}
-                        </li>
-                      )}
+                      {(segment) => {
+                        console.log(`PATH: ${segment}`);
+                        console.log(
+                          `TRANSLATION: ${t(`dashboard.${segment.toLowerCase()}`)}`,
+                        );
+                        return (
+                          <li class="font-bold opacity-100 text-base-content uppercase">
+                            {t(`entity.${segment.toLowerCase()}`)}
+                          </li>
+                        );
+                      }}
                     </For>
                   </ul>
                 </div>
@@ -200,7 +207,8 @@ const DashboardLayout = (props: any) => {
                       <div class="hidden md:flex flex-col items-start leading-tight">
                         <span class="text-sm font-bold">{user()?.name}</span>
                         <span class="text-[10px] uppercase opacity-50 font-black tracking-wider">
-                          {user()?.role || "Guest"}
+                          {t(`entity.${user()?.role?.toLowerCase()}`) ||
+                            "Guest"}
                         </span>
                       </div>
                     </Show>
@@ -263,7 +271,7 @@ const DashboardLayout = (props: any) => {
                 </div>
               </div>
               <ul class="p-4 w-full text-base flex-1 overflow-y-auto overflow-x-visible gap-1">
-                <For each={NavItems}>
+                <For each={NavItems()}>
                   {(item) => (
                     <Show
                       when={

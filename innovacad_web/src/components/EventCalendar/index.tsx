@@ -14,6 +14,8 @@ import type { Class } from "@/types/class";
 import toast from "solid-toast";
 import useI18n from "@/hooks/useL18N";
 
+const { t, currentLang } = useI18n();
+
 type Props = {
   selectedClass: Class | null;
   isEditable: boolean;
@@ -27,7 +29,6 @@ type Props = {
 export const EventCalendar = (props: Props) => {
   let calendarEl: HTMLDivElement | undefined;
   let calendar: Calendar | undefined;
-  const { t } = useI18n();
 
   createEffect(() => {
     const rawEvents = props.events;
@@ -153,7 +154,7 @@ export const EventCalendar = (props: Props) => {
       editable: props.isEditable,
       selectable: props.isEditable,
       timeZone: "local",
-      locale: "pt",
+      locale: currentLang(),
       firstDay: 1,
       selectMirror: true,
       eventDragStart: (info) => {

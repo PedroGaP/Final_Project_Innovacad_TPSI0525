@@ -1,13 +1,18 @@
 {
   "entity": {
+    "admin": "Administrador",
     "trainer": "Formador",
     "trainers": "Formadores",
+    "coordinator": "Coordenador",
+    "coordinators": "Coordenadores",
     "trainee": "Formando",
     "trainees": "Formandos",
     "course": "Curso",
     "courses": "Cursos",
     "schedule": "Horário",
     "schedules": "Horários",
+    "calendar": "Horário",
+    "calendars": "Horários",
     "user": "Utilizador",
     "users": "Utilizadores",
     "class": "Turma",
@@ -22,11 +27,12 @@
     "enrollments": "Matrículas",
     "availability": "Disponibilidade",
     "availabilities": "Disponibilidades",
+    "document": "Documento",
+    "documents": "Documentos",
     "overview": "Visão Geral",
     "online_class_q": "Aula Online?",
-    "start_time": "Hora de Inicio",
+    "start_time": "Hora de Início",
     "end_time": "Hora de Término",
-    "coordinator": "Coordenador",
     "date": "Data",
     "time": "Horário",
     "regime": "Regime",
@@ -45,6 +51,7 @@
     "name": "Nome",
     "email": "Email",
     "username": "Utilizador",
+    "role": "Papel",
     "birthday_date": "Data de Nascimento",
     "verified": "Verificado",
     "profile_pic": "Fotografia de Perfil",
@@ -58,7 +65,24 @@
     "delete": "Apagar",
     "download_file": "Exportar ficheiro",
     "view_file": "Ver ficheiro",
-    "upload_file": "Enviar ficheiro"
+    "upload_file": "Enviar ficheiro",
+    "deleting": "A Apagar...",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "save": "Guardar",
+    "select": "Seleciona",
+    "enter": "Insira um",
+    "yes": "Sim",
+    "no": "Não",
+    "no_data": "Sem dados",
+    "search": "Pesquisar...",
+    "hour_s": "hora(s)",
+    "sequence": "Sequência",
+    "none": "Nenhum",
+    "after": "Depois de",
+    "course_name": "Nome do Curso",
+    "area": "Área",
+    "identifier": "Identificador"
   },
   "fields": {
     "required_name": "O nome é obrigatório.",
@@ -66,20 +90,29 @@
     "invalid_email": "O email é inválido.",
     "required_username": "O utilizador é obrigatório.",
     "length_username": "O utilizador deve ter no mínimo 3 caracteres.",
-    "required_birthday_date": "A data de nascimento é obrigatório."
+    "required_birthday_date": "A data de nascimento é obrigatória.",
+    "cannot_be_changed": "Este campo não pode ser alterado.",
+    "required_identifier": "O identificador é obrigatório.",
+    "required_description": "A descrição é obrigatória.",
+    "required_start_time": "A hora de início é obrigatória.",
+    "required_end_time": "A hora de término é obrigatória.",
+    "required_regime": "O regime é obrigatório.",
+    "required_duration": "A duração é obrigatória.",
+    "required_area": "A área é obrigatória.",
+    "no_changes_found": "Nenhuma alteração detetada."
   },
   "not_found": {
     "are_you_lost": "Estás Perdido?",
     "page_not_found": "Ups! A página não foi encontrada.",
     "quote": "\"Nem todos os que perambulam estão perdidos... mas tu estás, definitivamente!\"",
     "buttons": {
-      "return_home": "Voltar ao inicio",
+      "return_home": "Voltar ao início",
       "go_back": "Voltar atrás"
     }
   },
   "sign_in": {
     "title": "Iniciar Sessão",
-    "desc": "Accesse a sua conta",
+    "desc": "Aceda à sua conta",
     "forgot_password": "Esqueceu-se da palavra-passe?",
     "or": "Ou",
     "buttons": {
@@ -89,7 +122,14 @@
     "password": "Palavra-passe",
     "email": "Email"
   },
-  "entity_table": {},
+  "entity_table": {
+    "page_of": "Página {{page}} de {{total}} página(s)",
+    "add": "Adicionar",
+    "edit_entry": "Editar Dados",
+    "new_entry": "Novos Dados",
+    "confirm_delete": "Confirmar Remoção",
+    "confirm_delete_desc": "Tens a certeza que queres apagar este dado?"
+  },
   "event_calendar": {
     "move_fail": "Não foi possível realocar o evento.",
     "move_successful": "Evento realocado com sucesso!",
@@ -101,14 +141,21 @@
     "profile": "Perfil",
     "settings": "Definições",
     "logout": "Sair",
+    "user": "Utilizadores",
+    "trainers": "Formadores",
+    "trainees": "Formandos",
+    "modal": {
+      "delete_title": "Apagar Item",
+      "delete_desc": "Tens a certeza que queres apagar este item?",
+      "delete_warn": "Esta ação não é reversível. Todos os dados associados vão ser apagados permanentemente."
+    },
     "overview": {
       "finished_classes": "Turmas terminadas",
       "ongoing_classes": "Turmas a decorrer",
       "active_trainees": "Formandos ativos",
       "courses_per_area": "Cursos por área",
       "course_plural": "Curso(s)",
-      "top_trainers": "TOP 10 Formadores (Horas)",
-      "no_data": "Sem dados"
+      "top_trainers": "TOP 10 Formadores (Horas)"
     },
     "schedule": {
       "update_successful": "Sessão atualizada com sucesso!",
@@ -131,7 +178,7 @@
     },
     "documents": {
       "upload_successful_profile_pic": "Fotografia de Perfil inserida com sucesso!",
-      "upload_fail_profile_pic": "Não foi possível inserir a fotografia de peril.",
+      "upload_fail_profile_pic": "Não foi possível inserir a fotografia de perfil.",
       "upload_successful_cv": "Currículo inserido com sucesso!",
       "upload_fail_cv": "Não foi possível inserir o currículo.",
       "upload_successful_diploma": "Diploma inserido com sucesso!",
@@ -155,11 +202,23 @@
       "pdf_generating": "A exportar ficheiro PDF...",
       "pdf_fail": "Não foi possível exportar o ficheiro PDF.",
       "pdf_successful": "Ficheiro PDF do utilizador exportado com sucesso!",
-      "trainees": {},
       "trainers": {
+        "validate_fail": "Não foi possível validar o formador.",
+        "update_successful": "Formador atualizado com sucesso!",
+        "create_successful": "Formador criado com sucesso! Credenciais de acesso enviadas por email.",
+        "create_fail": "Não foi possível criar formador.",
+        "delete_successful": "Formador apagado com sucesso!",
+        "delete_fail": "Não foi possível apagar o formador.",
+        "update_fail": "Não foi possível atualizar o formador.",
+        "title": "Gerir Formadores",
+        "save_to_upload_documents": "Crie o formador primeiro para inserir documentos.",
+        "coordination_classes": "Turmas da Coordenação",
+        "promote_coordinator": "Selecionar turmas promove automaticamente este utilizador a Coordenador."
+      },
+      "trainees": {
         "validate_fail": "Não foi possível validar o formando.",
         "update_successful": "Formando atualizado com sucesso!",
-        "create_successful": "Formando criado com sucesso! Credenciais de login enviados por email.",
+        "create_successful": "Formando criado com sucesso! Credenciais de acesso enviadas por email.",
         "create_fail": "Não foi possível criar formando.",
         "delete_successful": "Formando apagado com sucesso!",
         "delete_fail": "Não foi possível apagar o formando.",
@@ -168,148 +227,160 @@
         "save_to_upload_documents": "Crie o formando primeiro para inserir documentos."
       }
     },
-    "auth": {
-      "forgot_password": {
-        "title": "Introduz o teu Email",
-        "desc": "Enviaremos um link de verificação para o teu email. Por favor clica no link desse email para repor a palavra-passe.",
-        "email_placeholder": "Introduz o teu email",
-        "send_btn": "Enviar",
-        "back_to_login": "Voltar ao Login",
-        "toast_empty": "Por favor introduz o teu email!",
-        "or": "OU"
-      },
-      "reset_password": {
-        "title": "Repor Palavra-passe",
-        "desc": "Cria uma nova palavra-passe para a tua conta.",
-        "new_password": "Nova Palavra-passe",
-        "password_placeholder": "Introduz a tua nova palavra-passe",
-        "submit_btn": "Criar nova Palavra-passe",
-        "back_to_login": "Voltar ao Login",
-        "toast_empty": "Por favor introduz a palavra-passe",
-        "toast_success": "Palavra-passe reposta com sucesso!",
-        "toast_fail": "Falha ao repor a palavra-passe."
-      },
-      "verify_email": {
-        "title": "Verifica a tua conta",
-        "desc": "Enviámos um código para",
-        "paste_placeholder": "Cola o token aqui...",
-        "verify_btn": "Verificar",
-        "did_not_receive": "Não recebeste o token?",
-        "resend_btn": "Reenviar",
-        "wait_msg": "Aguarda {{seconds}} segundos...",
-        "back_to_login": "Voltar ao Início de Sessão",
-        "toast_sent": "Email de verificação enviado!",
-        "toast_send_fail": "Falha ao enviar email",
-        "toast_verify_success": "O email foi verificado!",
-        "toast_verify_fail": "Falha ao verificar email, tenta novamente mais tarde."
-      },
-      "verify_2fa": {
-        "title": "Verifica a tua conta",
-        "desc": "Enviámos um código para o teu email",
-        "paste_placeholder": "Cola o código aqui...",
-        "verify_btn": "Verificar",
-        "did_not_receive": "Não recebeste o código?",
-        "resend_btn": "Reenviar",
-        "wait_msg": "Aguarda {{seconds}} segundos...",
-        "back_to_login": "Voltar ao Início de Sessão",
-        "toast_sent": "Email de verificação 2FA enviado!",
-        "toast_send_fail": "Falha ao enviar email de verificação 2FA...",
-        "toast_verify_success": "O 2FA foi verificado!",
-        "toast_verify_fail": "Falha ao verificar 2FA, tenta novamente mais tarde."
-      }
-    },
-    "public": {
-      "courses": {
-        "title": "Cursos",
-        "desc": "Explora todos os cursos disponíveis e os seus módulos",
-        "search_placeholder": "Pesquisa por identificador, nome ou área...",
-        "no_results": "Nenhum curso encontrado com a tua pesquisa",
-        "no_data": "Nenhum curso disponível",
-        "modules": "módulos",
-        "modules_title": "Módulos",
-        "no_modules": "Nenhum módulo atribuído ainda",
-        "showing_results": "A mostrar {{count}} de {{total}} cursos"
-      },
-      "trainers": {
-        "title": "Formadores",
-        "desc": "Conhece os nossos formadores especialistas",
-        "search_placeholder": "Pesquisa por nome ou email...",
-        "no_results": "Nenhum formador encontrado com a tua pesquisa",
-        "no_data": "Nenhum formador disponível",
-        "showing_results": "A mostrar {{count}} de {{total}} formadores",
-        "coordinated_classes": "Turmas Coordenadas"
-      },
-      "trainees": {
-        "title": "Formandos",
-        "desc": "Ver todos os formandos registados",
-        "search_placeholder": "Pesquisa por nome ou email...",
-        "no_results": "Nenhum formando encontrado com a tua pesquisa",
-        "no_data": "Nenhum formando disponível",
-        "showing_results": "A mostrar {{count}} de {{total}} formandos"
-      },
-      "classes": {
-        "title": "Turmas",
-        "desc": "Explora todas as turmas agendadas",
-        "search_placeholder": "Pesquisa por nome ou curso...",
-        "no_results": "Nenhuma turma encontrada com a tua pesquisa",
-        "no_data": "Nenhuma turma disponível",
-        "showing_results": "A mostrar {{count}} de {{total}} turmas",
-        "unnamed_module": "Módulo sem nome",
-        "assigned": "atribuídos",
-        "no_modules": "Nenhum módulo atribuído ainda"
-      },
-      "schedules": {
-        "title": "Horários",
-        "desc": "Ver horários e sessões das turmas",
-        "search_placeholder": "Pesquisar horários...",
-        "no_results": "Nenhum horário encontrado",
-        "no_data": "Nenhum horário disponível",
-        "by_class": "Por Turma",
-        "by_trainer": "Por Formador",
-        "select_class": "Selecionar Turma",
-        "select_all_classes": "Todas as Turmas",
-        "select_class_placeholder": "Selecione uma turma...",
-        "select_trainer": "Selecionar Formador",
-        "select_all_trainers": "Todos os Formadores",
-        "select_trainer_placeholder": "Selecione um formador...",
-        "start_date": "Data Início",
-        "end_date": "Data Fim",
-        "search_label": "Pesquisar",
-        "search_detailed_placeholder": "Módulo, formador, sala...",
-        "clear_filters": "Limpar Filtros",
-        "found": "Horários Encontrados",
-        "select_prompt_class": "Selecione uma turma para ver os horários",
-        "select_prompt_trainer": "Selecione um formador para ver os horários"
-      },
-      "rooms_page": {
-        "title": "Alocação de Salas",
-        "desc": "Verificar disponibilidade e horários das salas",
-        "select_room": "Selecionar Sala",
-        "select_all_rooms": "Todas as Salas",
-        "select_room_placeholder": "Escolha uma sala...",
-        "select_date": "Selecionar Data",
-        "no_results": "Nenhuma alocação encontrada para esta sala nesta data",
-        "select_prompt": "Selecione uma sala e data para ver as alocações",
-        "found": "Alocações Encontradas",
-        "search_label": "Pesquisar",
-        "search_placeholder": "Filtrar resultados...",
-        "clear_filters": "Limpar Filtros"
-      }
-    },
-    "footer": {
-      "rights_reserved": "© {{year}} - Todos os direitos reservados por Innovacad."
-    },
-    "header": {
-      "dashboard": "Painel"
-    },
-    "common": {
-      "loading": "A carregar...",
-      "error_loading": "Falha ao carregar dados. Por favor tenta novamente mais tarde."
-    },
-    "home": {
-      "title": "Início",
-      "desc": "Esta é a página inicial.",
-      "count": "Contagem: {{count}}"
+    "courses": {
+      "title": "Gerir Cursos",
+      "validate_fail": "Não foi possível validar o curso.",
+      "update_successful": "Curso atualizado com sucesso!",
+      "update_fail": "Falha ao atualizar o curso.",
+      "create_successful": "Curso criado com sucesso!",
+      "create_fail": "Falha ao criar o curso.",
+      "delete_successful": "Curso apagado com sucesso!",
+      "delete_fail": "Falha ao apagar o curso.",
+      "courses_modules_title": "Módulos do Curso",
+      "modules_selected": "{{count}} módulos selecionados"
     }
+  },
+  "auth": {
+    "forgot_password": {
+      "title": "Introduza o seu Email",
+      "desc": "Enviaremos um link de verificação para o seu email. Por favor, clique no link desse email para repor a palavra-passe.",
+      "email_placeholder": "Introduza o seu email",
+      "send_btn": "Enviar",
+      "back_to_login": "Voltar ao Login",
+      "toast_empty": "Por favor, introduza o seu email!",
+      "or": "OU"
+    },
+    "reset_password": {
+      "title": "Repor Palavra-passe",
+      "desc": "Crie uma nova palavra-passe para a sua conta.",
+      "new_password": "Nova Palavra-passe",
+      "password_placeholder": "Introduza a sua nova palavra-passe",
+      "submit_btn": "Criar nova Palavra-passe",
+      "back_to_login": "Voltar ao Login",
+      "toast_empty": "Por favor, introduza a palavra-passe",
+      "toast_success": "Palavra-passe reposta com sucesso!",
+      "toast_fail": "Falha ao repor a palavra-passe."
+    },
+    "verify_email": {
+      "title": "Verifique a sua conta",
+      "desc": "Enviámos um código para",
+      "paste_placeholder": "Cole o token aqui...",
+      "verify_btn": "Verificar",
+      "did_not_receive": "Não recebeu o token?",
+      "resend_btn": "Reenviar",
+      "wait_msg": "Aguarde {{seconds}} segundos...",
+      "back_to_login": "Voltar ao Início de Sessão",
+      "toast_sent": "Email de verificação enviado!",
+      "toast_send_fail": "Falha ao enviar email",
+      "toast_verify_success": "O email foi verificado!",
+      "toast_verify_fail": "Falha ao verificar email, tente novamente mais tarde."
+    },
+    "verify_2fa": {
+      "title": "Verifique a sua conta",
+      "desc": "Enviámos um código para o seu email",
+      "paste_placeholder": "Cole o código aqui...",
+      "verify_btn": "Verificar",
+      "did_not_receive": "Não recebeu o código?",
+      "resend_btn": "Reenviar",
+      "wait_msg": "Aguarde {{seconds}} segundos...",
+      "back_to_login": "Voltar ao Início de Sessão",
+      "toast_sent": "Email de verificação 2FA enviado!",
+      "toast_send_fail": "Falha ao enviar email de verificação 2FA...",
+      "toast_verify_success": "O 2FA foi verificado!",
+      "toast_verify_fail": "Falha ao verificar 2FA, tente novamente mais tarde."
+    }
+  },
+  "public": {
+    "courses": {
+      "title": "Cursos",
+      "desc": "Explore todos os cursos disponíveis e os seus módulos",
+      "search_placeholder": "Pesquisa por identificador, nome ou área...",
+      "no_results": "Nenhum curso encontrado com a sua pesquisa",
+      "no_data": "Nenhum curso disponível",
+      "modules": "módulos",
+      "modules_title": "Módulos",
+      "no_modules": "Nenhum módulo atribuído ainda",
+      "showing_results": "A mostrar {{count}} de {{total}} cursos"
+    },
+    "trainers": {
+      "title": "Formadores",
+      "desc": "Conheça os nossos formadores especialistas",
+      "search_placeholder": "Pesquisa por nome ou email...",
+      "no_results": "Nenhum formador encontrado com a sua pesquisa",
+      "no_data": "Nenhum formador disponível",
+      "showing_results": "A mostrar {{count}} de {{total}} formadores",
+      "coordinated_classes": "Turmas Coordenadas"
+    },
+    "trainees": {
+      "title": "Formandos",
+      "desc": "Ver todos os formandos registados",
+      "search_placeholder": "Pesquisa por nome ou email...",
+      "no_results": "Nenhum formando encontrado com a sua pesquisa",
+      "no_data": "Nenhum formando disponível",
+      "showing_results": "A mostrar {{count}} de {{total}} formandos"
+    },
+    "classes": {
+      "title": "Turmas",
+      "desc": "Explore todas as turmas agendadas",
+      "search_placeholder": "Pesquisa por nome ou curso...",
+      "no_results": "Nenhuma turma encontrada com a sua pesquisa",
+      "no_data": "Nenhuma turma disponível",
+      "showing_results": "A mostrar {{count}} de {{total}} turmas",
+      "unnamed_module": "Módulo sem nome",
+      "assigned": "atribuídos",
+      "no_modules": "Nenhum módulo atribuído ainda"
+    },
+    "schedules": {
+      "title": "Horários",
+      "desc": "Ver horários e sessões das turmas",
+      "search_placeholder": "Pesquisar horários...",
+      "no_results": "Nenhum horário encontrado",
+      "no_data": "Nenhum horário disponível",
+      "by_class": "Por Turma",
+      "by_trainer": "Por Formador",
+      "select_class": "Selecionar Turma",
+      "select_all_classes": "Todas as Turmas",
+      "select_class_placeholder": "Selecione uma turma...",
+      "select_trainer": "Selecionar Formador",
+      "select_all_trainers": "Todos os Formadores",
+      "select_trainer_placeholder": "Selecione um formador...",
+      "start_date": "Data Início",
+      "end_date": "Data Fim",
+      "search_label": "Pesquisar",
+      "search_detailed_placeholder": "Módulo, formador, sala...",
+      "clear_filters": "Limpar Filtros",
+      "found": "Horários Encontrados",
+      "select_prompt_class": "Selecione uma turma para ver os horários",
+      "select_prompt_trainer": "Selecione um formador para ver os horários"
+    },
+    "rooms_page": {
+      "title": "Alocação de Salas",
+      "desc": "Verificar disponibilidade e horários das salas",
+      "select_room": "Selecionar Sala",
+      "select_all_rooms": "Todas as Salas",
+      "select_room_placeholder": "Escolha uma sala...",
+      "select_date": "Selecionar Data",
+      "no_results": "Nenhuma alocação encontrada para esta sala nesta data",
+      "select_prompt": "Selecione uma sala e data para ver as alocações",
+      "found": "Alocações Encontradas",
+      "search_label": "Pesquisar",
+      "search_placeholder": "Filtrar resultados...",
+      "clear_filters": "Limpar Filtros"
+    }
+  },
+  "footer": {
+    "rights_reserved": "© {{year}} - Todos os direitos reservados por Innovacad."
+  },
+  "header": {
+    "dashboard": "Painel"
+  },
+  "common": {
+    "loading": "A carregar...",
+    "error_loading": "Falha ao carregar dados. Por favor, tente novamente mais tarde."
+  },
+  "home": {
+    "title": "Início",
+    "desc": "Esta é a página inicial.",
+    "count": "Contagem: {{count}}"
   }
 }

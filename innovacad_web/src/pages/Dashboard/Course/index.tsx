@@ -1,12 +1,14 @@
 import EntityTable from "@/components/EntityTable";
 import type { ModalFieldDefinition } from "@/components/Modal/Edit";
 import { useApi } from "@/hooks/useApi";
+import useI18n from "@/hooks/useL18N";
 import type { Course } from "@/types/course";
 import type { CourseModule } from "@/types/course_module";
 import type { Module } from "@/types/module";
 import { createMemo, createResource, For, Show } from "solid-js";
 import toast from "solid-toast";
 
+const { t } = useI18n();
 const unwrap = <T,>(data: T): T => JSON.parse(JSON.stringify(data));
 
 const isSame = (a: any, b: any) => (a ?? "") === (b ?? "");
@@ -24,9 +26,9 @@ const validateCourse = (
 ): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
   if (!String(course.identifier || "").trim())
-    errors.push("Identifier is required");
-  if (!String(course.name || "").trim()) errors.push("Name is required");
-  if (!String(course.area || "").trim()) errors.push("Area is required");
+    errors.push(t("fields.required_identifier"));
+  if (!String(course.name || "").trim()) errors.push(t("fields.required_name"));
+  if (!String(course.area || "").trim()) errors.push(t("fields.required_area"));
   return { valid: errors.length === 0, errors };
 };
 
@@ -58,7 +60,7 @@ const CoursesPage = () => {
       const validation = validateCourse(course);
       if (!validation.valid) {
         validation.errors.forEach((err) => toast.error(err));
-        throw new Error("Validation failed");
+        throw new Error(t("dashboard.courses.validate_fail"));
       }
 
       if (original) {
@@ -114,12 +116,11 @@ const CoursesPage = () => {
         }
 
         if (Object.keys(changedFields).length === 0) {
-          toast.success("No changes detected");
+          toast.success(t("fields.no_changes_found"));
           return;
         }
 
         const cleanPayload = unwrap(changedFields);
-        console.log("Sending Payload:", cleanPayload);
 
         await api.updateCourse(String(course.course_id), cleanPayload);
 
@@ -128,7 +129,7 @@ const CoursesPage = () => {
             prev?.map((c) => (c.course_id === course.course_id ? course : c)) ||
             [],
         );
-        toast.success("Course updated successfully");
+        toast.success(t("dashboard.courses.update_successful"));
       } else {
         const newCourseObj = {
           identifier: course.identifier,
@@ -143,24 +144,34 @@ const CoursesPage = () => {
         const cleanPayload = unwrap(newCourseObj);
         const created = await api.createCourse(cleanPayload);
         mutate((prev) => [...(prev || []), created]);
-        toast.success("Course created successfully");
+        toast.success(t("dashboard.courses.create_successful"));
       }
     } catch (error) {
-      console.error(error);
-      if (error instanceof Error && error.message !== "Validation failed") {
-        toast.error("Failed to save course.");
+      if (original) {
+        if (error instanceof Error && error.message !== "Validation failed") {
+          toast.error(t("dashboard.courses.update_fail"));
+        }
+      } else {
+        if (error instanceof Error && error.message !== "Validation failed") {
+          toast.error(t("dashboard.courses.create_fail"));
+        }
       }
+
       throw error;
     }
   };
 
   const confirmDelete = async (courseToDelete: Course) => {
-    await api.deleteCourse(String(courseToDelete.course_id));
-    mutate(
-      (prev) =>
-        prev?.filter((c) => c.course_id !== courseToDelete.course_id) || [],
-    );
-    toast.success("Course deleted");
+    try {
+      await api.deleteCourse(String(courseToDelete.course_id));
+      mutate(
+        (prev) =>
+          prev?.filter((c) => c.course_id !== courseToDelete.course_id) || [],
+      );
+      toast.success(t("dashboard.courses.delete_successful"));
+    } catch (e) {
+      toast.error(t("dashboard.courses.delete_fail"));
+    }
   };
 
   const renderModulesManager = (formData: Course, setFormData: any) => {
@@ -234,9 +245,14 @@ const CoursesPage = () => {
       <div class="form-control w-full border p-4 rounded-xl bg-base-100 shadow-sm mt-6">
         <header class="mb-4 flex justify-between items-center">
           <div>
-            <h3 class="text-lg font-bold">Course Modules</h3>
+            <h3 class="text-lg font-bold">
+              {t("dashboard.courses.courses_modules_title")}
+            </h3>
             <p class="text-xs opacity-60">
-              {formData.modules?.length || 0} modules selected
+              {t("dashboard.courses.modules_selected").replace(
+                "{{count}}",
+                `${formData.modules?.length || 0}`,
+              )}
             </p>
           </div>
         </header>
@@ -260,7 +276,7 @@ const CoursesPage = () => {
                     <div class="flex flex-col">
                       <span class="font-medium text-sm">{mod.name}</span>
                       <span class="text-[10px] opacity-50">
-                        {mod.duration} hours
+                        {mod.duration} {t("general.hour_s")}
                       </span>
                     </div>
                     <input
@@ -274,7 +290,7 @@ const CoursesPage = () => {
                   <Show when={isChecked()}>
                     <div class="mt-3 flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
                       <span class="text-[10px] font-bold uppercase opacity-40">
-                        Previous:
+                        {t("general.sequence")}
                       </span>
 
                       <select
@@ -289,12 +305,12 @@ const CoursesPage = () => {
                           )
                         }
                       >
-                        <option value="">None</option>
+                        <option value="">{t("general.none")}</option>
                         <For each={validSequenceTargets()}>
                           {(m) => (
                             <Show when={m.module_id !== mod.module_id}>
                               <option value={m.module_id}>
-                                After {m.module_name}
+                                {t("general.after")} {m.module_name}
                               </option>
                             </Show>
                           )}
@@ -312,14 +328,24 @@ const CoursesPage = () => {
   };
 
   const formFieldsConfig = createMemo<ModalFieldDefinition<Course>[]>(() => [
-    { label: "Identifier", name: "identifier", required: true, type: "text" },
-    { label: "Course Name", name: "name", required: true, type: "text" },
-    { label: "Area", name: "area", required: true, type: "text" },
+    {
+      label: t("general.identifier"),
+      name: "identifier",
+      required: true,
+      type: "text",
+    },
+    {
+      label: t("general.course_name"),
+      name: "name",
+      required: true,
+      type: "text",
+    },
+    { label: t("general.area"), name: "area", required: true, type: "text" },
   ]);
 
   return (
     <EntityTable<Course>
-      title="Manage Courses"
+      title={t("dashboard.courses.title")}
       data={coursesData}
       handleEditClick={(course) => ({ ...course })}
       handleAddClick={() => createEmptyCourse()}
@@ -337,15 +363,22 @@ const CoursesPage = () => {
         );
       }}
       fields={[
-        { formattedName: "Identifier", fieldName: "identifier", bigger: true },
-        { formattedName: "Name", fieldName: "name" },
-        { formattedName: "Area", fieldName: "area" },
         {
-          formattedName: "Modules",
+          formattedName: t("general.identifier"),
+          fieldName: "identifier",
+          bigger: true,
+        },
+        { formattedName: t("general.name"), fieldName: "name" },
+        { formattedName: t("general.area"), fieldName: "area" },
+        {
+          formattedName: t("entity.modules"),
           fieldName: "modules",
           customGeneration: (e: Course) => (
             <span class="badge badge-neutral badge-outline">
-              {e.modules?.length || 0} Modules
+              {t("dashboard.courses.modules_selected").replace(
+                "{{count}}",
+                `${e.modules?.length || 0}`,
+              )}
             </span>
           ),
         },
