@@ -5,6 +5,7 @@ import toast from "solid-toast";
 import { newPasswordEmail } from "@/components/NewPasswordEmail";
 import EntityTable from "@/components/EntityTable";
 import UserDocumentsManager from "@/components/DocumentManager";
+import { useUserDetails } from "@/providers/UserDetailsProvider";
 import useI18n from "@/hooks/useL18N";
 
 const { t } = useI18n();
@@ -200,6 +201,9 @@ const TraineePage = () => {
     }
   };
 
+  const { user } = useUserDetails();
+  const isTrainee = () => user()?.role === "trainee";
+
   return (
     <EntityTable<Trainee>
       title={t("dashboard.users.trainers.title")}
@@ -227,6 +231,7 @@ const TraineePage = () => {
           fieldName: "traineeId",
           canCopy: true,
           smaller: true,
+          hidden: isTrainee(),
         },
         {
           formattedName: t("general.name"),

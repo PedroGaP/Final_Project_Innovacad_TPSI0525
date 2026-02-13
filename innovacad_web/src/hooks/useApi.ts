@@ -20,6 +20,10 @@ import { Enrollment, type EnrollmentResponseData } from "@/types/enrollment";
 import { Grade, type GradeResponseData } from "@/types/grade";
 import { Module, type ModuleResponseData } from "@/types/module";
 import { Room, type RoomResponseData } from "@/types/room";
+import {
+  RoomBusySlot,
+  type RoomBusySlotResponseDto,
+} from "@/types/RoomAvailability";
 import { Schedule, type ScheduleResponseData } from "@/types/schedule";
 import type { SaveSummaryPayload, SummaryGridResponse } from "@/types/summary";
 import {
@@ -234,11 +238,11 @@ export const useApi = () => {
       (trainer as any).is_coordinator = !!data.is_coordinator;
       if (data.role === "coordinator") (trainer as any).is_coordinator = true;
 
-      (trainer as any).coordinated_class_ids = Array.isArray(
-        data.coordinated_class_ids,
-      )
-        ? data.coordinated_class_ids
-        : [];
+      (trainer as any).coordinated_class_ids =
+        typeof data.coordinated_class_ids === 'object' &&
+          data.coordinated_class_ids !== null
+          ? data.coordinated_class_ids
+          : {};
 
       Object.assign(trainer, data);
 
@@ -1604,6 +1608,25 @@ export const useApi = () => {
     return rooms;
   };
 
+  const fetchRoomAvailability = async (
+    roomId: string,
+    date: string,
+  ): Promise<RoomBusySlot[]> => {
+    // date format should match what backend expects, assuming YYYY-MM-DD based on typical APIs
+    const res = await fetchApi<RoomBusySlotResponseDto[]>(
+      `${API_ENDPOINTS.ENTITY.ROOM}/${roomId}/availability/${date}`,
+      "GET",
+    );
+
+    if (res.isError || !res.data) {
+      throw new Error(
+        `Fetch room availability (${roomId}, ${date}) failed: ${res.error?.message}`,
+      );
+    }
+
+    return res.data.map((item) => new RoomBusySlot(item));
+  };
+
   /**
    * Fetch documents for a specific owner (Using User ID)
    */
@@ -1624,7 +1647,7 @@ export const useApi = () => {
       try {
         const err = await res.json();
         errorMessage = err.message || errorMessage;
-      } catch {}
+      } catch { }
 
       throw new Error(errorMessage);
     }
@@ -1995,6 +2018,7 @@ export const useApi = () => {
 
     // Schedules
     fetchSchedules,
+    fetchRoomAvailability,
     fetchUserSchedules,
     createSchedule,
     updateSchedule,

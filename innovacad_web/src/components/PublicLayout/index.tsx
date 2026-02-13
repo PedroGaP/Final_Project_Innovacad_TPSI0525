@@ -5,7 +5,7 @@ const PublicLayout = (props: any) => {
   return (
     <div class="flex flex-col min-h-screen">
       <Header />
-      <main class="grow flex items-center justify-center">
+      <main class="grow w-full">
         {props.children}
       </main>
       <Footer />

@@ -3,6 +3,7 @@ import type { Room } from "@/types/room";
 import { useApi } from "@/hooks/useApi";
 import toast from "solid-toast";
 import EntityTable from "@/components/EntityTable";
+import { useUserDetails } from "@/providers/UserDetailsProvider";
 
 const createEmptyRoom = (): Room =>
   ({
@@ -130,6 +131,9 @@ const RoomsPage = () => {
     );
   };
 
+  const { user } = useUserDetails();
+  const isTrainee = () => user()?.role === "trainee";
+
   return (
     <EntityTable<Room>
       title="Manage Rooms"
@@ -150,6 +154,7 @@ const RoomsPage = () => {
           fieldName: "room_id",
           canCopy: true,
           smaller: true,
+          hidden: isTrainee(),
         },
         {
           formattedName: "Name",

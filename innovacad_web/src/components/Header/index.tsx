@@ -4,10 +4,42 @@ import { useTheme } from "@/providers/ThemeProvider";
 import { useNavigate } from "@solidjs/router";
 import { useI18n } from "@/hooks/useL18N";
 import ChangeLanguage from "../ChangeLanguage";
+import { For } from "solid-js";
 export default function Header() {
   const { theme, toggleTheme } = useTheme();
   const { t } = useI18n();
   const navigate = useNavigate();
+
+  const items = () => [
+    {
+      name: t("header.dashboard"),
+      onClick: () => navigate("dashboard"),
+    },
+    {
+      name: t("entity.courses"),
+      onClick: () => navigate("courses"),
+    },
+    {
+      name: t("entity.trainers"),
+      onClick: () => navigate("trainers"),
+    },
+    {
+      name: t("entity.trainees"),
+      onClick: () => navigate("trainees"),
+    },
+    {
+      name: t("entity.classes"),
+      onClick: () => navigate("classes"),
+    },
+    {
+      name: t("entity.schedules"),
+      onClick: () => navigate("schedules"),
+    },
+    {
+      name: t("entity.rooms"),
+      onClick: () => navigate("rooms"),
+    },
+  ];
 
   return (
     <header class="sticky top-0 z-50 w-full border-b border-base-200 bg-base-100/80 backdrop-blur-lg">
@@ -21,50 +53,42 @@ export default function Header() {
               tabIndex={0}
               class="menu menu-sm dropdown-content mt-3 z-1 p-2 shadow-xl bg-base-100 rounded-box w-52 border border-base-200"
             >
-              <li>
-                <a href="hom.html">Homepage</a>
-              </li>
-              <li>
-                <a href="port.html">Portfolio</a>
-              </li>
-              <li>
-                <a href="about.html">About</a>
-              </li>
+              <For each={items()}>
+                {(item) => (
+                  <li>
+                    <button
+                      onClick={item.onClick}
+                      class="btn btn-ghost rounded-lg"
+                    >
+                      {item.name}
+                    </button>
+                  </li>
+                )}
+              </For>
             </ul>
           </div>
-          <a
-            href="server.html"
+          <button
             class="btn btn-ghost text-xl font-black tracking-tight text-primary"
+            onClick={() => navigate("/")}
           >
             TRAINING<span class="text-base-content">SERVER</span>
-          </a>
+          </button>
         </div>
 
         <div class="navbar-center hidden lg:flex">
           <ul class="menu menu-horizontal px-1 font-medium gap-1">
-            <li>
-              <a onClick={() => navigate("courses")} class="rounded-lg">
-                {t("entity.courses")}
-              </a>
-            </li>
-
-            <li>
-              <a onClick={() => navigate("trainers")} class="rounded-lg">
-                {t("entity.trainers")}
-              </a>
-            </li>
-
-            <li>
-              <a onClick={() => navigate("trainees")} class="rounded-lg">
-                {t("entity.trainees")}
-              </a>
-            </li>
-
-            <li>
-              <a onClick={() => navigate("schedules")} class="rounded-lg">
-                {t("entity.schedules")}
-              </a>
-            </li>
+            <For each={items()}>
+              {(item) => (
+                <li>
+                  <button
+                    onClick={item.onClick}
+                    class="btn btn-ghost rounded-lg"
+                  >
+                    {item.name}
+                  </button>
+                </li>
+              )}
+            </For>
           </ul>
         </div>
 

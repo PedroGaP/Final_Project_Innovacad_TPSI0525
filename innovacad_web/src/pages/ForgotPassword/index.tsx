@@ -3,10 +3,12 @@ import { A } from "@solidjs/router";
 import { Mail, ArrowLeft } from "lucide-solid";
 import { createSignal } from "solid-js";
 import toast from "solid-toast";
+import { useI18n } from "@/hooks/useL18N";
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = createSignal("");
   const api = useApi();
+  const { t } = useI18n();
 
   return (
     <div class="min-h-screen bg-base-200 flex items-center justify-center p-4">
@@ -16,11 +18,10 @@ const ForgotPasswordPage = () => {
             <Mail size={40} />
           </div>
 
-          <h2 class="card-title text-2xl font-bold mb-2">Enter your Email</h2>
+          <h2 class="card-title text-2xl font-bold mb-2">{t("auth.forgot_password.title")}</h2>
 
           <p class="text-base-content/70 mb-6 text-sm">
-            We'll send a verification link to your email. <br />
-            Please click on the link in that email to reset your password.
+            {t("auth.forgot_password.desc")}
           </p>
 
           <div class="form-control w-full">
@@ -28,7 +29,7 @@ const ForgotPasswordPage = () => {
               <Mail size={16} class="opacity-70" />
               <input
                 type="email"
-                placeholder="Enter your email"
+                placeholder={t("auth.forgot_password.email_placeholder")}
                 class="grow"
                 value={email()}
                 onInput={(e) => setEmail(e.currentTarget.value)}
@@ -42,16 +43,16 @@ const ForgotPasswordPage = () => {
             class="btn btn-primary w-full gap-2 shadow-lg"
             onclick={async () => {
               if (!email()) {
-                toast.error("Please enter your email!");
+                toast.error(t("auth.forgot_password.toast_empty"));
                 return;
               }
               await api.requestPasswordReset(email());
             }}
           >
-            Send
+            {t("auth.forgot_password.send_btn")}
           </button>
 
-          <div class="divider my-4 text-xs text-base-content/30">OR</div>
+          <div class="divider my-4 text-xs text-base-content/30">{t("auth.forgot_password.or")}</div>
 
           <div class="mt-2">
             <A
@@ -59,7 +60,7 @@ const ForgotPasswordPage = () => {
               class="link link-hover text-sm flex items-center justify-center gap-2 text-base-content/60 hover:text-primary transition-colors"
             >
               <ArrowLeft size={16} />
-              Back to Login
+              {t("auth.forgot_password.back_to_login")}
             </A>
           </div>
         </div>

@@ -25,7 +25,21 @@
     "overview": "Overview",
     "online_class_q": "Online Class?",
     "start_time": "Start Time",
-    "end_time": "End Time"
+    "end_time": "End Time",
+    "coordinator": "Coordinator",
+    "date": "Date",
+    "time": "Time",
+    "regime": "Regime",
+    "duration": "Duration",
+    "online": "Online",
+    "start": "Start",
+    "end": "End",
+    "description": "Description"
+  },
+  "class_status": {
+    "starting": "Starting",
+    "ongoing": "Ongoing",
+    "finished": "Finished"
   },
   "general": {
     "name": "Name",
@@ -72,13 +86,152 @@
       "sign_in": "Sign In",
       "sign_in_google": "Sign In With Google"
     },
-    "password": "Password"
+    "password": "Password",
+    "email": "Email"
   },
   "entity_table": {},
   "event_calendar": {
     "move_fail": "Failed to move event.",
     "move_successful": "Moved event successfully!",
     "move_moving": "Moving event..."
+  },
+  "auth": {
+    "forgot_password": {
+      "title": "Enter your Email",
+      "desc": "We'll send a verification link to your email. Please click on the link in that email to reset your password.",
+      "email_placeholder": "Enter your email",
+      "send_btn": "Send",
+      "back_to_login": "Back to Login",
+      "toast_empty": "Please enter your email!",
+      "or": "OR"
+    },
+    "reset_password": {
+      "title": "Reset Password",
+      "desc": "Create a new password for your account.",
+      "new_password": "New Password",
+      "password_placeholder": "Enter your new password",
+      "submit_btn": "Create new Password",
+      "back_to_login": "Back to Login",
+      "toast_empty": "Please enter your password",
+      "toast_success": "Password reset successful!",
+      "toast_fail": "Failed to reset password."
+    },
+    "verify_email": {
+      "title": "Verify your account",
+      "desc": "We sent a code to",
+      "paste_placeholder": "Paste the token here...",
+      "verify_btn": "Verify",
+      "did_not_receive": "Did you not receive the token?",
+      "resend_btn": "Resend",
+      "wait_msg": "Wait for {{seconds}} seconds...",
+      "back_to_login": "Back to Sign In",
+      "toast_sent": "Verification email sent!",
+      "toast_send_fail": "Failed to send email",
+      "toast_verify_success": "The email was verified!",
+      "toast_verify_fail": "Failed to verify email, try again later."
+    },
+    "verify_2fa": {
+      "title": "Verify your account",
+      "desc": "We sent a code to your email",
+      "paste_placeholder": "Paste the code here...",
+      "verify_btn": "Verify",
+      "did_not_receive": "Did you not receive the code?",
+      "resend_btn": "Resend",
+      "wait_msg": "Wait for {{seconds}} seconds...",
+      "back_to_login": "Back to Sign In",
+      "toast_sent": "2FA verification email sent!",
+      "toast_send_fail": "Failed to send 2FA verification email...",
+      "toast_verify_success": "The 2FA was verified!",
+      "toast_verify_fail": "Failed to verify 2FA, try again later."
+    }
+  },
+  "public": {
+    "courses": {
+      "title": "Courses",
+      "desc": "Browse all available courses and their modules",
+      "search_placeholder": "Search by identifier, name, or area...",
+      "no_results": "No courses found matching your search",
+      "no_data": "No courses available",
+      "modules": "modules",
+      "modules_title": "Modules",
+      "no_modules": "No modules assigned yet",
+      "showing_results": "Showing {{count}} of {{total}} courses"
+    },
+    "trainers": {
+      "title": "Trainers",
+      "desc": "Meet our expert trainers",
+      "search_placeholder": "Search by name or email...",
+      "no_results": "No trainers found matching your search",
+      "no_data": "No trainers available",
+      "showing_results": "Showing {{count}} of {{total}} trainers",
+      "coordinated_classes": "Coordinated Classes"
+    },
+    "trainees": {
+      "title": "Trainees",
+      "desc": "View all registered trainees",
+      "search_placeholder": "Search by name or email...",
+      "no_results": "No trainees found matching your search",
+      "no_data": "No trainees available",
+      "showing_results": "Showing {{count}} of {{total}} trainees"
+    },
+    "classes": {
+      "title": "Classes",
+      "desc": "Browse all scheduled classes",
+      "search_placeholder": "Search by name or course...",
+      "no_results": "No classes found matching your search",
+      "no_data": "No classes available",
+      "showing_results": "Showing {{count}} of {{total}} classes",
+      "unnamed_module": "Unnamed Module",
+      "assigned": "assigned",
+      "no_modules": "No modules assigned yet"
+    },
+    "schedules": {
+      "title": "Schedules",
+      "desc": "View class schedules and sessions",
+      "search_placeholder": "Search schedules...",
+      "no_results": "No schedules found",
+      "no_data": "No schedules available",
+      "by_class": "By Class",
+      "by_trainer": "By Trainer",
+      "select_class": "Select Class",
+      "select_all_classes": "All Classes",
+      "select_class_placeholder": "Select a class...",
+      "select_trainer": "Select Trainer",
+      "select_all_trainers": "All Trainers",
+      "select_trainer_placeholder": "Select a trainer...",
+      "start_date": "Start Date",
+      "end_date": "End Date",
+      "search_label": "Search",
+      "search_detailed_placeholder": "Module, trainer, room...",
+      "clear_filters": "Clear Filters",
+      "found": "Schedules Found",
+      "select_prompt_class": "Select a class to view schedules",
+      "select_prompt_trainer": "Select a trainer to view schedules"
+    },
+    "rooms_page": {
+      "title": "Room Allocation",
+      "desc": "Check room availability and schedules",
+      "select_room": "Select Room",
+      "select_all_rooms": "All Rooms",
+      "select_room_placeholder": "Choose a room...",
+      "select_date": "Select Date",
+      "no_results": "No allocations found for this room on this date",
+      "select_prompt": "Select a room and date to view allocations",
+      "found": "Allocations Found",
+      "search_label": "Search",
+      "search_placeholder": "Filter results...",
+      "clear_filters": "Clear Filters"
+    }
+  },
+  "footer": {
+    "rights_reserved": "© {{year}} - All rights reserved by Innovacad."
+  },
+  "header": {
+    "dashboard": "Dashboard"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error_loading": "Failed to load data. Please try again later."
   },
   "dashboard": {
     "dashboard": "Dashboard",
@@ -169,5 +322,10 @@
         "save_to_upload_documents": "Save the trainee first to upload documents."
       }
     }
+  },
+  "home": {
+    "title": "Home",
+    "desc": "This is the home page.",
+    "count": "Count: {{count}}"
   }
 }
