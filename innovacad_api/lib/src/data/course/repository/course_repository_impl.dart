@@ -23,7 +23,6 @@ class CourseRepositoryImpl implements ICourseRepository {
 
   @override
   Future<Result<List<OutputCourseDao>>> getAll() async {
-    print("Repositório");
     try {
       return await MysqlConfiguration.executeWithConnection((db) async {
         final coursesResults = await db.getAll(table: 'courses');
@@ -79,7 +78,6 @@ class CourseRepositoryImpl implements ICourseRepository {
         return Result.success(outputList);
       });
     } catch (e, s) {
-      print("ERRO CRÍTICO: $e");
       return Result.failure(
         AppError(
           AppErrorType.internal,
@@ -206,7 +204,6 @@ class CourseRepositoryImpl implements ICourseRepository {
       return await getById(newCourseId);
     } catch (e, s) {
       if (db != null) await db.rollback();
-      print("Error Creating Course: $e");
       return Result.failure(
         AppError(
           AppErrorType.internal,
@@ -348,7 +345,6 @@ class CourseRepositoryImpl implements ICourseRepository {
       return await getById(id);
     } catch (e, s) {
       if (db != null) await db.rollback();
-      print("Update Error: $e");
       return Result.failure(
         AppError(
           AppErrorType.internal,
@@ -367,9 +363,6 @@ class CourseRepositoryImpl implements ICourseRepository {
 
     try {
       final existingCourse = await getById(id);
-
-      print(existingCourse.data.toString());
-      print(id);
 
       if (existingCourse.isFailure || existingCourse.data == null)
         return existingCourse;

@@ -51,9 +51,6 @@ class SignServiceImpl implements ISignService {
     if (role == 'trainee') user = OutputTraineeDao.fromJson(authResult.data!);
 
     if (user != null) {
-      print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-      print(authResult.headers);
-      print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
       return Result.success(user, headers: authResult.headers);
     }
 

@@ -142,13 +142,11 @@ class EnrollmentRepositoryImpl implements IEnrollmentRepository {
 
         if (updateData.isEmpty) return existingEnrollment;
 
-        print("Update Data: $updateData");
-
         await db.update(
           table: table,
           updateData: updateData,
           where: {"enrollment_id": id},
-          debug: true,
+          debug: false,
         );
 
         return await getById(id);
