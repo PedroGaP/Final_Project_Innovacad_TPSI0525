@@ -16,7 +16,6 @@ class CourseController {
   )
   @Get('/')
   Future<Response> getAll() async {
-    print("Controlador");
     return resultToResponse(await _service.getAll());
   }
 

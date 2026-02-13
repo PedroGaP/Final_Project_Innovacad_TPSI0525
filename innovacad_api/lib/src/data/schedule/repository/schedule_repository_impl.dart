@@ -377,7 +377,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
 
       return await _getSingleScheduleById(scheduleId);
     } catch (e, s) {
-      print("CRITICAL DB ERROR: $e");
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     } finally {
       await MysqlConfiguration.closeConnection(db);
@@ -392,8 +391,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
     MysqlUtils? db;
 
     try {
-      print(dto.toJson());
-
       db = await MysqlConfiguration.getConnection();
       await db.query("SET SESSION innodb_lock_wait_timeout = 10");
 
@@ -479,7 +476,12 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
 
         final availResult = await txn.query(
           availSql,
-          whereValues: [targetTrainerId, _toSqlDate(targetStart), _toSqlDate(targetStart), _toSqlDate(targetEnd)],
+          whereValues: [
+            targetTrainerId,
+            _toSqlDate(targetStart),
+            _toSqlDate(targetStart),
+            _toSqlDate(targetEnd),
+          ],
           isStmt: true,
         );
 
@@ -595,7 +597,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
 
       return await _getSingleScheduleById(id);
     } catch (e, s) {
-      print("Update Error: $e\n$s");
       if (e is AppError) return Result.failure(e);
       return Result.failure(
         AppError(AppErrorType.internal, "Update failed: $e"),
@@ -647,7 +648,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
           fullQuery,
           isStmt: true,
           whereValues: [userId, userId],
-          debug: true,
+          debug: false,
         );
 
         if (result.numOfRows <= 0) {
@@ -770,8 +771,6 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
     try {
       db = await MysqlConfiguration.connect();
 
-      print("🚀 [AutoSchedule] Iniciando...");
-
       String timeCondition = dto.regimeType == 0
           ? "start_time >= '08:00:00' AND start_time <= '14:00:00' AND start_time != '11:00:00'"
           : "start_time >= '16:00:00' AND start_time < '23:00:00' AND start_time != '19:00:00'";
@@ -869,14 +868,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
               continue;
             }
 
-            startDateForThisModule = completionDates[depId]!.add(
-              Duration(days: 1),
-            );
+            startDateForThisModule = completionDates[depId]!;
           }
-
-          print(
-            "📅 Agendando '${mod['name']}' a partir de ${_toSqlDate(startDateForThisModule)}",
-          );
 
           await db.startTrans();
 
@@ -896,7 +889,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
             while (hoursRemaining > 0) {
               if (moduleDateCursor.isAfter(safetyLimit)) break;
 
-              if (moduleDateCursor.weekday != DateTime.sunday) {
+              if (moduleDateCursor.weekday < DateTime.saturday) {
                 for (int slotNum in allowedSlots) {
                   if (hoursRemaining <= 0) break;
 
@@ -952,9 +945,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
 
               if (hoursRemaining > 0) {
                 moduleDateCursor = moduleDateCursor.add(Duration(days: 1));
-
                 lastScheduleId = null;
-
                 lastSlotNumber = -999;
               }
             }
@@ -967,14 +958,10 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
 
             madeProgress = true;
           } catch (e) {
-            print("Erro no módulo ${mod['name']}: $e");
-
             await db.rollback();
           }
         }
       }
-
-      print("✅ Geração concluída.");
 
       return Result.success(true);
     } catch (e) {

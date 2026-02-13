@@ -135,7 +135,6 @@ class SummaryRepositoryImpl implements ISummaryRepository {
 
       return Result.success(true);
     } catch (e, s) {
-      print("Save Summary Error: $e");
       return Result.failure(
         AppError(
           AppErrorType.internal,

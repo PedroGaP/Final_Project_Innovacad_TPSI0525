@@ -136,20 +136,16 @@ class TraineeRepositoryImpl implements ITraineeRepository {
             "user_id": createdUserId,
             "birthday_date": dto.birthdayDate,
           },
-          debug: true,
+          debug: false,
         );
       });
 
       return await getById(traineeId);
-    } catch (e, s) {
-      print("Create Trainee Error: $e\n$s");
-
+    } catch (e, _) {
       if (createdUserId != null) {
         try {
           await _remoteUserService.deleteUserAsAdmin(createdUserId);
-        } catch (cleanupError) {
-          print("Failed to cleanup remote user: $cleanupError");
-        }
+        } catch (_) {}
       }
 
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
@@ -559,8 +555,7 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       );
 
       return Result.success(await pdf.save());
-    } catch (e, s) {
-      print("Erro ao gerar PDF Formando: $e\n$s");
+    } catch (e, _) {
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     }
   }
@@ -597,9 +592,7 @@ class TraineeRepositoryImpl implements ITraineeRepository {
       if (response.statusCode == 200 && response.data is List<int>) {
         return pw.MemoryImage(Uint8List.fromList(response.data));
       }
-    } catch (e) {
-      print("⚠️ Não foi possível carregar imagem: $e");
-    }
+    } catch (_) {}
 
     return null;
   }

@@ -29,8 +29,6 @@ class SignController {
   @Post('/in')
   Future<Response> signin(@Body() UserSigninDto dto) async {
     final result = await _service.signin(dto);
-    print(result.headers);
-
     return resultToResponse(result, headers: result.headers);
   }
 
@@ -81,7 +79,6 @@ class SignController {
   )
   @Post("/link-social")
   Future<Response> linkSocial(@Body() UserLinkAccountDto dto) async {
-    print(dto.token);
     final result = await _service.linkSocial(dto);
     return resultToResponse(result, headers: result.headers);
   }
@@ -112,8 +109,6 @@ class SignController {
   )
   @Post("/send-otp")
   Future<Response> sendOTP(@Header('cookie') String? cookieHeader) async {
-    print("Estou aqui $cookieHeader");
-
     final result = await _service.sendOTP(cookieHeader);
 
     return resultToResponse(result, headers: result.headers);

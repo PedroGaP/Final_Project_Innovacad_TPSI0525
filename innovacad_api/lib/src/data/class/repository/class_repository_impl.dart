@@ -57,7 +57,7 @@ class ClassRepositoryImpl implements IClassRepository {
           ORDER BY crm.sequence_course_module_id ASC
         """;
 
-        final modulesResult = await db.query(modulesQuery, debug: true);
+        final modulesResult = await db.query(modulesQuery, debug: false);
 
         final Map<String, List<Map<String, dynamic>>> modulesByClassId = {};
 
@@ -88,12 +88,9 @@ class ClassRepositoryImpl implements IClassRepository {
           return OutputClassDao.fromJson(fullData);
         }).toList();
 
-        print(classesList);
-
         return Result.success(outputList);
       });
     } catch (e, s) {
-      print("[GetAll Class Error] $e");
       return Result.failure(
         AppError(
           AppErrorType.internal,
@@ -207,8 +204,6 @@ class ClassRepositoryImpl implements IClassRepository {
       if (dto.modules != null && dto.modules!.isNotEmpty) {
         for (final LinkClassModuleDto item in dto.modules!) {
           final String linkId = uuidGenerator.v4();
-          print(item.trainerId);
-          print(item.courseModuleId);
 
           await db.insert(
             table: 'classes_modules',
@@ -248,8 +243,6 @@ class ClassRepositoryImpl implements IClassRepository {
   @override
   Future<Result<OutputClassDao>> update(String id, UpdateClassDto dto) async {
     MysqlUtils? db;
-
-    print("Update Class DTO: ${dto.toJson()}");
 
     try {
       final existingClassResult = await getById(id);
@@ -320,7 +313,6 @@ class ClassRepositoryImpl implements IClassRepository {
 
           if (existingMap.containsKey(courseModId)) {
             final pkId = existingMap[courseModId];
-            print(">> Updating Module PK: $pkId | Trainer: $trainerId");
 
             await db.query(
               "UPDATE classes_modules SET trainer_id = ? WHERE classes_modules_id = ?",
@@ -328,7 +320,6 @@ class ClassRepositoryImpl implements IClassRepository {
               isStmt: true,
             );
           } else {
-            print(">> Inserting Module: $courseModId | Trainer: $trainerId");
             await db.insert(
               table: 'classes_modules',
               insertData: {
@@ -347,7 +338,6 @@ class ClassRepositoryImpl implements IClassRepository {
       return await getById(id);
     } catch (e, s) {
       if (db != null) await db.rollback();
-      print("Update Error: $e");
       return Result.failure(
         AppError(
           AppErrorType.internal,

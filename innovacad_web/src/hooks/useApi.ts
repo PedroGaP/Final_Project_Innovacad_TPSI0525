@@ -218,6 +218,25 @@ export const useApi = () => {
     }
   };
 
+  const generateAutoSchedule = async (data: {
+    class_id: string;
+    start_date: string;
+    regime_type: number;
+    is_online: boolean;
+  }) => {
+    const res = await fetchApi<any>(
+      `${API_ENDPOINTS.ENTITY.SCHEDULE}/auto`,
+      "POST",
+      data,
+    );
+
+    if (res.isError) {
+      throw new Error(`Failed to generate auto schedule: ${res.error?.message}`);
+    }
+
+    return res.data;
+  };
+
   /**
    * Map response data to appropriate User type
    */
@@ -1935,6 +1954,7 @@ export const useApi = () => {
     signUp,
     send2FA,
     verify2FA,
+    generateAutoSchedule,
     requestPasswordReset,
     resetPassword,
 

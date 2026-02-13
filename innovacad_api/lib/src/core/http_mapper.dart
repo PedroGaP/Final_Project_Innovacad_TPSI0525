@@ -23,18 +23,12 @@ Response resultToResponse<T>(
 
   if (result.isSuccess) {
     final body = result.data;
-    print(body);
-    print(body.runtimeType);
 
     if (body is Response) {
       return body.change(headers: finalHeaders);
     }
 
     final encoded = jsonEncode(body);
-
-    if (headers != null) {
-      print("entrou com headers extra");
-    }
 
     return Response.ok(encoded, headers: finalHeaders);
   }

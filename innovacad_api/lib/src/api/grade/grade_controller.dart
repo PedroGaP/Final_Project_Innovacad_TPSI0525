@@ -19,7 +19,6 @@ class GradeController {
     @Body() BatchGradeDto dto,
     @Context() ExtendedUserDetails user,
   ) async {
-    print(user.roles.first);
     return resultToResponse(await _service.batchUpsert(dto, user));
   }
 
@@ -30,7 +29,6 @@ class GradeController {
     @Body() FinalizeGradeDto dto,
     @Context() ExtendedUserDetails user,
   ) async {
-    print(user.roles.first);
     return resultToResponse(await _service.finalizeGrades(dto, user));
   }
 

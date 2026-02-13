@@ -18,7 +18,6 @@ class MysqlConfiguration {
     }
 
     if (!(await utils!.isConnectionAlive())) {
-      print('⚠️ Connection pool is dead, attempting to reconnect...');
       utils = MysqlUtils(
         settings: settings!,
         errorLog: (log) => print(log),

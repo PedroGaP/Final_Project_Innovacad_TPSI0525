@@ -200,7 +200,6 @@ class GradeRepositoryImpl implements IGradeRepository {
 
       return coordCheck.numOfRows > 0;
     } catch (e) {
-      print("Error checking finalize permission: $e");
       return false;
     } finally {
       await MysqlConfiguration.closeConnection(db);
@@ -223,10 +222,6 @@ class GradeRepositoryImpl implements IGradeRepository {
 
       final moduleData = moduleRes.data!;
       bool hasPermission = false;
-      print("CLASS ID: ${moduleData.classId}");
-      print("USER ID: ${user.id}");
-      print("TRAINER ID: ${user.trainerId}");
-      print("ROLE: ${user.roles.first}");
 
       if (['admin', 'assistant'].contains(user.roles.first)) {
         hasPermission = true;

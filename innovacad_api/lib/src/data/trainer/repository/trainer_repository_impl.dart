@@ -159,8 +159,6 @@ class TrainerRepositoryImpl implements ITrainerRepository {
           trainerMap['coordinated_class_ids'] = <String, String>{};
         }
 
-        print("TRAINER MAP::: $trainerMap");
-
         return Result.success(OutputTrainerDao.fromJson(trainerMap));
       });
     } catch (e, s) {
@@ -178,8 +176,6 @@ class TrainerRepositoryImpl implements ITrainerRepository {
   Future<Result<OutputTrainerDao>> create(CreateTrainerDto dto) async {
     MysqlUtils? db;
     String? createdUserId;
-
-    print("TRAINER DTO::: ${dto.toJson()}");
 
     try {
       final bool hasClassesToCoordinate =
@@ -207,9 +203,6 @@ class TrainerRepositoryImpl implements ITrainerRepository {
           whereValues: [createdUserId],
           isStmt: true,
         );
-
-        print("USER CHECK::: ${userCheck.rowsAssoc.first.assoc()}");
-        print("USER DTO::: ${dto.toJson()}");
 
         if (userCheck.numOfRows == 0) {
           await txn.insert(
@@ -272,7 +265,6 @@ class TrainerRepositoryImpl implements ITrainerRepository {
         }
 
         final res = await getById(trainerId);
-        print("Trainer::: ${res.data?.toJson()}");
         return res;
       });
     } catch (e, s) {
@@ -422,7 +414,6 @@ class TrainerRepositoryImpl implements ITrainerRepository {
           await db.rollback();
         } catch (_) {}
       }
-      print("🔥 [Update Error]: $e");
       return Result.failure(AppError(AppErrorType.internal, e.toString()));
     } finally {
       await MysqlConfiguration.closeConnection(db);
@@ -541,9 +532,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
           if (response.statusCode == 200) {
             profileImage = pw.MemoryImage(response.data);
           }
-        } catch (e) {
-          print("Erro ao processar imagem com Dio: $e");
-        }
+        } catch (_) {}
       }
 
       final pdf = pw.Document();
@@ -808,7 +797,6 @@ class TrainerRepositoryImpl implements ITrainerRepository {
         return result.numOfRows > 0;
       });
     } catch (e) {
-      print("Error checking coordination: $e");
       return false;
     }
   }
