@@ -2,10 +2,11 @@ import { createResource, createSignal, For, Show } from "solid-js";
 import { useApi } from "@/hooks/useApi";
 import type { Class } from "@/types/class";
 import { Icon } from "@/components/Icon";
-import capitalize from "@/utils/capitalize";
+import { useI18n } from "@/hooks/useL18N";
 
 const Classes = () => {
   const api = useApi();
+  const { t } = useI18n();
   const [classesData] = createResource<Class[]>(api.fetchClasses);
   const [searchQuery, setSearchQuery] = createSignal("");
 
@@ -43,9 +44,9 @@ const Classes = () => {
     <div class="min-h-screen bg-base-200 p-6">
       <div class="w-full">
         <div class="mb-8">
-          <h1 class="text-4xl font-bold mb-2 text-primary">Classes</h1>
+          <h1 class="text-4xl font-bold mb-2 text-primary">{t("public.classes.title")}</h1>
           <p class="text-base-content/60">
-            View all classes, their status, and modules
+            {t("public.classes.desc")}
           </p>
         </div>
 
@@ -58,7 +59,7 @@ const Classes = () => {
             />
             <input
               type="text"
-              placeholder="Search by identifier, location, or status..."
+              placeholder={t("public.classes.search_placeholder")}
               class="input input-bordered w-full pl-12 bg-base-100 shadow-sm"
               value={searchQuery()}
               onInput={(e) => setSearchQuery(e.currentTarget.value)}
@@ -75,7 +76,7 @@ const Classes = () => {
         <Show when={classesData.error}>
           <div class="alert alert-error shadow-lg">
             <Icon name="CircleAlert" size={24} />
-            <span>Failed to load classes. Please try again later.</span>
+            <span>{t("common.error_loading")}</span>
           </div>
         </Show>
 
@@ -92,8 +93,8 @@ const Classes = () => {
                   />
                   <p class="text-lg text-base-content/60">
                     {searchQuery()
-                      ? "No classes found matching your search"
-                      : "No classes available"}
+                      ? t("public.classes.no_results")
+                      : t("public.classes.no_data")}
                   </p>
                 </div>
               }
@@ -108,7 +109,7 @@ const Classes = () => {
                       <div
                         class={`badge ${getStatusColor(cls.status)} badge-sm`}
                       >
-                        {capitalize(cls.status?.toString() || "")}
+                        {t(`class_status.${cls.status?.toLowerCase()}`)}
                       </div>
                     </div>
 
@@ -138,13 +139,13 @@ const Classes = () => {
 
                     <div class="grid grid-cols-2 gap-2 mb-4">
                       <div class="bg-base-200/50 rounded-lg p-2">
-                        <p class="text-xs text-base-content/60 mb-1">Start</p>
+                        <p class="text-xs text-base-content/60 mb-1">{t("entity.start")}</p>
                         <p class="text-sm font-medium">
                           {formatDate(cls.start_date_timestamp!)}
                         </p>
                       </div>
                       <div class="bg-base-200/50 rounded-lg p-2">
-                        <p class="text-xs text-base-content/60 mb-1">End</p>
+                        <p class="text-xs text-base-content/60 mb-1">{t("entity.end")}</p>
                         <p class="text-sm font-medium">
                           {formatDate(cls.end_date_timestamp)}
                         </p>
@@ -152,14 +153,14 @@ const Classes = () => {
                     </div>
 
                     <Show when={cls.modules && cls.modules.length > 0}>
-                      <div class="divider my-2">Modules</div>
+                      <div class="divider my-2">{t("entity.modules")}</div>
                       <div class="space-y-2 max-h-48 overflow-y-auto">
                         <For each={cls.modules}>
                           {(module) => (
                             <div class="p-2 rounded-lg bg-base-200/50 hover:bg-base-200 transition-colors">
                               <div class="flex items-center justify-between mb-1">
                                 <p class="text-sm font-medium line-clamp-1">
-                                  {module.module_name || "Unnamed Module"}
+                                  {module.module_name || t("public.classes.unnamed_module")}
                                 </p>
                                 <Show when={module.trainer_id}>
                                   <Icon
@@ -171,7 +172,7 @@ const Classes = () => {
                               </div>
                               <Show when={module.trainer_name}>
                                 <p class="text-xs text-base-content/60">
-                                  Trainer: {module.trainer_name}
+                                  {t("entity.trainer")}: {module.trainer_name}
                                 </p>
                               </Show>
                               <Show
@@ -198,11 +199,11 @@ const Classes = () => {
                       </div>
                       <div class="mt-3 flex gap-2">
                         <div class="badge badge-neutral badge-sm">
-                          {cls.modules.length} modules
+                          {cls.modules.length} {t("entity.modules")}
                         </div>
                         <div class="badge badge-primary badge-sm">
                           {cls.modules.filter((m) => m.trainer_id).length}{" "}
-                          assigned
+                          {t("public.classes.assigned")}
                         </div>
                       </div>
                     </Show>
@@ -210,7 +211,7 @@ const Classes = () => {
                     <Show when={!cls.modules || cls.modules.length === 0}>
                       <div class="alert alert-info text-xs mt-2">
                         <Icon name="Info" size={14} />
-                        <span>No modules assigned yet</span>
+                        <span>{t("public.classes.no_modules")}</span>
                       </div>
                     </Show>
                   </div>
@@ -221,8 +222,10 @@ const Classes = () => {
 
           <Show when={filteredClasses().length > 0}>
             <div class="mt-6 text-center text-sm text-base-content/60">
-              Showing {filteredClasses().length} of {classesData()?.length || 0}{" "}
-              classes
+              {t("public.classes.showing_results", {
+                count: filteredClasses().length,
+                total: classesData()?.length || 0,
+              })}
             </div>
           </Show>
         </Show>

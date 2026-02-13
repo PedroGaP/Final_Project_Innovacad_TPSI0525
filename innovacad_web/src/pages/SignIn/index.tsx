@@ -22,7 +22,7 @@ const SignIn = () => {
 
   const handleSocialLogin = async () => {
     try {
-      const res = await api.signInSocial();
+      await api.signInSocial();
     } catch (error) {
       console.log(error);
     }
@@ -67,7 +67,7 @@ const SignIn = () => {
         <div class="card-body gap-1 p-6">
           <div class="form-control">
             <label class="label">
-              <span class="label-text font-medium">Email</span>
+              <span class="label-text font-medium">{t("sign_in.email")}</span>
             </label>
             <input
               type="email"

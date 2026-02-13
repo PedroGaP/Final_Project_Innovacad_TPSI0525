@@ -10,9 +10,9 @@ export default function Header() {
   const { t } = useI18n();
   const navigate = useNavigate();
 
-  const items = [
+  const items = () => [
     {
-      name: "Dashboard",
+      name: t("header.dashboard"),
       onClick: () => navigate("dashboard"),
     },
     {
@@ -35,6 +35,10 @@ export default function Header() {
       name: t("entity.schedules"),
       onClick: () => navigate("schedules"),
     },
+    {
+      name: t("entity.rooms"),
+      onClick: () => navigate("rooms"),
+    },
   ];
 
   return (
@@ -49,7 +53,7 @@ export default function Header() {
               tabIndex={0}
               class="menu menu-sm dropdown-content mt-3 z-1 p-2 shadow-xl bg-base-100 rounded-box w-52 border border-base-200"
             >
-              <For each={items}>
+              <For each={items()}>
                 {(item) => (
                   <li>
                     <button
@@ -73,7 +77,7 @@ export default function Header() {
 
         <div class="navbar-center hidden lg:flex">
           <ul class="menu menu-horizontal px-1 font-medium gap-1">
-            <For each={items}>
+            <For each={items()}>
               {(item) => (
                 <li>
                   <button

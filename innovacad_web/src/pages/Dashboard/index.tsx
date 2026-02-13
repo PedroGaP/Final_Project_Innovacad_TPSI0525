@@ -155,7 +155,6 @@ const DashboardLayout = (props: any) => {
               <div class="flex-none flex items-center gap-2">
                 <ChangeLanguage />
 
-                {/* Theme Switcher */}
                 <label class="btn btn-ghost btn-circle swap swap-rotate">
                   <input
                     type="checkbox"
@@ -170,7 +169,6 @@ const DashboardLayout = (props: any) => {
                   </div>
                 </label>
 
-                {/* User Menu */}
                 <div class="dropdown dropdown-end z-110">
                   <label
                     tabindex="0"

@@ -222,7 +222,6 @@ const AccountSettingsPage = () => {
         </div>
 
         <div class="p-6 space-y-8">
-          {/* Avatar Section */}
           <div class="form-control">
             <label class="label pt-0">
               <span class="label-text opacity-70 font-medium">Your photo</span>
@@ -273,7 +272,6 @@ const AccountSettingsPage = () => {
             </div>
           </div>
 
-          {/* Form Fields */}
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="form-control w-full">
               <label class="label">
@@ -323,7 +321,6 @@ const AccountSettingsPage = () => {
 
           <div class="divider"></div>
 
-          {/* Documents Section */}
           <div>
             <div class="flex justify-between items-end mb-4">
               <div>
@@ -436,7 +433,6 @@ const AccountSettingsPage = () => {
 
           <div class="divider"></div>
 
-          {/* Social Accounts */}
           <div class="form-control w-full">
             <label class="label">
               <span class="label-text opacity-70 font-medium">

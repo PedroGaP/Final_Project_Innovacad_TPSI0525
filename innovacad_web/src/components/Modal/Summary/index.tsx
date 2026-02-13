@@ -80,7 +80,6 @@ const SummaryModal = (props: SummaryModalProps) => {
   return (
     <div class={`modal ${props.isOpen ? "modal-open" : ""}`}>
       <div class="modal-box w-11/12 max-w-6xl h-[95vh] flex flex-col p-0 bg-base-100 shadow-2xl">
-        {/* Header */}
         <div class="flex items-center justify-between p-4 border-b border-base-300 bg-base-200/50">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-primary/10 rounded-lg text-primary">
@@ -106,7 +105,6 @@ const SummaryModal = (props: SummaryModalProps) => {
           </button>
         </div>
 
-        {/* Body */}
         <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
           <div class="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 bg-base-200 rounded-xl border border-base-300">
             <div class="form-control md:col-span-5">
@@ -275,7 +273,6 @@ const SummaryModal = (props: SummaryModalProps) => {
           </Show>
         </div>
 
-        {/* Footer */}
         <div class="modal-action p-4 bg-base-100 border-t border-base-300 m-0 flex justify-between items-center">
           <span class="text-xs opacity-50 flex items-center gap-2">
             <Icon name="Info" size={14} /> Changes are not saved automatically.
