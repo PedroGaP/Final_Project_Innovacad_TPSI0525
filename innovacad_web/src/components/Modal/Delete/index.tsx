@@ -1,3 +1,4 @@
+import useI18n from "@/hooks/useL18N";
 import { createSignal, type Accessor, type Setter } from "solid-js";
 
 interface Props<T extends Record<string, any>> {
@@ -13,6 +14,7 @@ export default function ModalDelete<T extends Record<string, any>>(
   props: Props<T>,
 ) {
   const [isDeleting, setIsDeleting] = createSignal(false);
+  const { t } = useI18n();
 
   const handleConfirm = async () => {
     try {
@@ -40,7 +42,7 @@ export default function ModalDelete<T extends Record<string, any>>(
         <div class="bg-linear-to-r from-error to-error/80 px-6 py-4 flex items-center justify-between">
           <div class="flex-1">
             <h3 class="font-bold text-lg text-white">
-              {props.title || "Delete Item"}
+              {props.title || t("dashboard.modal.delete_title")}
             </h3>
           </div>
           <button
@@ -71,12 +73,10 @@ export default function ModalDelete<T extends Record<string, any>>(
             </div>
             <div class="flex-1">
               <p class="text-sm font-medium text-base-content">
-                {props.description ||
-                  "Are you sure you want to delete this item?"}
+                {props.description || t("dashboard.modal.delete_title")}
               </p>
               <p class="text-sm text-base-content/60 mt-2">
-                This action cannot be undone. All associated data will be
-                permanently deleted.
+                t("dashboard.modal.delete_warn")
               </p>
               {props.value() && (
                 <>
@@ -99,7 +99,7 @@ export default function ModalDelete<T extends Record<string, any>>(
             disabled={isDeleting()}
             type="button"
           >
-            Cancel
+            {t("general.cancel")}
           </button>
           <button
             class="btn btn-error btn-sm font-medium gap-1"
@@ -110,17 +110,17 @@ export default function ModalDelete<T extends Record<string, any>>(
             {isDeleting() ? (
               <>
                 <span class="loading loading-spinner loading-xs"></span>
-                Deleting
+                {t("general.deleting")}
               </>
             ) : (
-              "Delete"
+              t("general.delete")
             )}
           </button>
         </div>
       </div>
 
       <form method="dialog" class="modal-backdrop bg-black/30">
-        <button onClick={handleCancel}>close</button>
+        <button onClick={handleCancel}>{t("general.close")}</button>
       </form>
     </dialog>
   );

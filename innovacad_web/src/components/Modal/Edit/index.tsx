@@ -1,11 +1,6 @@
+import useI18n from "@/hooks/useL18N";
 import { CircleQuestionMark } from "lucide-solid";
-import {
-  createSignal,
-  Show,
-  For,
-  createMemo,
-  type JSXElement,
-} from "solid-js";
+import { createSignal, Show, For, createMemo, type JSXElement } from "solid-js";
 import { Portal } from "solid-js/web";
 
 export type ModalFieldType =
@@ -48,6 +43,7 @@ interface ModalEditProps<T> {
 const PortalTooltip = (props: { text: string; children: any }) => {
   let ref: HTMLDivElement | undefined;
   const [pos, setPos] = createSignal<{ x: number; y: number } | null>(null);
+
   return (
     <>
       <div
@@ -104,6 +100,7 @@ const getFieldLabel = (fieldName: string) =>
 
 const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
   const [loading, setLoading] = createSignal(false);
+  const { t } = useI18n();
 
   const handleInputChange = (field: keyof T, value: any) => {
     props.setValue({ ...props.value, [field]: value } as T);
@@ -125,7 +122,7 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
       (key) =>
         ({
           name: key as keyof T & string,
-          label: getFieldLabel(key),
+          label: t(`general.${getFieldLabel(key).toLocaleLowerCase()}`),
           type: "text",
         }) as ModalFieldDefinition<T>,
     );
@@ -134,7 +131,7 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
   return (
     <dialog id="edit_modal" class="modal modal-open">
       <div class="modal-box w-11/12 max-w-md p-0 overflow-hidden flex flex-col bg-base-100 rounded-xl">
-        <div class="bg-gradient-to-r from-primary to-primary/80 px-6 py-4 flex items-center justify-between shrink-0">
+        <div class="bg-linear-to-r from-primary to-primary/80 px-6 py-4 flex items-center justify-between shrink-0">
           <div class="flex-1">
             <h3 class="font-bold text-lg text-primary-content">
               {props.title}
@@ -191,7 +188,7 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
                       }
                     >
                       <option value="" disabled>
-                        {field.placeholder || `Select ${label}`}
+                        {field.placeholder || `${t("general.select")} ${label}`}
                       </option>
                       <For each={field.options}>
                         {(opt) => (
@@ -210,7 +207,8 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
                     <textarea
                       class="textarea textarea-bordered h-24 focus:textarea-primary"
                       placeholder={
-                        field.placeholder || `Enter ${label.toLowerCase()}`
+                        field.placeholder ||
+                        `${t("general.enter")} ${label.toLowerCase()}`
                       }
                       value={String(value() || "")}
                       disabled={isDisabled}
@@ -229,7 +227,8 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
                     id={`field-${field.name}`}
                     type={field.type || "text"}
                     placeholder={
-                      field.placeholder || `Enter ${label.toLowerCase()}`
+                      field.placeholder ||
+                      `${t("general.enter")} ${label.toLowerCase()}`
                     }
                     class="input input-bordered w-full focus:input-primary"
                     disabled={isDisabled}
@@ -273,7 +272,7 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
             onClick={props.onCancel}
             disabled={loading()}
           >
-            Cancel
+            {t("general.cancel")}
           </button>
           <button
             class="btn btn-primary btn-sm font-medium min-w-20"
@@ -283,13 +282,13 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
             {loading() ? (
               <span class="loading loading-spinner loading-xs"></span>
             ) : (
-              "Save"
+              t("general.save")
             )}
           </button>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop bg-black/40">
-        <button onClick={props.onCancel}>Close</button>
+        <button onClick={props.onCancel}>{t("general.close")}</button>
       </form>
     </dialog>
   );
@@ -298,18 +297,21 @@ const ModalEdit = <T extends Record<string, any>>(props: ModalEditProps<T>) => {
 const FieldLabel = (props: {
   field: ModalFieldDefinition<any>;
   label: string;
-}) => (
-  <label class="label" for={`field-${props.field.name}`}>
-    <span class="label-text">
-      {props.label}
-      {props.field.required && <span class="text-error ml-1">*</span>}
-    </span>
-    <Show when={props.field.disabled}>
-      <PortalTooltip text="Field cannot be changed">
-        <CircleQuestionMark size={14} class="opacity-50" />
-      </PortalTooltip>
-    </Show>
-  </label>
-);
+}) => {
+  const { t } = useI18n();
+  return (
+    <label class="label" for={`field-${props.field.name}`}>
+      <span class="label-text">
+        {props.label}
+        {props.field.required && <span class="text-error ml-1">*</span>}
+      </span>
+      <Show when={props.field.disabled}>
+        <PortalTooltip text={t("fields.cannot_be_changed")}>
+          <CircleQuestionMark size={14} class="opacity-50" />
+        </PortalTooltip>
+      </Show>
+    </label>
+  );
+};
 
 export default ModalEdit;
