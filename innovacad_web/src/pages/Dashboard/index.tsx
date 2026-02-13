@@ -6,10 +6,13 @@ import { useLocation } from "@solidjs/router";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import { API_ENDPOINTS } from "@/hooks/useApi";
+import ChangeLanguage from "@/components/ChangeLanguage";
+import useI18n from "@/hooks/useL18N";
 
 const DashboardLayout = (props: any) => {
   const { user, logout } = useUserDetails();
   const { theme, toggleTheme } = useTheme();
+  const { t } = useI18n();
   const [isCollapsed, setIsCollapsed] = createSignal(false);
   const location = useLocation();
 
@@ -24,34 +27,34 @@ const DashboardLayout = (props: any) => {
     {
       icon: "LayoutDashboard",
       size: 22,
-      title: "Overview",
+      title: t("entity.overview"),
       path: "",
     },
     {
       icon: "Calendar",
       size: 22,
       path: "calendar",
-      title: "Schedule",
+      title: t("entity.schedule"),
     },
     {
       icon: "CircleUser",
       size: 22,
       path: "user",
-      title: "Users",
+      title: t("entity.users"),
       role: "admin",
       children: [
         {
           icon: "BriefcaseBusiness",
           size: 16,
           path: "user/trainers",
-          title: "Trainers",
+          title: t("entity.trainers"),
           role: "admin",
         },
         {
           icon: "Backpack",
           size: 16,
           path: "user/trainees",
-          title: "Trainees",
+          title: t("entity.trainees"),
           role: "admin",
         },
       ],
@@ -60,49 +63,49 @@ const DashboardLayout = (props: any) => {
       icon: "School",
       size: 22,
       path: "courses",
-      title: "Courses",
+      title: t("entity.courses"),
       role: "admin",
     },
     {
       icon: "Users",
       size: 22,
       path: "classes",
-      title: "Classes",
+      title: t("entity.classes"),
       role: "admin",
     },
     {
       icon: "Book",
       size: 22,
       path: "modules",
-      title: "Modules",
+      title: t("entity.modules"),
       role: "admin",
     },
     {
       icon: "Armchair",
       size: 22,
       path: "rooms",
-      title: "Rooms",
+      title: t("entity.rooms"),
       role: "admin",
     },
     {
       icon: "Sigma",
       size: 22,
       path: "grades",
-      title: "Grades",
+      title: t("entity.grades"),
       role: ["admin", "trainer", "coordinator"],
     },
     {
       icon: "BookUser",
       size: 22,
       path: "enrollments",
-      title: "Enrollments",
+      title: t("entity.enrollments"),
       role: ["admin", "trainee"],
     },
     {
       icon: "CalendarDays",
       size: 22,
       path: "availabilities",
-      title: "Availabilities",
+      title: t("entity.availabilities"),
       role: ["admin", "trainer", "coordinator"],
     },
   ];
@@ -136,11 +139,11 @@ const DashboardLayout = (props: any) => {
               <div class="flex-1 px-2">
                 <div class="text-sm breadcrumbs opacity-60">
                   <ul>
-                    <li>Dashboard</li>
+                    <li>{t("dashboard.dashboard")}</li>
                     <For each={currentPathArray()}>
                       {(segment) => (
                         <li class="font-bold opacity-100 text-base-content uppercase">
-                          {segment}
+                          {t(`dashboard.${segment.toLowerCase()}`)}
                         </li>
                       )}
                     </For>
@@ -149,6 +152,8 @@ const DashboardLayout = (props: any) => {
               </div>
 
               <div class="flex-none flex items-center gap-2">
+                <ChangeLanguage />
+
                 {/* Theme Switcher */}
                 <label class="btn btn-ghost btn-circle swap swap-rotate">
                   <input
@@ -208,18 +213,19 @@ const DashboardLayout = (props: any) => {
                   >
                     <li>
                       <a>
-                        <Icon name="User" size={16} /> Profile
+                        <Icon name="User" size={16} /> {t("dashboard.profile")}
                       </a>
                     </li>
                     <li>
                       <a href="/dashboard/settings">
-                        <Icon name="Settings" size={16} /> Settings
+                        <Icon name="Settings" size={16} />{" "}
+                        {t("dashboard.settings")}
                       </a>
                     </li>
                     <li class="divider- my-1"></li>
                     <li>
                       <a class="text-error" onclick={() => logout()}>
-                        <Icon name="LogOut" size={16} /> Logout
+                        <Icon name="LogOut" size={16} /> {t("dashboard.logout")}
                       </a>
                     </li>
                   </ul>

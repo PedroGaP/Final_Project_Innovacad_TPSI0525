@@ -12,6 +12,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { Class } from "@/types/class";
 import toast from "solid-toast";
+import useI18n from "@/hooks/useL18N";
 
 type Props = {
   selectedClass: Class | null;
@@ -26,6 +27,7 @@ type Props = {
 export const EventCalendar = (props: Props) => {
   let calendarEl: HTMLDivElement | undefined;
   let calendar: Calendar | undefined;
+  const { t } = useI18n();
 
   createEffect(() => {
     const rawEvents = props.events;
@@ -116,13 +118,13 @@ export const EventCalendar = (props: Props) => {
     }
 
     info.revert();
-    const loadingToast = toast.loading("Moving session...");
+    const loadingToast = toast.loading(t("event_calendar.move_moving"));
 
     try {
       const success = await props.onMoveRequest(info.event.id, start, end);
 
       if (!success) {
-        toast.error("Could not move session.", { id: loadingToast });
+        toast.error(t("event_calendar.move_fail"), { id: loadingToast });
         return;
       }
 
@@ -132,10 +134,12 @@ export const EventCalendar = (props: Props) => {
         event.setEnd(end);
       }
 
-      toast.success("Schedule moved!", { id: loadingToast });
+      toast.success(t("event_calendar.move_successful"), { id: loadingToast });
     } catch (e: any) {
       console.error("Move error:", e);
-      toast.error(e.message || "Could not move session.", { id: loadingToast });
+      toast.error(t("event_calendar.move_fail"), {
+        id: loadingToast,
+      });
     }
   };
 
