@@ -234,11 +234,11 @@ export const useApi = () => {
       (trainer as any).is_coordinator = !!data.is_coordinator;
       if (data.role === "coordinator") (trainer as any).is_coordinator = true;
 
-      (trainer as any).coordinated_class_ids = Array.isArray(
-        data.coordinated_class_ids,
-      )
-        ? data.coordinated_class_ids
-        : [];
+      (trainer as any).coordinated_class_ids =
+        typeof data.coordinated_class_ids === 'object' &&
+          data.coordinated_class_ids !== null
+          ? data.coordinated_class_ids
+          : {};
 
       Object.assign(trainer, data);
 
@@ -1624,7 +1624,7 @@ export const useApi = () => {
       try {
         const err = await res.json();
         errorMessage = err.message || errorMessage;
-      } catch {}
+      } catch { }
 
       throw new Error(errorMessage);
     }

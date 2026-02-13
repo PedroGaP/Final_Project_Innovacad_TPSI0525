@@ -8,7 +8,6 @@ import {
   createMemo,
   createResource,
   createSignal,
-  For,
   Show,
 } from "solid-js";
 import toast from "solid-toast";
@@ -383,9 +382,9 @@ const GradesPage = () => {
     }
 
     const role = u.role;
-    const coordinatedClassIds = ((u as any).coordinated_class_ids || []).map(
-      (id: any) => normalizeId(id),
-    );
+    const coordinatedClassIds = Object.keys(
+      (u as any).coordinated_class_ids || {},
+    ).map((id: any) => normalizeId(id));
 
     allClasses.forEach((cls) => {
       const classId = normalizeId(cls.class_id);
@@ -431,9 +430,9 @@ const GradesPage = () => {
     const u = user();
     if (u?.role === "admin") return true;
     if (u?.role === "coordinator") {
-      const coordinatedIds = ((u as any).coordinated_class_ids || []).map(
-        (id: any) => normalizeId(id),
-      );
+      const coordinatedIds = Object.keys(
+        (u as any).coordinated_class_ids || {},
+      ).map((id: any) => normalizeId(id));
       return coordinatedIds.includes(normalizeId(classId));
     }
     return false;
@@ -446,7 +445,7 @@ const GradesPage = () => {
         data={modulesList}
         handleAddClick={undefined}
         confirmDelete={undefined}
-        handleSave={async () => {}}
+        handleSave={async () => { }}
         handleEditClick={(row) => {
           handleOpenPauta(row);
           return undefined;

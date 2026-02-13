@@ -5,6 +5,7 @@ import toast from "solid-toast";
 import { newPasswordEmail } from "@/components/NewPasswordEmail";
 import EntityTable from "@/components/EntityTable";
 import UserDocumentsManager from "@/components/DocumentManager";
+import { useUserDetails } from "@/providers/UserDetailsProvider";
 
 const createEmptyTrainee = (): Trainee =>
   ({
@@ -92,7 +93,6 @@ const getChangedFields = (
 
   return changes;
 };
-
 
 const TraineePage = () => {
   const api = useApi();
@@ -189,6 +189,9 @@ const TraineePage = () => {
     }
   };
 
+  const { user } = useUserDetails();
+  const isTrainee = () => user()?.role === "trainee";
+
   return (
     <EntityTable<Trainee>
       title="Manage Trainees"
@@ -216,6 +219,7 @@ const TraineePage = () => {
           fieldName: "traineeId",
           canCopy: true,
           smaller: true,
+          hidden: isTrainee(),
         },
         {
           formattedName: "Name",

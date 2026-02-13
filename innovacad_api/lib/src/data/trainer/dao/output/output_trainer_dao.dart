@@ -22,7 +22,7 @@ class OutputTrainerDao extends OutputUserDao {
   final bool? isCoordinator;
 
   @annotation.JsonKey(name: 'coordinated_class_ids')
-  final List<String>? coordinatedClassIds;
+  final Map<String, String>? coordinatedClassIds;
 
   OutputTrainerDao({
     required super.id,

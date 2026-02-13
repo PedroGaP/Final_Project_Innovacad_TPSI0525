@@ -2,7 +2,7 @@ import { NavbarLink, type NavProps } from "@/components/NavbarLink";
 import { Icon } from "@/components/Icon";
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { useTheme } from "@/providers/ThemeProvider";
-import { useLocation } from "@solidjs/router";
+import { useLocation, useNavigate } from "@solidjs/router";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import { API_ENDPOINTS } from "@/hooks/useApi";
@@ -15,6 +15,7 @@ const DashboardLayout = (props: any) => {
   const { t } = useI18n();
   const [isCollapsed, setIsCollapsed] = createSignal(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const currentPathArray = createMemo((): string[] => {
     const path = location.pathname.replace("/dashboard/", "");
@@ -247,7 +248,10 @@ const DashboardLayout = (props: any) => {
               }}
             >
               <div class="h-16 flex items-center px-6 border-b border-base-300 shrink-0">
-                <div class="flex items-center gap-3">
+                <div
+                  class="btn btn-ghost flex items-center gap-3"
+                  onClick={() => navigate("/")}
+                >
                   <Icon
                     name="GraduationCap"
                     size={30}

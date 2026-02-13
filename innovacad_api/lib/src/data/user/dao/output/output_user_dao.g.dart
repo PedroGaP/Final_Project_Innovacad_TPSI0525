@@ -19,9 +19,8 @@ OutputUserDao _$OutputUserDaoFromJson(
   twoFactorEnabled:
       OutputUserDao.convertBoolean(json, 'twoFactorEnabled') as bool? ?? false,
   isCoordinator: OutputUserDao.convertBoolean(json, 'is_coordinator') as bool?,
-  coordinatedClassIds: (json['coordinated_class_ids'] as List<dynamic>?)
-      ?.map((e) => e as String)
-      .toList(),
+  coordinatedClassIds: (json['coordinated_class_ids'] as Map<String, dynamic>?)
+      ?.map((k, e) => MapEntry(k, e as String)),
   image: json['image'] as String?,
   token: json['token'] as String?,
   sessionToken: json['session_token'] as String?,

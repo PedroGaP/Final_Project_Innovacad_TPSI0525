@@ -42,11 +42,15 @@ class TrainerRepositoryImpl implements ITrainerRepository {
             t.trainer_id, t.user_id, t.birthday_date, t.is_coordinator,
             u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt, u.emailVerified,
             GROUP_CONCAT(DISTINCT CONCAT(ts.module_id, ':', ts.competence_level) SEPARATOR '|') as skills_data,
-            GROUP_CONCAT(DISTINCT tcc.class_id SEPARATOR ',') as coordinated_class_ids
+            GROUP_CONCAT(DISTINCT CONCAT(tcc.class_id, ':', CONCAT(cor.identifier, ' ', cls.identifier)) SEPARATOR '|') as coordinated_classes_data
           FROM `trainers` t 
           JOIN `user` u ON t.user_id = u.id
           LEFT JOIN trainer_skills ts ON t.trainer_id = ts.trainer_id
           LEFT JOIN trainers_classes_coordinator tcc ON t.trainer_id = tcc.trainer_id
+          LEFT JOIN classes cls ON tcc.class_id = cls.class_id
+          LEFT JOIN classes_modules clsm ON cls.class_id = clsm.class_id
+          LEFT JOIN courses_modules corm ON clsm.courses_modules_id = corm.courses_modules_id
+          LEFT JOIN courses cor ON corm.course_id = cor.course_id
           GROUP BY t.trainer_id, t.user_id, t.birthday_date, t.is_coordinator,
                    u.id, u.username, u.name, u.email, u.role, u.image, u.createdAt, u.emailVerified
         """;
@@ -74,14 +78,21 @@ class TrainerRepositoryImpl implements ITrainerRepository {
             row['skills'] = [];
           }
 
-          final classIdsData = row['coordinated_class_ids']?.toString();
+          final classesData = row['coordinated_classes_data']?.toString();
           if (isCoordinator &&
-              classIdsData != null &&
-              classIdsData.isNotEmpty &&
-              classIdsData != 'null') {
-            row['coordinated_class_ids'] = classIdsData.split(',');
+              classesData != null &&
+              classesData.isNotEmpty &&
+              classesData != 'null') {
+            final classesMap = <String, String>{};
+            for (var classEntry in classesData.split('|')) {
+              final parts = classEntry.split(':');
+              if (parts.length == 2) {
+                classesMap[parts[0]] = parts[1];
+              }
+            }
+            row['coordinated_class_ids'] = classesMap;
           } else {
-            row['coordinated_class_ids'] = [];
+            row['coordinated_class_ids'] = <String, String>{};
           }
 
           daos.add(OutputTrainerDao.fromJson(row));
@@ -130,15 +141,22 @@ class TrainerRepositoryImpl implements ITrainerRepository {
 
         if (isCoordinator) {
           final classResults = await db.query(
-            "SELECT class_id FROM trainers_classes_coordinator WHERE trainer_id = ?",
+            "SELECT c.class_id, c.identifier FROM trainers_classes_coordinator tcc "
+            "JOIN classes c ON tcc.class_id = c.class_id "
+            "WHERE tcc.trainer_id = ?",
             whereValues: [trainerId],
             isStmt: true,
           );
-          trainerMap['coordinated_class_ids'] = classResults.rows
-              .map((c) => c['class_id'].toString())
-              .toList();
+          trainerMap['coordinated_class_ids'] = Map.fromEntries(
+            classResults.rows.map(
+              (row) => MapEntry(
+                row['class_id'].toString(),
+                row['identifier'].toString(),
+              ),
+            ),
+          );
         } else {
-          trainerMap['coordinated_class_ids'] = [];
+          trainerMap['coordinated_class_ids'] = <String, String>{};
         }
 
         print("TRAINER MAP::: $trainerMap");
@@ -763,13 +781,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
       List<String> classes = [];
 
       if (trainer.data?.coordinatedClassIds != null) {
-        for (var id in trainer.data!.coordinatedClassIds!) {
-          final klass = await _classRepository.getById(id);
-
-          if (klass.isSuccess) {
-            classes.add("${klass.data?.identifier} - ${klass.data?.location}");
-          }
-        }
+        classes = trainer.data!.coordinatedClassIds!.values.toList();
       }
 
       return Result.success(classes);
