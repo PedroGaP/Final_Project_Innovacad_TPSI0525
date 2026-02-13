@@ -1,7 +1,6 @@
 import useI18n from "@/hooks/useL18N";
 import i18next from "i18next";
 
-// Bandeira de Portugal Retangular
 const PTFlag = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -21,7 +20,6 @@ const PTFlag = () => (
   </svg>
 );
 
-// Bandeira dos EUA Retangular
 const USFlag = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -87,16 +85,13 @@ const ChangeLanguage = () => {
         <input
           type="checkbox"
           onChange={toggleLanguage}
-          // Se estiver em Inglês, o checkbox está 'checked', logo mostra o 'swap-on'
           checked={currentLang() === "en-EN"}
         />
 
-        {/* swap-on: O que aparece quando CHECKED (English) */}
         <div class="swap-on flex items-center justify-center">
           <USFlag />
         </div>
 
-        {/* swap-off: O que aparece quando UNCHECKED (Portuguese) */}
         <div class="swap-off flex items-center justify-center">
           <PTFlag />
         </div>

@@ -38,13 +38,11 @@ type Props = {
 export const EventCalendar = (props: Props) => {
   let calendarEl: HTMLDivElement | undefined;
 
-  // FIX 1: Use a signal for the calendar instance so effects can track it
   const [calendar, setCalendar] = createSignal<Calendar | undefined>(undefined);
 
-  // Effect 1: Handle Events
   createEffect(() => {
     const rawEvents = props.events;
-    const cal = calendar(); // Access signal
+    const cal = calendar();
 
     if (cal) {
       const cleanEvents = JSON.parse(JSON.stringify(rawEvents));
@@ -65,10 +63,9 @@ export const EventCalendar = (props: Props) => {
     }
   });
 
-  // Effect 2: Handle Editable State
   createEffect(() => {
     const editable = props.isEditable;
-    const cal = calendar(); // Access signal
+    const cal = calendar();
 
     if (cal) {
       cal.setOption("editable", editable);
@@ -78,27 +75,20 @@ export const EventCalendar = (props: Props) => {
     }
   });
 
-  // Effect 3: Handle Custom Buttons (The Fix)
   createEffect(() => {
-    const cal = calendar(); // Access signal
+    const cal = calendar();
 
-    // Only run if calendar exists
     if (cal) {
       if (props.customButtons) {
-        // Register the buttons
         cal.setOption("customButtons", props.customButtons);
-
-        // Construct the toolbar string dynamically
         const customBtnNames = Object.keys(props.customButtons).join(" ");
 
-        // Force update the header toolbar
         cal.setOption("headerToolbar", {
           left: "prev,next today",
           center: "title",
           right: `${customBtnNames} dayGridMonth,timeGridWeek,timeGridDay`,
         });
       } else {
-        // Revert to standard toolbar if no buttons
         cal.setOption("headerToolbar", {
           left: "prev,next today",
           center: "title",
@@ -195,7 +185,6 @@ export const EventCalendar = (props: Props) => {
 
     const initialEvents = JSON.parse(JSON.stringify(props.events || []));
 
-    // Initialize calendar instance
     const calInstance = new Calendar(calendarEl, {
       plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin],
       customButtons: props.customButtons,
@@ -231,7 +220,6 @@ export const EventCalendar = (props: Props) => {
       slotMaxTime: "23:00:00",
       initialView: "timeGridWeek",
 
-      // Initialize toolbar immediately on mount as well to prevent flicker
       headerToolbar: {
         left: "prev,next today",
         center: "title",
@@ -263,7 +251,6 @@ export const EventCalendar = (props: Props) => {
 
     calInstance.render();
 
-    // FIX 2: Set the signal, triggering the effects
     setCalendar(calInstance);
   });
 

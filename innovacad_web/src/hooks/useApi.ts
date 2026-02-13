@@ -1631,7 +1631,6 @@ export const useApi = () => {
     roomId: string,
     date: string,
   ): Promise<RoomBusySlot[]> => {
-    // date format should match what backend expects, assuming YYYY-MM-DD based on typical APIs
     const res = await fetchApi<RoomBusySlotResponseDto[]>(
       `${API_ENDPOINTS.ENTITY.ROOM}/${roomId}/availability/${date}`,
       "GET",

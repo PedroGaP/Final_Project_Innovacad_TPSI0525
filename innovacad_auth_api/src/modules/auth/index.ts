@@ -13,15 +13,20 @@ import { API } from "@/src/utils/env";
 import { sendTwoFactorEmail, sendVerificationEmail } from "../email";
 import nodemailer from "nodemailer";
 
+console.log("--- TENTATIVA DE CONEXÃO ---");
+console.log("Host:", API.MYSQL.HOSTNAME || "INDEFINIDO (Vou usar 127.0.0.1)");
+console.log("Port:", 3306); // Forçado
+console.log("User:", API.MYSQL.USERNAME);
+console.log("Database:", API.MYSQL.DATABASE);
+console.log("--------------------------");
+
 const pool = createPool({
   host: API.MYSQL.HOSTNAME,
   user: API.MYSQL.USERNAME,
-  database: API.MYSQL.DATABASE,
   password: API.MYSQL.PASSWORD,
+  database: API.MYSQL.DATABASE,
+  port: 3306,
   connectionLimit: 10,
-  connectTimeout: 10000,
-  acquireTimeout: 10000,
-  timeout: 60000,
   waitForConnections: true,
   queueLimit: 0,
   enableKeepAlive: true,
@@ -101,7 +106,12 @@ export const auth = betterAuth({
   ],
   session: {
     expiresIn: 3600,
-    cookieCache: { enabled: true, strategy: "jwt" },
+    cookieCache: {
+      enabled: true,
+      strategy: "jwt",
+      maxAge: 3600,
+      refreshCache: true,
+    },
     additionalFields: {
       iss: { type: "string", defaultValue: API.JWT.ISSUER },
       aud: { type: "string", defaultValue: API.JWT.AUDIENCE },

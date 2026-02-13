@@ -330,7 +330,7 @@ CREATE INDEX idx_availabilities_lock_order ON availabilities (trainer_id, date_d
 CREATE INDEX idx_schedule_slots_lock_order ON schedule_slots (schedule_id, availability_id);
 CREATE INDEX idx_user_email_username ON user (email, username);
 CREATE INDEX idx_schedules_class_module_lookup ON schedules (class_module_id, schedule_id);
-
+CREATE INDEX idx_avail_sched ON schedule_slots(availability_id, schedule_id);
 
 -- Update trainee's grade with type of 'attendance' when a summary is created or update
 DELIMITER //
@@ -390,24 +390,6 @@ END //
 DELIMITER ;
 
 DELIMITER //
-
-CREATE TRIGGER tr_check_availability_consistency
-    BEFORE UPDATE
-    ON availabilities
-    FOR EACH ROW
-BEGIN
-    IF NEW.is_booked = 1 AND OLD.is_booked = 0 THEN
-        IF NOT EXISTS (SELECT 1
-                       FROM schedule_slots
-                       WHERE availability_id = NEW.availability_id) THEN
-            SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Cannot set is_booked=1 without schedule_slot';
-        END IF;
-    END IF;
-END//
-
-DELIMITER ;
-
 
 -- Update trainee's enrollment final grade
 DELIMITER //
