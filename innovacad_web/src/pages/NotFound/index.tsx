@@ -1,8 +1,10 @@
+import { useI18n } from "@/hooks/useL18N";
 import { useNavigate } from "@solidjs/router";
 import { AiFillCaretLeft, AiTwotoneHome } from "solid-icons/ai";
 
 const NotFound = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   return (
     <div class="hero">
@@ -11,17 +13,15 @@ const NotFound = () => {
           <div class="relative">
             <h1 class="text-9xl font-black opacity-10 select-none">404</h1>
             <p class="absolute inset-0 flex items-center justify-center text-4xl font-bold">
-              Are you lost ?
+              {t("not_found.are_you_lost")}
             </p>
           </div>
 
           <div class="py-6">
             <h2 class="text-2xl font-bold italic border-b-2 border-primary w-fit mx-auto mb-4">
-              Oops! Page not found.
+              {t("not_found.page_not_found")}
             </h2>
-            <p class="text-base-content/60 italic">
-              "Not all those who wander are lost... but you definitely are !"
-            </p>
+            <p class="text-base-content/60 italic">{t("not_found.quote")}</p>
           </div>
 
           <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -30,14 +30,14 @@ const NotFound = () => {
               onClick={() => navigate("/")}
             >
               <AiTwotoneHome size={20} />
-              Return Home
+              {t("not_found.buttons.return_home")}
             </button>
             <button
               class="btn btn-ghost border-base-content/20"
               onClick={() => navigate(-1)}
             >
               <AiFillCaretLeft size={20} />
-              Go Back
+              {t("not_found.buttons.go_back")}
             </button>
           </div>
         </div>

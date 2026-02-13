@@ -1,0 +1,95 @@
+{
+  "entity": {
+    "trainer": "Trainer",
+    "trainers": "Trainers",
+    "trainee": "Trainee",
+    "trainees": "Trainees",
+    "course": "Course",
+    "courses": "Courses",
+    "schedule": "Schedule",
+    "schedules": "Schedules",
+    "user": "User",
+    "users": "Users",
+    "class": "Class",
+    "classes": "Classes",
+    "module": "Module",
+    "modules": "Modules",
+    "room": "Room",
+    "rooms": "Rooms",
+    "grade": "Grade",
+    "grades": "Grades",
+    "enrollment": "Enrollment",
+    "enrollments": "Enrollments",
+    "availability": "Availability",
+    "availabilities": "Availabilities",
+    "overview": "Overview",
+    "online_class_q": "Online Class?",
+    "start_time": "Start Time",
+    "end_time": "End Time"
+  },
+  "general": {
+    "name": "Name",
+    "lectured_hours": "Lectured Hours"
+  },
+  "not_found": {
+    "are_you_lost": "Are You Lost?",
+    "page_not_found": "Oops! Page not found.",
+    "quote": "\"Not all those who wander are lost... but you definitely are!\"",
+    "buttons": {
+      "return_home": "Return Home",
+      "go_back": "Go Back"
+    }
+  },
+  "sign_in": {
+    "title": "Sign In",
+    "desc": "Access into your account",
+    "forgot_password": "Forgot password?",
+    "or": "Or",
+    "buttons": {
+      "sign_in": "Sign In",
+      "sign_in_google": "Sign In With Google"
+    },
+    "password": "Password"
+  },
+  "entity_table": {},
+  "event_calendar": {
+    "move_fail": "Failed to move event.",
+    "move_successful": "Moved event successfuly!",
+    "move_moving": "Moving event..."
+  },
+  "dashboard": {
+    "dashboard": "Dashboard",
+    "calendar": "Schedule",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Logout",
+    "overview": {
+      "finished_classes": "Finished Classes",
+      "ongoing_classes": "Ongoing Classes",
+      "active_trainees": "Active Trainees",
+      "courses_per_area": "Courses per Area",
+      "course_plural": "Course(s)",
+      "top_trainers": "TOP 10 Trainers (Hours)",
+      "no_data": "No data found"
+    },
+    "schedule": {
+      "update_successful": "Updated schedule successfuly!",
+      "update_fail": "Failed to update schedule.",
+      "create_successful": "Created schedule successfuly!",
+      "create_fail": "Failed to create schedule.",
+      "delete_successful": "Deleted schedule successfuly!",
+      "delete_fail": "Failed to delete schedule.",
+      "move_fail": "Failed to move event",
+      "move_successful": "Moved event successfuly!",
+      "select_class": "Select a Class",
+      "my_schedule": "My Schedule",
+      "read_only": "Read Only",
+      "editing": "Editing",
+      "new_session": "New Session",
+      "edit_session": "Edit Session",
+      "delete_schedule": "Delete Schedule",
+      "delete_schedule_desc_q": "Are you sure you want to remove this session from the calendar?",
+      "force_trainer_change_q": "Force Trainer Change?"
+    }
+  }
+}

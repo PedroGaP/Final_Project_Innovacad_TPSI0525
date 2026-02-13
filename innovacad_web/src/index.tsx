@@ -28,10 +28,6 @@ import AvailabilitiesPage from "./pages/Dashboard/Availability";
 import Calendar from "./pages/Dashboard/Calendar";
 import Courses from "./pages/Courses";
 import { TransProvider } from "@mbarzda/solid-i18next";
-import { createEffect } from "solid-js";
-import i18next from "i18next";
-import englishTranslation from "./locale/englishTranslation";
-import portugueseTranslation from "./locale/portugueseTranslation";
 
 const routes: RouteDefinition[] = [
   {
@@ -121,27 +117,9 @@ const routes: RouteDefinition[] = [
   { path: "**", component: NotFound },
 ];
 
-createEffect(() => {
-  i18next.init({
-    lng: "en-EN",
-    fallbackLng: "en-EN",
-    interpolation: {
-      escapeValue: false,
-    },
-    resources: {
-      "en-EN": {
-        translation: englishTranslation,
-      },
-      "pt-PT": {
-        translation: portugueseTranslation,
-      },
-    },
-  });
-});
-
 render(
   () => (
-    <TransProvider lng="en">
+    <TransProvider>
       <ThemeProvider>
         <UserDetailsProvider>
           <Toaster position="bottom-right" gutter={8} />

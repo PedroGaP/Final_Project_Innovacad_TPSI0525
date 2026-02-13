@@ -7,10 +7,12 @@ import type { User } from "@/types/user";
 import debounce from "@/utils/debounce";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import { useApi } from "@/hooks/useApi";
+import useI18n from "@/hooks/useL18N";
 
 const SignIn = () => {
   const api = useApi();
   const { setUser } = useUserDetails();
+  const { t } = useI18n();
   const [signInStore, setSignInStore] = createStore<SignInData>({
     password: "",
     username: undefined,
@@ -31,24 +33,17 @@ const SignIn = () => {
       email: signInStore.email,
       password: signInStore.password,
     });
-
     setUser(user!);
 
-    console.log(`[USER] > ${JSON.stringify(user)}`);
-
     if (user?.twoFactorRedirect) {
-      console.log("Sent to the 2FA verification page!");
       navigate("/verify-2fa");
       return;
     }
 
     if (!user?.verified) {
-      console.log("Sent to the email verification page!");
       navigate("/verify-email");
       return;
     }
-
-    console.log("Sent to the dashboard page!");
     navigate("/dashboard");
   };
 
@@ -62,10 +57,10 @@ const SignIn = () => {
         <div class="bg-primary p-6 text-primary-content">
           <h2 class="card-title text-2xl font-bold flex items-center gap-2">
             <TbLogin />
-            Sign In
+            {t("sign_in.title")}
           </h2>
           <p class="text-primary-content/80 text-sm mt-1">
-            Access into your account
+            {t("sign_in.desc")}
           </p>
         </div>
 
@@ -84,7 +79,9 @@ const SignIn = () => {
 
           <div class="form-control mt-2">
             <label class="label">
-              <span class="label-text font-medium">Password</span>
+              <span class="label-text font-medium">
+                {t("sign_in.password")}
+              </span>
             </label>
             <input
               type="password"
@@ -96,7 +93,7 @@ const SignIn = () => {
               href={`/forgot-password`}
               class="label-text-alt link link-hover text-primary"
             >
-              Forgot Password?
+              {t("sign_in.forgot_password")}
             </A>
           </div>
 
@@ -105,17 +102,19 @@ const SignIn = () => {
               class="btn btn-primary btn-block shadow-lg"
               onClick={handleEmailSignIn}
             >
-              Login
+              {t("sign_in.buttons.sign_in")}
             </button>
 
-            <div class="divider text-xs uppercase opacity-50 font-bold">Or</div>
+            <div class="divider text-xs uppercase opacity-50 font-bold">
+              {t("sign_in.or")}
+            </div>
 
             <button
               class="btn btn-outline btn-block border-base-300 hover:bg-base-200  uppercase"
               onClick={handleSocialLogin}
             >
               <img src={GoogleLogo} alt="Google" class="w-5 h-5 mr-2" />
-              Sign In with Google
+              {t("sign_in.buttons.sign_in_google")}
             </button>
           </div>
         </div>

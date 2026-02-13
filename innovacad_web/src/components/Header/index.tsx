@@ -2,8 +2,11 @@ import { BsMoonStarsFill, BsSunFill } from "solid-icons/bs";
 import { FiMenu } from "solid-icons/fi";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useNavigate } from "@solidjs/router";
+import { useI18n } from "@/hooks/useL18N";
+import ChangeLanguage from "../ChangeLanguage";
 export default function Header() {
   const { theme, toggleTheme } = useTheme();
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   return (
@@ -41,31 +44,32 @@ export default function Header() {
           <ul class="menu menu-horizontal px-1 font-medium gap-1">
             <li>
               <a onClick={() => navigate("courses")} class="rounded-lg">
-                Courses
+                {t("entity.courses")}
               </a>
             </li>
 
             <li>
               <a onClick={() => navigate("trainers")} class="rounded-lg">
-                Trainers
+                {t("entity.trainers")}
               </a>
             </li>
 
             <li>
               <a onClick={() => navigate("trainees")} class="rounded-lg">
-                Trainees
+                {t("entity.trainees")}
               </a>
             </li>
 
             <li>
-              <a onClick={() => navigate("classes")} class="rounded-lg">
-                Classes
+              <a onClick={() => navigate("schedules")} class="rounded-lg">
+                {t("entity.schedules")}
               </a>
             </li>
           </ul>
         </div>
 
         <div class="navbar-end gap-3">
+          <ChangeLanguage />
           <label class="btn btn-ghost btn-circle swap swap-rotate">
             <input
               type="checkbox"

@@ -5,6 +5,7 @@ import ModalEdit from "@/components/Modal/Edit";
 import ScheduleInfoModal from "@/components/Modal/ScheduleInfo";
 import SummaryModal from "@/components/Modal/Summary";
 import { useApi } from "@/hooks/useApi";
+import useI18n from "@/hooks/useL18N";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import type { Class } from "@/types/class";
 import {
@@ -52,6 +53,7 @@ const Calendar = () => {
   } = useApi();
 
   const { user } = useUserDetails();
+  const { t } = useI18n();
 
   const [fetchedClasses] = createResource(fetchClasses);
   const [allTrainers] = createResource(fetchTrainers);
@@ -377,15 +379,19 @@ const Calendar = () => {
           class_module_id: data.moduleId,
           force_trainer_change: !!data.force,
         });
-        toast.success("Schedule created successfully!");
+        toast.success(t("dashboard.schedule.create_successful"));
       } else {
         await updateSchedule(currentScheduleId()!, payload);
-        toast.success("Schedule updated successfully!");
+        toast.success(t("dashboard.schedule.update_successful"));
       }
       setIsEditModalOpen(false);
       refetchSchedules();
     } catch (e: any) {
-      toast.error(e.message || "Failed to save schedule");
+      if (modalMode() === "create") {
+        toast.error(t("dashboard.schedule.create_fail"));
+      } else {
+        toast.error(t("dashboard.schedule.update_fail"));
+      }
     }
   };
 
@@ -394,11 +400,11 @@ const Calendar = () => {
     if (item) {
       try {
         await deleteSchedule(item.id);
-        toast.success("Schedule deleted");
+        toast.success(t("dashboard.schedule.delete_success"));
         setItemToDelete(null);
         refetchSchedules();
       } catch (e: any) {
-        toast.error(e.message);
+        toast.error(t("dashboard.schedule.delete_fail"));
       }
     }
   };
@@ -420,12 +426,14 @@ const Calendar = () => {
               }}
             >
               <option value="">
-                {user()?.role === "admin" ? "Select Class" : "My Schedule"}
+                {user()?.role === "admin"
+                  ? t("dashboard.schedule.select_class")
+                  : t("dashboard.schedule.my_schedule")}
               </option>
               <For each={availableClasses()}>
                 {(k) => (
                   <option value={k.class_id}>
-                    {k.identifier} - {k.location}
+                    {k.course_identifier} {k.location} {k.identifier}
                   </option>
                 )}
               </For>
@@ -437,25 +445,26 @@ const Calendar = () => {
 
           <div
             class={`badge gap-2 py-4 px-4 font-bold border transition-all ${
-              canEdit()
+              canEdit() && selectedClass() !== null
                 ? "badge-success border-success/20 text-success-content"
                 : "badge-ghost border-base-300 opacity-70"
             }`}
           >
             <Show
-              when={canEdit()}
+              when={canEdit() && selectedClass() !== null}
               fallback={
                 <>
                   <Icon name="Lock" size={14} />
                   <span class="uppercase text-[10px] tracking-wider">
-                    Read Only Mode
+                    {t("dashboard.schedule.read_only")}
                   </span>
                 </>
               }
             >
               <Icon name="LockOpen" size={14} />
               <span class="uppercase text-[10px] tracking-wider">
-                Editing: {selectedClass()?.identifier}
+                {t("dashboard.schedule.editing")}:{" "}
+                {selectedClass()?.identifier || "N/A"}
               </span>
             </Show>
           </div>
@@ -500,7 +509,7 @@ const Calendar = () => {
                 refetchSchedules();
                 return true;
               } catch (e: any) {
-                toast.error("Failed to move event");
+                toast.error(t("dashboard.schedule.move_fail"));
                 return false;
               }
             }}
@@ -509,7 +518,11 @@ const Calendar = () => {
 
         <Show when={isEditModalOpen()}>
           <ModalEdit<ScheduleFormData>
-            title={modalMode() === "create" ? "New Session" : "Edit Session"}
+            title={
+              modalMode() === "create"
+                ? t("dashboard.schedule.new_session")
+                : t("dashboard.schedule.edit_session")
+            }
             value={formData()}
             setValue={handleFormChange}
             onSave={handleSave}
@@ -526,7 +539,7 @@ const Calendar = () => {
             fields={[
               {
                 name: "moduleId",
-                label: "Module",
+                label: t("entity.module"),
                 type: "select",
                 required: true,
                 disabled: modalMode() === "edit",
@@ -534,34 +547,38 @@ const Calendar = () => {
               },
               {
                 name: "trainerId",
-                label: "Trainer",
+                label: t("entity.trainer"),
                 type: "select",
                 required: true,
                 options: trainerOptions(),
               },
               {
                 name: "roomId",
-                label: "Room",
+                label: t("entity.room"),
                 type: "select",
                 hidden: formData().isOnline,
                 options: roomOptions(),
               },
-              { name: "isOnline", label: "Online Class?", type: "checkbox" },
+              {
+                name: "isOnline",
+                label: t("entity.online_class_q"),
+                type: "checkbox",
+              },
               {
                 name: "start",
-                label: "Start Time",
+                label: t("entity.start_time"),
                 type: "datetime-local",
                 disabled: true,
               },
               {
                 name: "end",
-                label: "End Time",
+                label: t("entity.end_time"),
                 type: "datetime-local",
                 disabled: true,
               },
               {
                 name: "force",
-                label: "Force Trainer Change?",
+                label: t("dashboard.schedule.force_trainer_change_q"),
                 type: "checkbox",
                 hidden: modalMode() === "edit",
               },
@@ -604,8 +621,8 @@ const Calendar = () => {
           value={itemToDelete}
           setValue={setItemToDelete}
           onConfirm={handleConfirmDelete}
-          title="Delete Schedule"
-          description="Are you sure you want to remove this session from the calendar?"
+          title={t("dashboard.schedule.delete_schedule")}
+          description={t("dashboard.schedule.delete_schedule_desc_q")}
         />
       </div>
     </div>

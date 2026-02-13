@@ -1,0 +1,89 @@
+{
+  "entity": {
+    "trainer": "Formador",
+    "trainers": "Formadores",
+    "trainee": "Formando",
+    "trainees": "Formandos",
+    "course": "Curso",
+    "courses": "Cursos",
+    "schedule": "Horário",
+    "schedules": "Horários",
+    "user": "Utilizador",
+    "users": "Utilizadores",
+    "class": "Turma",
+    "classes": "Turmas",
+    "module": "Módulo",
+    "modules": "Módulos",
+    "room": "Sala",
+    "rooms": "Salas",
+    "grade": "Avaliação",
+    "grades": "Avaliações",
+    "enrollment": "Matrícula",
+    "enrollments": "Matrículas",
+    "availability": "Disponibilidade",
+    "availabilities": "Disponibilidades",
+    "overview": "Visão Geral",
+    "online_class_q": "Aula Online?",
+    "start_time": "Hora de Inicio",
+    "end_time": "Hora de Término"
+  },
+  "general": {
+    "name": "Nome",
+    "lectured_hours": "Horas Lecionadas"
+  },
+  "not_found": {
+    "are_you_lost": "Estás Perdido?",
+    "page_not_found": "Ups! A página não foi encontrada.",
+    "quote": "\"Nem todos os que perambulam estão perdidos... mas tu estás, definitivamente!\"",
+    "buttons": {
+      "return_home": "Voltar ao inicio",
+      "go_back": "Voltar atrás"
+    }
+  },
+  "sign_in": {
+    "title": "Iniciar Sessão",
+    "desc": "Accesse a sua conta",
+    "forgot_password": "Esqueceu-se da palavra-passe?",
+    "or": "Ou",
+    "buttons": {
+      "sign_in": "Entrar",
+      "sign_in_google": "Entrar com o Google"
+    },
+    "password": "Palavra-passe"
+  },
+  "dashboard": {
+    "dashboard": "Painel",
+    "calendar": "Horário",
+    "profile": "Perfil",
+    "settings": "Definições",
+    "logout": "Sair",
+    "overview": {
+      "finished_classes": "Turmas terminadas",
+      "ongoing_classes": "Turmas a decorrer",
+      "active_trainees": "Formandos ativos",
+      "courses_per_area": "Cursos por área",
+      "course_plural": "Curso(s)",
+      "top_trainers": "TOP 10 Formadores (Horas)",
+      "no_data": "Sem dados"
+    },
+    "schedule": {
+      "update_successful": "Sessão atualizada com sucesso!",
+      "update_fail": "Não foi possível atualizar a sessão.",
+      "create_successful": "Sessão criada com sucesso!",
+      "create_fail": "Não foi possível criar a sessão.",
+      "delete_successful": "Sessão removida com sucesso!",
+      "delete_fail": "Não foi possível remover a sessão.",
+      "move_fail": "Não foi possível realocar a sessão.",
+      "move_successful": "Sessão realocada com sucesso!",
+      "select_class": "Escolher uma Turma",
+      "my_schedule": "Meu Horário",
+      "read_only": "Apenas Leitura",
+      "editing": "A Editar",
+      "new_session": "Nova Sessão",
+      "edit_session": "Modificar Sessão",
+      "delete_schedule": "Remover Sessão",
+      "delete_schedule_desc_q": "Tens a certeza que queres remover esta sessão do horário?",
+      "force_trainer_change_q": "Forçar substituição de Formador?"
+    }
+  }
+}
