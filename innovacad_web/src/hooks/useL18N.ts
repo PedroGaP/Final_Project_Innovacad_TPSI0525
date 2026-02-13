@@ -3,7 +3,6 @@ import i18next from "@/utils/i18n";
 
 const [currentLang, setCurrentLang] = createSignal(i18next.language);
 
-// Listener único global
 i18next.on("languageChanged", (l) => {
   console.log(`i18next changed to: ${l}`);
   setCurrentLang(l);

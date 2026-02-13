@@ -13,17 +13,18 @@ class MysqlConfiguration {
   }
 
   static Future<MysqlUtils> getConnection() async {
-    if (utils == null) {
-      throw Exception('Database not initialized. Call initDatabase() first.');
-    }
+    bool isAlive = await utils?.isConnectionAlive() ?? false;
 
-    if (!(await utils!.isConnectionAlive())) {
+    if (!isAlive && settings != null) {
       utils = MysqlUtils(
         settings: settings!,
         errorLog: (log) => print(log),
         sqlLog: (log) => print(log),
         connectInit: (log) => print(log),
       );
+      await utils!.createConnectionSingle(settings!);
+    } else if (settings == null) {
+      throw Exception("Try running initDatabase firts!");
     }
 
     return utils!;
@@ -54,7 +55,7 @@ class MysqlConfiguration {
       db: settings["mysql"]["database"],
       password: settings["mysql"]["password"],
       secure: true,
-      pool: true,
+      pool: false,
       collation: "utf8mb4_uca1400_ai_ci",
       maxConnections: 20,
       timeoutMs: 10000,

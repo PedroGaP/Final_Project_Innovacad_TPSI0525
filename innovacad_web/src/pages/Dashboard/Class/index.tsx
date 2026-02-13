@@ -8,8 +8,6 @@ import toast from "solid-toast";
 import type { Trainer } from "@/types/user";
 import useI18n from "@/hooks/useL18N";
 
-// --- HELPERS ---
-
 const createEmptyClass = (): Class =>
   ({
     class_id: "",
@@ -55,11 +53,9 @@ const validateClass = (
   return { valid: errors.length === 0, errors };
 };
 
-// --- COMPONENT ---
-
 const ClassesPage = () => {
   const api = useApi();
-  const { t } = useI18n(); // Reatividade garantida aqui dentro
+  const { t } = useI18n();
 
   const [classesData, { mutate }] = createResource<Class[]>(api.fetchClasses);
   const [courses] = createResource<Course[]>(api.fetchCourses);

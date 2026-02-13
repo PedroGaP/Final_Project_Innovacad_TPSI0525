@@ -177,14 +177,10 @@ const Calendar = () => {
     return current || [];
   }, []);
 
-  // ---------------------------------------------------------------------------
-  // GROUPING LOGIC START
-  // ---------------------------------------------------------------------------
   const calendarEvents = createMemo(() => {
     const rawData = displaySchedules();
     if (!rawData || !Array.isArray(rawData)) return [];
 
-    // 1. Map raw data to a clean format first
     const mappedEvents = rawData
       .filter((s: any) => (s.start && s.end) || (s.start_time && s.end_time))
       .map((s: any) => {
@@ -211,7 +207,6 @@ const Calendar = () => {
           backgroundColor: s.is_online || s.isOnline ? "#3b82f6" : "#10b981",
           borderColor: s.is_online || s.isOnline ? "#2563eb" : "#059669",
           extendedProps: {
-            // Important: Initialize originalIds with the current single ID
             originalIds: [s.schedule_id || s.scheduleId],
             classModuleId: s.class_module_id || s.classModuleId,
             trainerId: trainerId,
@@ -228,12 +223,10 @@ const Calendar = () => {
         };
       });
 
-    // 2. Sort by start time to ensure contiguous blocks align
     mappedEvents.sort(
       (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
     );
 
-    // 3. Grouping Logic
     const groupedEvents: any[] = [];
     if (mappedEvents.length === 0) return [];
 
@@ -244,37 +237,26 @@ const Calendar = () => {
       const prevEnd = new Date(currentGroup.end).getTime();
       const nextStart = new Date(nextEvent.start).getTime();
 
-      // Check for Match:
-      // 1. Contiguous (previous End == next Start)
-      // 2. Same Title (Module + Trainer)
-      // 3. Same Room
       const isContiguous = prevEnd === nextStart;
       const isSameTitle = currentGroup.title === nextEvent.title;
       const isSameRoom =
         currentGroup.extendedProps.roomId === nextEvent.extendedProps.roomId;
 
       if (isContiguous && isSameTitle && isSameRoom) {
-        // MERGE: Extend the end time of the current group
         currentGroup.end = nextEvent.end;
-        // Accumulate IDs so we can delete the whole block later if needed
         currentGroup.extendedProps.originalIds.push(
           ...nextEvent.extendedProps.originalIds,
         );
       } else {
-        // PUSH & RESET: Push the finished group and start a new one
         groupedEvents.push(currentGroup);
         currentGroup = nextEvent;
       }
     }
 
-    // Push the final remaining group
     groupedEvents.push(currentGroup);
 
     return groupedEvents;
   });
-  // ---------------------------------------------------------------------------
-  // GROUPING LOGIC END
-  // ---------------------------------------------------------------------------
 
   const formatForInput = (dateInput: string | Date) => {
     const d = new Date(dateInput);
@@ -298,7 +280,6 @@ const Calendar = () => {
 
     const hasStarted = now.getTime() >= eventStart.getTime();
 
-    // Trainee View
     if (u?.role === "trainee") {
       const readOnlyData = {
         id: event.id,
@@ -371,7 +352,6 @@ const Calendar = () => {
     setModalMode("edit");
     setCurrentScheduleId(event.id);
 
-    // Pass the grouped IDs to the itemToDelete state so we can delete them all if needed
     if (props.originalIds && props.originalIds.length > 0) {
       setItemToDelete({ id: event.id, originalIds: props.originalIds });
     } else {
@@ -440,9 +420,6 @@ const Calendar = () => {
         });
         toast.success(t("dashboard.schedule.create_successful"));
       } else {
-        // Warning: This only updates the "Head" event of the group.
-        // For a rigid backend, this usually means the other events in the group become "orphaned"
-        // or the backend auto-updates.
         await updateSchedule(currentScheduleId()!, payload);
         toast.success(t("dashboard.schedule.update_successful"));
       }
@@ -461,7 +438,6 @@ const Calendar = () => {
     const item = itemToDelete();
     if (item) {
       try {
-        // Fix: Delete ALL IDs associated with this visual group
         const idsToDelete = item.originalIds || [item.id];
         await Promise.all(idsToDelete.map((id: string) => deleteSchedule(id)));
 
@@ -570,23 +546,18 @@ const Calendar = () => {
               return true;
             }}
             onEditRequest={handleEditRequest}
-            // Fix: Enhanced Move Logic for Grouped Events
             onMoveRequest={async (id, start, end) => {
               if (!canEdit()) return false;
               try {
-                // 1. Find the grouped event definition to get all its IDs
                 const groupedEvent = calendarEvents().find((e) => e.id === id);
-                // "Tail" IDs are everything after the first one
                 const idsToDelete =
                   groupedEvent?.extendedProps?.originalIds?.slice(1) || [];
 
-                // 2. Find the original data for the "Head" event
                 const original = displaySchedules().find(
                   (s: any) => (s.schedule_id || s.scheduleId) === id,
                 );
                 if (!original) return false;
 
-                // 3. Update the Head event to the NEW full duration
                 await updateSchedule(id, {
                   trainer_id: original.trainer_id || original.trainerId,
                   room_id: original.room_id || original.roomId,
@@ -595,8 +566,6 @@ const Calendar = () => {
                   end_time: end.toISOString(),
                 });
 
-                // 4. Delete the tail events (merging them into the head)
-                // This prevents "ghost" events from being left behind at the old time
                 if (idsToDelete.length > 0) {
                   await Promise.all(
                     idsToDelete.map((delId: string) => deleteSchedule(delId)),
@@ -628,12 +597,7 @@ const Calendar = () => {
             onDelete={
               modalMode() === "edit"
                 ? () => {
-                    // We don't delete here immediately; we set the item and open confirmation via the modal
-                    // The ModalEdit component likely calls onConfirm internally or we handle it via the Delete Modal below.
-                    // If ModalEdit triggers the delete directly, we need to adapt.
-                    // Assuming ModalEdit has a "Delete" button that triggers this prop:
-                    setIsEditModalOpen(false); // Close edit modal
-                    // Open confirmation modal (itemToDelete is already set in handleEditRequest)
+                    setIsEditModalOpen(false);
                     return Promise.resolve();
                   }
                 : undefined
