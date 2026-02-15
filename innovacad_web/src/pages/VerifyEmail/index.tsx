@@ -123,7 +123,9 @@ const VerifyEmail = () => {
             <Mail size={40} class="text-primary" />
           </div>
 
-          <h1 class="text-3xl font-bold mb-2">{t("auth.verify_email.title")}</h1>
+          <h1 class="text-3xl font-bold mb-2">
+            {t("auth.verify_email.title")}
+          </h1>
           <p class="text-base-content/70 mb-8">
             {t("auth.verify_email.desc")}{" "}
             <span class="font-semibold text-base-content">
@@ -166,7 +168,9 @@ const VerifyEmail = () => {
               >
                 <Show
                   when={seconds() == 0}
-                  fallback={t("auth.verify_email.wait_msg", { seconds: seconds() })}
+                  fallback={t("auth.verify_email.wait_msg", {
+                    seconds: seconds(),
+                  })}
                 >
                   {t("auth.verify_email.resend_btn")}
                 </Show>

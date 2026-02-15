@@ -460,5 +460,159 @@
     "enabled_desc": "A sua conta está segura.",
     "please_enter_password": "Por favor insira a palavra-passe para ",
     "current_password": "Palavra-passe atual"
+  },
+  "messages": {
+    "generics": {
+      "network_error": "Erro de rede ou resposta inválida."
+    },
+    "auth": {
+      "session_expired": "A sua sessão expirou. Por favor, inicie sessão novamente.",
+      "no_token": "Nenhum token de autenticação fornecido",
+      "success_logout": "Sessão terminada com sucesso",
+      "fail_link_social": "Falha ao vincular conta social",
+      "fail_social_login": "Falha no login social",
+      "fail_enable_2fa": "Falha ao ativar 2FA",
+      "success_enable_2fa": "2FA ativado com sucesso",
+      "fail_disable_2fa": "Falha ao desativar 2FA",
+      "success_disable_2fa": "2FA desativado com sucesso",
+      "fail_send_otp": "Falha ao enviar código OTP",
+      "success_send_otp": "Código OTP enviado com sucesso",
+      "fail_verify_otp": "Falha ao verificar código OTP",
+      "fail_request_password_reset": "Falha ao solicitar redefinição de palavra-passe",
+      "success_request_password_reset": "Email de redefinição enviado! Verifique a sua caixa de entrada.",
+      "fail_reset_password": "Falha ao redefinir a palavra-passe",
+      "success_reset_password": "Palavra-passe redefinida com sucesso",
+      "fail_send_verification": "Falha ao enviar email de verificação",
+      "success_send_verification": "Email de verificação enviado! Verifique a sua caixa de entrada.",
+      "fail_verify_email": "Falha na verificação de email",
+      "success_verify_email": "Email verificado! Pode agora iniciar sessão."
+    },
+    "email": {
+      "success_send": "Email enviado com sucesso",
+      "fail_send": "Falha ao enviar email"
+    },
+    "users": {
+      "fail_sign_in": "Falha ao iniciar sessão, verifique as suas credenciais e tente novamente.",
+      "verify_email": "Por favor, verifique o seu email para aceder ao dashboard.",
+      "success_sign_in": "Login efetuado com sucesso. Vai ser redirecionado para o dashboard",
+      "verify_two_factor": "Por favor, verifique o seu 2FA para aceder ao dashboard",
+      "fail_get_session": "Falha ao obter a sessão.",
+      "success_get_session": "Sessão verificada com sucesso!",
+      "success_create": "Utilizador criado com sucesso",
+      "fail_create": "Falha ao criar utilizador",
+      "success_export": "Exportação concluída com sucesso",
+      "fail_export": "Falha na exportação"
+    },
+    "trainees": {
+      "fail_fetch": "Falha ao obter formandos",
+      "success_create": "Formando criado com sucesso",
+      "fail_create": "Falha ao criar formando",
+      "success_update": "Formando atualizado com sucesso",
+      "fail_update": "Falha ao atualizar formando",
+      "success_delete": "Formando eliminado com sucesso",
+      "fail_delete": "Falha ao eliminar formando"
+    },
+    "trainers": {
+      "fail_fetch": "Falha ao obter formadores",
+      "success_create": "Formador criado com sucesso",
+      "fail_create": "Falha ao criar formador",
+      "success_update": "Formador atualizado com sucesso",
+      "fail_update": "Falha ao atualizar formador",
+      "success_delete": "Formador eliminado com sucesso",
+      "fail_delete": "Falha ao eliminar formador"
+    },
+    "classes": {
+      "fail_fetch": "Falha ao obter turmas",
+      "success_create": "Turma criada com sucesso",
+      "fail_create": "Falha ao criar turma",
+      "success_update": "Turma atualizada com sucesso",
+      "fail_update": "Falha ao atualizar turma",
+      "success_delete": "Turma eliminada com sucesso",
+      "fail_delete": "Falha ao eliminar turma"
+    },
+    "courses": {
+      "fail_fetch": "Falha ao obter cursos",
+      "success_create": "Curso criado com sucesso",
+      "fail_create": "Falha ao criar curso",
+      "success_update": "Curso atualizado com sucesso",
+      "fail_update": "Falha ao atualizar curso",
+      "success_delete": "Curso eliminado com sucesso",
+      "fail_delete": "Falha ao eliminar curso"
+    },
+    "grades": {
+      "fail_fetch": "Falha ao obter notas",
+      "success_create": "Nota criada com sucesso",
+      "fail_create": "Falha ao criar nota",
+      "success_update": "Nota atualizada com sucesso",
+      "fail_update": "Falha ao atualizar nota",
+      "success_delete": "Nota eliminada com sucesso",
+      "fail_delete": "Falha ao eliminar nota",
+      "success_batch": "Notas guardadas com sucesso",
+      "fail_batch": "Falha ao guardar notas",
+      "success_finalize": "Notas finalizadas com sucesso",
+      "fail_finalize": "Falha ao finalizar notas"
+    },
+    "rooms": {
+      "fail_fetch": "Falha ao obter salas",
+      "success_create": "Sala criada com sucesso",
+      "fail_create": "Falha ao criar sala",
+      "success_update": "Sala atualizada com sucesso",
+      "fail_update": "Falha ao atualizar sala",
+      "success_delete": "Sala eliminada com sucesso",
+      "fail_delete": "Falha ao eliminar sala"
+    },
+    "modules": {
+      "fail_fetch": "Falha ao obter módulos",
+      "success_create": "Módulo criado com sucesso",
+      "fail_create": "Falha ao criar módulo",
+      "success_update": "Módulo atualizado com sucesso",
+      "fail_update": "Falha ao atualizar módulo",
+      "success_delete": "Módulo eliminado com sucesso",
+      "fail_delete": "Falha ao eliminar módulo"
+    },
+    "enrollments": {
+      "fail_fetch": "Falha ao obter inscrições",
+      "success_create": "Inscrição criada com sucesso",
+      "fail_create": "Falha ao criar inscrição",
+      "success_update": "Inscrição atualizada com sucesso",
+      "fail_update": "Falha ao atualizar inscrição",
+      "success_delete": "Inscrição eliminada com sucesso",
+      "fail_delete": "Falha ao eliminar inscrição"
+    },
+    "availabilities": {
+      "fail_fetch": "Falha ao obter disponibilidades",
+      "success_create": "Disponibilidade criada com sucesso",
+      "fail_create": "Falha ao criar disponibilidade",
+      "success_update": "Disponibilidade atualizada com sucesso",
+      "fail_update": "Falha ao atualizar disponibilidade",
+      "success_delete": "Disponibilidade eliminada com sucesso",
+      "fail_delete": "Falha ao eliminar disponibilidade"
+    },
+    "schedules": {
+      "fail_fetch": "Não foi possível obter sessões.",
+      "success_create": "Sessão criada com sucesso!",
+      "fail_create": "Não foi possível criar sessão.",
+      "success_update": "Sessão atualizada com sucesso!",
+      "fail_update": "Não foi possível atualizar a sessão.",
+      "success_delete": "Sessão removida com sucesso!",
+      "fail_delete": "Não foi possível remover sessão.",
+      "success_generate": "Horário gerado automaticamente com sucesso!",
+      "fail_generate": "Não foi possível gerar horário automaticamente."
+    },
+    "documents": {
+      "fail_fetch": "Não foi possível obter os documentos.",
+      "success_upload": "Documento carregado com sucesso!",
+      "fail_upload": "Não foi possível carregar o documento.",
+      "success_delete": "Documento removido com sucesso!",
+      "fail_delete": "Não foi possível remover o documento."
+    },
+    "summaries": {
+      "fail_fetch": "Não foi possível obter o sumário.",
+      "success_save": "Sumário guardado com sucesso!",
+      "fail_save": "Não foi possível guardar o sumário."
+    },
+    "statistics": {
+      "fail_fetch": "Não foi possível obter estatísticas."
+    }
   }
 }
