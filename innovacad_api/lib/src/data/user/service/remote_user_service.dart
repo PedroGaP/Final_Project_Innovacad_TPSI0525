@@ -501,10 +501,7 @@ class RemoteUserService {
       final response = await _dio.getUri(
         uri,
         options: Options(
-          headers: {
-            if (dto.authToken != null)
-              "set-cookie": "better-auth.session_data=${dto.authToken}",
-          },
+          headers: {"set-cookie": "better-auth.session_data=${dto.authToken}"},
         ),
       );
 

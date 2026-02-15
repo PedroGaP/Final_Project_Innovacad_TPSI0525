@@ -10,6 +10,9 @@ import type { ModalFieldDefinition } from "@/components/Modal/Edit";
 import type { Course } from "@/types/course";
 import { Icon } from "@/components/Icon";
 import EnrollmentDetailsModal from "@/components/Modal/EnrollmentDetails";
+import useI18n from "@/hooks/useL18N";
+
+const { t } = useI18n();
 
 const createEmptyEnrollment = (): Enrollment =>
   ({
@@ -181,21 +184,21 @@ const EnrollmentsPage = () => {
     () => [
       {
         name: "class_id",
-        label: "Class",
+        label: t("dashboard.enrollments.fields.class"),
         type: "select",
         options: classOptions(),
         required: true,
       },
       {
         name: "trainee_id",
-        label: "Trainee",
+        label: t("dashboard.enrollments.fields.trainee"),
         type: "select",
         options: traineeOptions(),
         required: true,
       },
       {
         name: "final_grade",
-        label: "Final Grade (0-20)",
+        label: `${t("dashboard.enrollments.fields.final_grade")} (0-20)`,
         type: "number",
       },
     ],
@@ -204,7 +207,11 @@ const EnrollmentsPage = () => {
   return (
     <>
       <EntityTable<Enrollment>
-        title={isTrainee() ? "My Enrollments & Grades" : "Manage Enrollments"}
+        title={
+          isTrainee()
+            ? t("dashboard.enrollments.trainee_title")
+            : t("dashboard.enrollments.title")
+        }
         data={displayData}
         handleAddClick={isTrainee() ? undefined : () => createEmptyEnrollment()}
         handleEditClick={isTrainee() ? undefined : (e) => ({ ...e })}
@@ -249,14 +256,14 @@ const EnrollmentsPage = () => {
         }}
         fields={[
           {
-            formattedName: "ID",
+            formattedName: t("dashboard.enrollments.fields.id"),
             fieldName: "enrollment_id",
             canCopy: true,
             smaller: true,
             hidden: isTrainee(),
           },
           {
-            formattedName: "Course",
+            formattedName: t("dashboard.enrollments.fields.course"),
             fieldName: "class_id",
             customGeneration: (e) => (
               <div class="flex flex-col">
@@ -280,7 +287,7 @@ const EnrollmentsPage = () => {
           },
           {
             bigger: true,
-            formattedName: "Class",
+            formattedName: t("dashboard.enrollments.fields.class"),
             fieldName: "class_id",
             customGeneration: (e) => (
               <div class="flex flex-col">
@@ -296,7 +303,7 @@ const EnrollmentsPage = () => {
             ),
           },
           {
-            formattedName: "Trainee",
+            formattedName: t("dashboard.enrollments.fields.trainee"),
             fieldName: "trainee_id",
             hidden: isTrainee(),
             customGeneration: (e) => (
@@ -309,7 +316,7 @@ const EnrollmentsPage = () => {
             ),
           },
           {
-            formattedName: "Final Grade",
+            formattedName: t("dashboard.enrollments.fields.final_grade"),
             fieldName: "final_grade",
             smaller: true,
             customGeneration: (e) => {

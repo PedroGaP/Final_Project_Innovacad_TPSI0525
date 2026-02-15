@@ -3,10 +3,19 @@ import type { ModalFieldDefinition } from "@/components/Modal/Edit";
 import { useApi } from "@/hooks/useApi";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import { Availability } from "@/types/availability";
-import { createMemo, createResource, createSignal, Show, createEffect } from "solid-js";
+import {
+  createMemo,
+  createResource,
+  createSignal,
+  Show,
+  createEffect,
+} from "solid-js";
 import { AvailabilityCalendar } from "@/components/AvailabilityCalendar";
 import { type EventInput } from "@fullcalendar/core";
 import toast from "solid-toast";
+import useI18n from "@/hooks/useL18N";
+
+const { t } = useI18n();
 
 const SLOT_TIMES: Record<number, { start: string; end: string }> = {
   1: { start: "08:00", end: "09:00" },
@@ -22,8 +31,6 @@ const SLOT_TIMES: Record<number, { start: string; end: string }> = {
   11: { start: "21:00", end: "22:00" },
   12: { start: "22:00", end: "23:00" },
 };
-
-
 
 const SLOT_OPTIONS = [
   { label: "Slot 1 (08:00 - 09:00)", value: 1 },
@@ -121,7 +128,8 @@ const AvailabilitiesPage = () => {
   const { user } = useUserDetails();
 
   const [viewMode, setViewMode] = createSignal<"calendar" | "list">("calendar");
-  const [selectedTrainerFilter, setSelectedTrainerFilter] = createSignal<string>("");
+  const [selectedTrainerFilter, setSelectedTrainerFilter] =
+    createSignal<string>("");
 
   const [availabilitiesData, { refetch }] = createResource<Availability[]>(
     api.fetchAvailabilities,
@@ -132,8 +140,6 @@ const AvailabilitiesPage = () => {
     refetch();
   });
   const [trainersData] = createResource(api.fetchTrainers);
-
-
 
   const isStrictTrainer = createMemo(() => {
     const u = user();
@@ -153,11 +159,16 @@ const AvailabilitiesPage = () => {
 
     if (role !== "admin") {
       if (!myId) return [];
-      result = list.filter(a => normalizeId(a.trainer_id) === normalizeId(myId));
+      result = list.filter(
+        (a) => normalizeId(a.trainer_id) === normalizeId(myId),
+      );
     }
 
     if (selectedTrainerFilter()) {
-      result = result.filter(a => normalizeId(a.trainer_id) === normalizeId(selectedTrainerFilter()));
+      result = result.filter(
+        (a) =>
+          normalizeId(a.trainer_id) === normalizeId(selectedTrainerFilter()),
+      );
     }
 
     return result;
@@ -186,29 +197,35 @@ const AvailabilitiesPage = () => {
   const formFieldsConfig = createMemo<ModalFieldDefinition<Availability>[]>(
     () => [
       {
-        label: "Trainer",
+        label: t("dashboard.availabilities.fields.trainer"),
         name: "trainer_id",
         type: "select",
         options: trainerOptions(),
         required: true,
         disabled: isStrictTrainer(),
-        placeholder: "Select Trainer",
+        placeholder: t("dashboard.availabilities.fields.trainer"),
       },
       {
-        label: "Date",
+        label: t("dashboard.availabilities.fields.date"),
         name: "date_day",
         type: "date",
         required: true,
       },
       {
-        label: "Slot Time",
+        label: t("dashboard.availabilities.fields.slot"),
         name: "slot_number",
         type: "select",
-        options: SLOT_OPTIONS,
+        options: SLOT_OPTIONS.map((s) => ({
+          ...s,
+          label: s.label.replace(
+            "Slot",
+            t("dashboard.availabilities.fields.slot"),
+          ),
+        })),
         required: true,
       },
       {
-        label: "Booked Status",
+        label: t("dashboard.availabilities.fields.modal.booked_status"),
         name: "is_booked",
         type: "checkbox",
         disabled: true,
@@ -218,7 +235,7 @@ const AvailabilitiesPage = () => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("ID copiado!");
+    toast.success(t("dashboard.availabilities.alerts.id_copied"));
   };
 
   const handleSave = async (
@@ -230,7 +247,7 @@ const AvailabilitiesPage = () => {
       !availability.date_day ||
       !availability.slot_number
     ) {
-      toast.error("Preencha todos os campos obrigatórios");
+      toast.error(t("dashboard.availabilities.alerts.fill_required"));
       throw new Error("Validation failed");
     }
 
@@ -247,7 +264,7 @@ const AvailabilitiesPage = () => {
           cleanData as any,
         );
         await refetch();
-        toast.success("Updated");
+        toast.success(t("dashboard.availabilities.update_successful"));
       } else {
         await api.createAvailability({
           trainer_id: String(cleanData.trainer_id),
@@ -256,7 +273,7 @@ const AvailabilitiesPage = () => {
           is_booked: 0,
         });
         await refetch();
-        toast.success("Created");
+        toast.success(t("dashboard.availabilities.create_successful"));
       }
     } catch (e: any) {
       if (e.message !== "Validation failed") toast.error(e.message);
@@ -274,7 +291,7 @@ const AvailabilitiesPage = () => {
     }
 
     await refetch();
-    toast.success("Availability deleted");
+    toast.success(t("dashboard.availabilities.delete_successful"));
   };
 
   const prepareAdd = () => {
@@ -340,7 +357,9 @@ const AvailabilitiesPage = () => {
         if (isContiguous && currentEvent) {
           currentEvent.end = endStr;
           if (currentEvent.extendedProps) {
-            currentEvent.extendedProps.mergedIds.push(String(av.availability_id));
+            currentEvent.extendedProps.mergedIds.push(
+              String(av.availability_id),
+            );
           }
           lastEndTime = endStr;
         } else {
@@ -349,17 +368,21 @@ const AvailabilitiesPage = () => {
 
           currentEvent = {
             id: String(av.availability_id),
-            title: `Available`,
+            title: t("dashboard.availabilities.fields.available"),
             start: startStr,
             end: endStr,
-            backgroundColor: av.is_booked ? "var(--color-error)" : "var(--color-success)",
-            borderColor: av.is_booked ? "var(--color-error)" : "var(--color-success)",
+            backgroundColor: av.is_booked
+              ? "var(--color-error)"
+              : "var(--color-success)",
+            borderColor: av.is_booked
+              ? "var(--color-error)"
+              : "var(--color-success)",
             textColor: "#fff",
             extendedProps: {
               trainerName,
               mergedIds: [String(av.availability_id)],
-              ...av
-            }
+              ...av,
+            },
           };
           events.push(currentEvent);
           lastEndTime = endStr;
@@ -379,7 +402,7 @@ const AvailabilitiesPage = () => {
     const slotsToCreate = getMatchingSlots(startDate, endDate);
 
     if (slotsToCreate.length === 0) {
-      toast.error("Please select a range covering at least one valid slot (slots are usually 1h long).");
+      toast.error(t("dashboard.availabilities.alerts.select_range"));
       return;
     }
 
@@ -394,7 +417,7 @@ const AvailabilitiesPage = () => {
       }
 
       if (!trainerId) {
-        toast.error("Please select a specific trainer from the dropdown above to add availability.");
+        toast.error(t("dashboard.availabilities.alerts.select_trainer"));
         return;
       }
 
@@ -415,11 +438,14 @@ const AvailabilitiesPage = () => {
 
       if (createdList.length > 0) {
         await refetch();
-        toast.success(`Created ${createdList.length} availability slot(s)`);
+        toast.success(
+          t("dashboard.availabilities.alerts.created_slots", {
+            count: createdList.length,
+          }),
+        );
       } else {
-        toast.error("Failed to create any slots.");
+        toast.error(t("dashboard.availabilities.alerts.create_fail_slots"));
       }
-
     } catch (e: any) {
       toast.error(e.message);
     }
@@ -429,7 +455,17 @@ const AvailabilitiesPage = () => {
     const props = event.extendedProps;
     const idsToDelete: string[] = props.mergedIds || [event.id];
 
-    if (confirm(`Delete availability? ${idsToDelete.length > 1 ? `(${idsToDelete.length} slots)` : ""}`)) {
+    if (
+      confirm(
+        `${t("dashboard.availabilities.alerts.delete_confirmation")} ${
+          idsToDelete.length > 1
+            ? t("dashboard.availabilities.alerts.delete_slots_info", {
+                count: idsToDelete.length,
+              })
+            : ""
+        }`,
+      )
+    ) {
       try {
         for (const id of idsToDelete) {
           if (!id || id === "undefined") continue;
@@ -441,16 +477,19 @@ const AvailabilitiesPage = () => {
         }
 
         await refetch();
-        toast.success("Deleted");
+        toast.success(t("dashboard.availabilities.delete_successful"));
       } catch (e) {
         console.error(e);
-        toast.error("Error deleting one or more slots");
+        toast.error(t("dashboard.availabilities.alerts.delete_partial_fail"));
       }
     }
   };
 
-
-  const handleCalendarMove = async (event: any, newStartStr: string, newEndStr: string) => {
+  const handleCalendarMove = async (
+    event: any,
+    newStartStr: string,
+    newEndStr: string,
+  ) => {
     const props = event.extendedProps;
     const idsToDelete: string[] = props.mergedIds || [event.id];
     const trainerId = props.trainer_id;
@@ -462,7 +501,7 @@ const AvailabilitiesPage = () => {
     const dateDay = getLocalYYYYMMDD(newStart);
 
     if (newSlots.length === 0) {
-      toast.error("No valid slots found for this time range.");
+      toast.error(t("dashboard.availabilities.alerts.no_slots"));
       throw new Error("Invalid range");
     }
 
@@ -481,15 +520,16 @@ const AvailabilitiesPage = () => {
         try {
           await api.deleteAvailability(id);
         } catch (e) {
-          console.warn(`Failed to delete ${id}, likely already deleted or not found.`);
+          console.warn(
+            `Failed to delete ${id}, likely already deleted or not found.`,
+          );
         }
       }
 
       await refetch();
-
     } catch (e) {
       console.error(e);
-      toast.error("Failed to move availability");
+      toast.error(t("dashboard.availabilities.alerts.moved_fail"));
       throw e;
     }
   };
@@ -519,14 +559,18 @@ const AvailabilitiesPage = () => {
     <div class="p-6 h-full flex flex-col gap-6">
       <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
         <div class="flex items-center gap-4 w-full sm:w-auto">
-          <h1 class="text-2xl font-bold text-base-content">Availability</h1>
+          <h1 class="text-2xl font-bold text-base-content">
+            {t("dashboard.availabilities.title")}
+          </h1>
           <Show when={!isStrictTrainer() && trainersData()}>
             <select
               class="select select-bordered select-sm w-full max-w-xs"
               value={selectedTrainerFilter()}
               onChange={(e) => setSelectedTrainerFilter(e.currentTarget.value)}
             >
-              <option value="">All Trainers</option>
+              <option value="">
+                {t("dashboard.availabilities.select_default")}
+              </option>
               {trainerOptions().map((t) => (
                 <option value={String(t.value)}>{t.label}</option>
               ))}
@@ -539,13 +583,13 @@ const AvailabilitiesPage = () => {
             class={`join-item btn border-0 ${viewMode() === "calendar" ? "btn-active shadow-sm !bg-base-100 text-base-content hover:!bg-base-100" : "btn-ghost text-base-content/70 hover:bg-transparent"}`}
             onClick={() => setViewMode("calendar")}
           >
-            Calendar
+            {t("dashboard.availabilities.btn.calendar")}
           </button>
           <button
             class={`join-item btn border-0 ${viewMode() === "list" ? "btn-active shadow-sm !bg-base-100 text-base-content hover:!bg-base-100" : "btn-ghost text-base-content/70 hover:bg-transparent"}`}
             onClick={() => setViewMode("list")}
           >
-            List
+            {t("dashboard.availabilities.btn.list")}
           </button>
         </div>
       </div>
@@ -584,7 +628,8 @@ const AvailabilitiesPage = () => {
               const tData = trainersData();
 
               const trainer = tData?.find(
-                (t) => normalizeId(getTrainerId(t)) === normalizeId(e.trainer_id),
+                (t) =>
+                  normalizeId(getTrainerId(t)) === normalizeId(e.trainer_id),
               );
               const tName = trainer?.name?.toLowerCase() || "";
               const dateStr = toInputDate(e.date_day);
@@ -593,7 +638,7 @@ const AvailabilitiesPage = () => {
             }}
             fields={[
               {
-                formattedName: "Trainer",
+                formattedName: t("dashboard.availabilities.fields.trainer"),
                 fieldName: "trainer_id",
                 canCopy: false,
                 customGeneration: (e) => {
@@ -607,7 +652,9 @@ const AvailabilitiesPage = () => {
                         const trainer = trainersMap().get(avTrainerId);
 
                         const name =
-                          trainer?.name || trainer?.username || "Unknown Trainer";
+                          trainer?.name ||
+                          trainer?.username ||
+                          t("common.unknown_trainer");
                         const idToDisplay = e.trainer_id || "N/A";
 
                         return (
@@ -631,15 +678,17 @@ const AvailabilitiesPage = () => {
                 },
               },
               {
-                formattedName: "Date",
+                formattedName: t("dashboard.availabilities.fields.date"),
                 fieldName: "date_day",
                 customGeneration: (e) => toInputDate(e.date_day),
               },
               {
-                formattedName: "Slot",
+                formattedName: t("dashboard.availabilities.fields.slot"),
                 fieldName: "slot_number",
                 customGeneration: (e) => {
-                  const slot = SLOT_OPTIONS.find((s) => s.value == e.slot_number);
+                  const slot = SLOT_OPTIONS.find(
+                    (s) => s.value == e.slot_number,
+                  );
                   return (
                     <span class="badge badge-ghost badge-sm">
                       {slot ? slot.label : `Slot ${e.slot_number}`}
@@ -648,16 +697,18 @@ const AvailabilitiesPage = () => {
                 },
               },
               {
-                formattedName: "Status",
+                formattedName: t(
+                  "dashboard.availabilities.fields.status.title",
+                ),
                 fieldName: "is_booked",
                 customGeneration: (e) =>
                   e.is_booked ? (
                     <span class="badge badge-error gap-1 text-xs font-semibold text-white">
-                      Booked
+                      {t("dashboard.availabilities.fields.status.booked")}
                     </span>
                   ) : (
                     <span class="badge badge-success gap-1 text-xs font-semibold text-white">
-                      Free
+                      {t("dashboard.availabilities.fields.status.free")}
                     </span>
                   ),
               },
