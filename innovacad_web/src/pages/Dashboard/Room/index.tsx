@@ -4,6 +4,9 @@ import { useApi } from "@/hooks/useApi";
 import toast from "solid-toast";
 import EntityTable from "@/components/EntityTable";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
+import useI18n from "@/hooks/useL18N";
+
+const { t } = useI18n();
 
 const createEmptyRoom = (): Room =>
   ({
@@ -136,7 +139,7 @@ const RoomsPage = () => {
 
   return (
     <EntityTable<Room>
-      title="Manage Rooms"
+      title={t("dashboard.rooms.title")}
       data={usersData}
       handleEditClick={(room) => ({
         ...room,
@@ -150,75 +153,75 @@ const RoomsPage = () => {
       }}
       fields={[
         {
-          formattedName: "ID",
+          formattedName: t("dashboard.rooms.fields.id"),
           fieldName: "room_id",
           canCopy: true,
           smaller: true,
           hidden: isTrainee(),
         },
         {
-          formattedName: "Name",
+          formattedName: t("dashboard.rooms.fields.name"),
           fieldName: "room_name",
           canCopy: true,
           smaller: true,
         },
         {
-          formattedName: "Capacity",
+          formattedName: t("dashboard.rooms.fields.capacity"),
           fieldName: "capacity",
           canCopy: true,
           smaller: true,
         },
         {
-          formattedName: "Has Computers ?",
+          formattedName: t("dashboard.rooms.fields.has_computers"),
           fieldName: "has_computers",
           smaller: true,
         },
         {
-          formattedName: "Has Projector ?",
+          formattedName: t("dashboard.rooms.fields.has_projector"),
           fieldName: "has_projector",
           smaller: true,
         },
         {
-          formattedName: "Has Whiteboard ?",
+          formattedName: t("dashboard.rooms.fields.has_whiteboard"),
           fieldName: "has_whiteboard",
           smaller: true,
         },
         {
-          formattedName: "Has Smartboard ?",
+          formattedName: t("dashboard.rooms.fields.has_smartboard"),
           fieldName: "has_smartboard",
           smaller: true,
         },
       ]}
       formFields={[
         {
-          label: "Name",
+          label: t("dashboard.rooms.fields.name"),
           name: "room_name",
           type: "text",
           required: true,
         },
         {
-          label: "Capacity",
+          label: t("dashboard.rooms.fields.capacity"),
           name: "capacity",
           type: "number",
           required: true,
         },
         {
-          label: "Has Computers ?",
+          label: t("dashboard.rooms.fields.has_computers"),
           name: "has_computers",
           type: "checkbox",
         },
         {
-          label: "Has Projector ?",
+          label: t("dashboard.rooms.fields.has_projector"),
           name: "has_projector",
           type: "checkbox",
         },
         {
-          label: "Has Whiteboard ?",
+          label: t("dashboard.rooms.fields.has_whiteboard"),
           name: "has_whiteboard",
           type: "checkbox",
         },
         {
-          label: "Has Smartboard ?",
+          label: t("dashboard.rooms.fields.has_smartboard"),
           name: "has_smartboard",
           type: "checkbox",
         },

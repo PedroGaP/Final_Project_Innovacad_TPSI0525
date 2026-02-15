@@ -149,6 +149,7 @@
     "add": "Add",
     "edit_entry": "Edit Entry",
     "new_entry": "New Entry",
+    "delete_entry": "Delete Entry",
     "confirm_delete": "Delete Confirmation",
     "confirm_delete_desc": "Are you sure you want to remove this entry?"
   },
@@ -210,7 +211,8 @@
       "edit_session": "Edit Session",
       "delete_schedule": "Delete Schedule",
       "delete_schedule_desc_q": "Are you sure you want to remove this session from the calendar?",
-      "force_trainer_change_q": "Force Trainer Change?"
+      "force_trainer_change_q": "Force Trainer Change?",
+      "delete_success": "Action completed, all associated data was permanently deleted."
     },
     "documents": {
       "upload_successful_profile_pic": "Uploaded profile picture successfully!",
@@ -303,6 +305,45 @@
       "selected_modules": "Selected Modules",
       "total": "Total",
       "with_trainer": "w/ Trainer"
+    },
+    "rooms": {
+      "title": "Manage Rooms",
+      "fields": {
+        "id": "ID",
+        "name": "Name",
+        "capacity": "Capacity",
+        "has_computers": "Has Computers?",
+        "has_projector": "Has Projector?",
+        "has_whiteboard": "Has Whiteboard?",
+        "has_smartboard": "Has Smartboard?"
+      }
+    },
+    "grades": {
+      "title": "Grade Sheets",
+      "fields": {
+        "role": "Role",
+        "class": "Class",
+        "module": "Module",
+        "action": {
+          "title": "Action",
+          "description": "Manage Grades"
+        }
+      },
+      "modal": {
+        "title": "Grade Sheets",
+        "fields": {
+          "trainee": "Trainee",
+          "assiduity": "Assiduity",
+          "behavior": "Behavior",
+          "work": "Work",
+          "test": "Test",
+          "final": "Final"
+        },
+        "sheet_locked": "Grade sheet LOCKED.",
+        "remember_changes": "Remember to save changes.",
+        "finalize_grades": "Finalize Grades",
+        "save": "Save"
+      }
     }
   },
   "auth": {

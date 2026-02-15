@@ -149,6 +149,7 @@
     "add": "Adicionar",
     "edit_entry": "Editar Dados",
     "new_entry": "Novos Dados",
+    "delete_entry": "Apagar Dados",
     "confirm_delete": "Confirmar Remoção",
     "confirm_delete_desc": "Tens a certeza que queres apagar este dado?"
   },
@@ -210,7 +211,8 @@
       "edit_session": "Modificar Sessão",
       "delete_schedule": "Remover Sessão",
       "delete_schedule_desc_q": "Tens a certeza que queres remover esta sessão do horário?",
-      "force_trainer_change_q": "Forçar substituição de Formador?"
+      "force_trainer_change_q": "Forçar substituição de Formador?",
+      "delete_success": "Ação concluída, todos os dados associados foram apagados permanentemente."
     },
     "documents": {
       "upload_successful_profile_pic": "Fotografia de Perfil inserida com sucesso!",
@@ -303,6 +305,45 @@
       "selected_modules": "Módulos Selecionados",
       "total": "Total",
       "with_trainer": "com Formador"
+    },
+    "rooms": {
+      "title": "Gerir Salas",
+      "fields": {
+        "id": "ID",
+        "name": "Nome",
+        "capacity": "Capacidade",
+        "has_computers": "Tem Computadores?",
+        "has_projector": "Tem Projetor?",
+        "has_whiteboard": "Tem Quadro Branco?",
+        "has_smartboard": "Tem Quadro Interativo?"
+      }
+    },
+    "grades": {
+      "title": "Folhas de Avaliação",
+      "fields": {
+        "role": "Papel",
+        "class": "Turma",
+        "module": "Módulo",
+        "action": {
+          "title": "Ação",
+          "description": "Gerir Notas"
+        }
+      },
+      "modal": {
+        "title": "Folha de Avaliação",
+        "fields": {
+          "trainee": "Formando",
+          "assiduity": "Assiduidade",
+          "behavior": "Comportamento",
+          "work": "Trabalhos",
+          "test": "Testes",
+          "final": "Final"
+        },
+        "sheet_locked": "Folha TRANCADA.",
+        "remember_changes": "Lembre-se de salvar as alterações.",
+        "finalize_grades": "Finalizar Notas",
+        "save": "Salvar"
+      }
     }
   },
   "auth": {

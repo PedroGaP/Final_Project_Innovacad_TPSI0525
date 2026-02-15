@@ -365,7 +365,7 @@ export default function EntityTable<T>(props: Props<T>) {
               }}
               onCancel={() => setDeletingEntity(null)}
               title={t("entity_table.delete_entry")}
-              description={t("entity_table.delete_entry_confirm")}
+              description={t("entity_table.confirm_delete")}
             />
           )}
         </Show>

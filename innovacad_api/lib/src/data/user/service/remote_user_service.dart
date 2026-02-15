@@ -51,10 +51,14 @@ class RemoteUserService {
           isStmt: true,
         );
 
-        List<String> coordinatedIds = [];
-        for (var row in classesResult.rowsAssoc) {
-          coordinatedIds.add(row.assoc()['class_id'].toString());
-        }
+        Map<String, String> coordinatedIds = Map.fromEntries(
+          classesResult.rows.map(
+            (row) => MapEntry(
+              row['class_id'].toString(),
+              row['identifier'].toString(),
+            ),
+          ),
+        );
 
         userData['is_coordinator'] = coordinatedIds.isNotEmpty;
         userData['coordinated_class_ids'] = coordinatedIds;
@@ -497,7 +501,10 @@ class RemoteUserService {
       final response = await _dio.getUri(
         uri,
         options: Options(
-          headers: {"set-cookie": "better-auth.session_data=${dto.authToken}"},
+          headers: {
+            if (dto.authToken != null)
+              "set-cookie": "better-auth.session_data=${dto.authToken}",
+          },
         ),
       );
 

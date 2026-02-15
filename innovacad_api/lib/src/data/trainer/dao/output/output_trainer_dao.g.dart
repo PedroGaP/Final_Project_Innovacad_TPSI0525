@@ -46,9 +46,9 @@ Map<String, dynamic> _$OutputTrainerDaoToJson(OutputTrainerDao instance) =>
       'session_token': instance.sessionToken,
       'emailVerified': instance.verified,
       'twoFactorEnabled': instance.twoFactorEnabled,
+      'coordinated_class_ids': instance.coordinatedClassIds,
       'trainer_id': instance.trainerId,
       'birthday_date': const DateTimeConverter().toJson(instance.birthdayDate),
       'skills': instance.skills,
       'is_coordinator': instance.isCoordinator,
-      'coordinated_class_ids': instance.coordinatedClassIds,
     };

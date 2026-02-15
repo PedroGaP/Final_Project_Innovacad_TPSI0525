@@ -14,6 +14,7 @@ import toast from "solid-toast";
 import { BookOpen, Crown, Lock, Save, X } from "lucide-solid";
 import { createStore } from "solid-js/store";
 import { Index } from "solid-js";
+import useI18n from "@/hooks/useL18N";
 
 interface ModuleRow {
   unique_id: string;
@@ -35,6 +36,8 @@ interface StudentGradeRow {
   final: number;
   status: GradeStatusEnum;
 }
+
+const { t } = useI18n();
 
 const normalizeId = (id: any) =>
   String(id || "")
@@ -218,7 +221,8 @@ const GradeSheetModal = (props: {
         <div class="modal-box w-11/12 max-w-6xl">
           <div class="flex justify-between items-center mb-4">
             <h3 class="font-bold text-lg">
-              Grade Sheet: <span class="text-primary">{props.className}</span> -{" "}
+              {t("dashboard.grades.modal.title")}:{" "}
+              <span class="text-primary">{props.className}</span> -{" "}
               {props.moduleName}
             </h3>
             <button
@@ -241,12 +245,24 @@ const GradeSheetModal = (props: {
               <table class="table table-xs md:table-sm">
                 <thead>
                   <tr>
-                    <th class="w-48">Trainee</th>
-                    <th class="w-24 text-center">Assiduity (5%)</th>
-                    <th class="w-24 text-center">Behavior (5%)</th>
-                    <th class="w-24 text-center">Work (30%)</th>
-                    <th class="w-24 text-center">Test (60%)</th>
-                    <th class="w-24 text-center font-bold">Final</th>
+                    <th class="w-48">
+                      {t("dashboard.grades.modal.fields.trainee")}
+                    </th>
+                    <th class="w-24 text-center">
+                      {t("dashboard.grades.modal.fields.assiduity")} (5%)
+                    </th>
+                    <th class="w-24 text-center">
+                      {t("dashboard.grades.modal.fields.behavior")} (5%)
+                    </th>
+                    <th class="w-24 text-center">
+                      {t("dashboard.grades.modal.fields.work")} (30%)
+                    </th>
+                    <th class="w-24 text-center">
+                      {t("dashboard.grades.modal.fields.test")} (60%)
+                    </th>
+                    <th class="w-24 text-center font-bold">
+                      {t("dashboard.grades.modal.fields.final")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -333,8 +349,8 @@ const GradeSheetModal = (props: {
           <div class="modal-action flex justify-between items-center">
             <div class="text-xs opacity-50">
               {isFinalized()
-                ? "Grade sheet LOCKED."
-                : "Remember to save changes."}
+                ? t("dashboard.grades.modal.sheet_locked")
+                : t("dashboard.grades.modal.remember_changes")}
             </div>
             <div class="flex gap-2">
               <Show when={props.canFinalize && !isFinalized()}>
@@ -342,12 +358,13 @@ const GradeSheetModal = (props: {
                   class="btn btn-error btn-sm text-white"
                   onClick={handleFinalize}
                 >
-                  <Lock size={16} /> Finalize Grades
+                  <Lock size={16} />{" "}
+                  {t("dashboard.grades.modal.finalize_grades")}
                 </button>
               </Show>
               <Show when={!isFinalized()}>
                 <button class="btn btn-primary btn-sm" onClick={handleSave}>
-                  <Save size={16} /> Save
+                  <Save size={16} /> {t("dashboard.grades.modal.save")}
                 </button>
               </Show>
             </div>
@@ -441,11 +458,11 @@ const GradesPage = () => {
   return (
     <>
       <EntityTable<ModuleRow>
-        title="Grade Sheets"
+        title={t("dashboard.grades.title")}
         data={modulesList}
         handleAddClick={undefined}
         confirmDelete={undefined}
-        handleSave={async () => { }}
+        handleSave={async () => {}}
         handleEditClick={(row) => {
           handleOpenPauta(row);
           return undefined;
@@ -460,7 +477,7 @@ const GradesPage = () => {
         }}
         fields={[
           {
-            formattedName: "Role",
+            formattedName: t("dashboard.grades.fields.role"),
             fieldName: "class_id",
             smaller: true,
             customGeneration: (r) => {
@@ -476,7 +493,7 @@ const GradesPage = () => {
             },
           },
           {
-            formattedName: "Class",
+            formattedName: t("dashboard.grades.fields.class"),
             fieldName: "class_identifier",
             customGeneration: (r) => (
               <div class="flex flex-col">
@@ -485,9 +502,12 @@ const GradesPage = () => {
               </div>
             ),
           },
-          { formattedName: "Module", fieldName: "module_name" },
           {
-            formattedName: "Action",
+            formattedName: t("dashboard.grades.fields.module"),
+            fieldName: "module_name",
+          },
+          {
+            formattedName: t("dashboard.grades.fields.action.title"),
             fieldName: "module_id",
             customGeneration: (r) => {
               const isCoord = isCoordinatorOf(r.class_id);
@@ -496,7 +516,7 @@ const GradesPage = () => {
                   class={`btn btn-sm btn-outline ${isCoord ? "btn-primary" : "btn-ghost"}`}
                   onClick={() => handleOpenPauta(r)}
                 >
-                  {isCoord ? "Manage Grades" : "Enter Grades"}
+                  {t("dashboard.grades.fields.action.description")}
                 </button>
               );
             },
