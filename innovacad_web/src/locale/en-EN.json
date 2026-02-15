@@ -344,6 +344,59 @@
         "finalize_grades": "Finalize Grades",
         "save": "Save"
       }
+    },
+    "enrollments": {
+      "trainee_title": "My Enrollments & Grades",
+      "title": "Manage Enrollments",
+      "fields": {
+        "id": "ID",
+        "course": "Course",
+        "class": "Class",
+        "trainee": "Trainee",
+        "final_grade": "Final Grade"
+      }
+    },
+    "availabilities": {
+      "title": "Availabilities",
+      "select_default": "All Trainers",
+      "btn": {
+        "calendar": "Calendar",
+        "list": "List",
+        "today": "Today",
+        "month": "Month",
+        "week": "Week",
+        "day": "Day"
+      },
+      "fields": {
+        "trainer": "Trainer",
+        "date": "Date",
+        "slot": "Slot",
+        "status": {
+          "title": "Status",
+          "free": "Free",
+          "booked": "Booked"
+        },
+        "modal": {
+          "booked_status": "Booked Status"
+        },
+        "slot_label": "Slot {{number}} ({{start}} - {{end}})",
+        "slot_n": "Slot {{number}}",
+        "available": "Available"
+      },
+      "alerts": {
+        "id_copied": "ID copied!",
+        "fill_required": "Please fill all required fields",
+        "select_range": "Please select a range covering at least one valid slot (slots are usually 1h long).",
+        "select_trainer": "Please select a specific trainer from the dropdown above to add availability.",
+        "created_slots": "Created {{count}} availability slot(s)",
+        "create_fail_slots": "Failed to create any slots.",
+        "delete_confirmation": "Delete availability?",
+        "delete_slots_info": "( {{count}} slots )",
+        "delete_partial_fail": "Error deleting one or more slots",
+        "no_slots": "No valid slots found for this time range.",
+        "moved_success": "Availability moved!",
+        "moved_fail": "Could not move availability."
+      }
     }
   },
   "auth": {
@@ -482,7 +535,8 @@
   },
   "common": {
     "loading": "Loading...",
-    "error_loading": "Failed to load data. Please try again later."
+    "error_loading": "Failed to load data. Please try again later.",
+    "unknown_trainer": "Unknown Trainer"
   },
   "home": {
     "title": "Home",

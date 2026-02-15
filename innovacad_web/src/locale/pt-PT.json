@@ -337,12 +337,65 @@
           "behavior": "Comportamento",
           "work": "Trabalhos",
           "test": "Testes",
-          "final": "Final"
+          "final": "Nota Final"
         },
         "sheet_locked": "Folha TRANCADA.",
         "remember_changes": "Lembre-se de salvar as alterações.",
         "finalize_grades": "Finalizar Notas",
         "save": "Salvar"
+      }
+    },
+    "enrollments": {
+      "trainee_title": "As minhas Matrículas e Notas",
+      "title": "Gerir Matrículas",
+      "fields": {
+        "id": "ID",
+        "course": "Curso",
+        "class": "Turma",
+        "trainee": "Formando",
+        "final_grade": "Nota Final"
+      }
+    },
+    "availabilities": {
+      "title": "Disponibilidades",
+      "select_default": "Todos os Formandos",
+      "btn": {
+        "calendar": "Calendário",
+        "list": "Lista",
+        "today": "Hoje",
+        "month": "Mês",
+        "week": "Semana",
+        "day": "Dia"
+      },
+      "fields": {
+        "trainer": "Formador",
+        "date": "Data",
+        "slot": "Slot",
+        "status": {
+          "title": "Estado",
+          "free": "Livre",
+          "booked": "Reservad@"
+        },
+        "modal": {
+          "booked_status": "Estado da Reserva"
+        },
+        "slot_label": "Slot {{number}} ({{start}} - {{end}})",
+        "slot_n": "Slot {{number}}",
+        "available": "Disponível"
+      },
+      "alerts": {
+        "id_copied": "ID copiado!",
+        "fill_required": "Por favor, preencha todos os campos obrigatórios.",
+        "select_range": "Selecione um intervalo que abranja pelo menos um horário válido (os horários geralmente têm duração de 1 hora).",
+        "select_trainer": "Selecione um instrutor específico no menu suspenso acima para adicionar disponibilidade.",
+        "created_slots": "Criadas {{count}} vagas de disponibilidade",
+        "create_fail_slots": "Não foi possível criar nenhum slot.",
+        "delete_confirmation": "Apagar disponibilidade?",
+        "delete_slots_info": "( {{count}} slots )",
+        "delete_partial_fail": "Erro ao apagar um ou mais slots",
+        "no_slots": "Não foram encontrados horários válidos para este intervalo.",
+        "moved_success": "Disponibilidade movida!",
+        "moved_fail": "Não foi possível mover a disponibilidade."
       }
     }
   },
