@@ -147,6 +147,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
             whereValues: [trainerId],
             isStmt: true,
           );
+
           trainerMap['coordinated_class_ids'] = Map.fromEntries(
             classResults.rows.map(
               (row) => MapEntry(

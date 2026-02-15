@@ -48,7 +48,7 @@ const validateTrainer = (
   } else if (trainer.username.length < 3) {
     errors.push(t(`fields.length_username`));
   }
-  if (!trainer.birthdayDate) errors.push("fields.required_birtday_date");
+  if (!trainer.birthdayDate) errors.push(t("fields.required_birthday_date"));
   return { valid: errors.length === 0, errors };
 };
 
@@ -68,7 +68,7 @@ const TrainerPage = () => {
       const validation = validateTrainer(trainer);
       if (!validation.valid) {
         validation.errors.forEach((error) => toast.error(error));
-        throw new Error(t("dashboard.user.trainers.validate_fail"));
+        throw new Error(t("dashboard.users.trainers.validate_fail"));
       }
 
       const currentClassIds = Object.keys(trainer.coordinated_class_ids) || [];
@@ -111,7 +111,7 @@ const TrainerPage = () => {
               return u;
             }) || [],
         );
-        toast.success(t("dashboard.user.trainers.update_successful"));
+        toast.success(t("dashboard.users.trainers.update_successful"));
       } else {
         const tempPassword = "T" + Math.random().toString(36).slice(-10) + "1@";
 
@@ -130,23 +130,23 @@ const TrainerPage = () => {
         try {
           await api.sendEmail({
             to: trainer.email!,
-            subject: t("dashboard.user.email_new_password_subject"),
+            subject: t("dashboard.users.email_new_password_subject"),
             body: newPasswordEmail(tempPassword),
           });
         } catch (e) {
-          toast.error(t("dashboard.user.send_email_fail"));
+          toast.error(t("dashboard.users.send_email_fail"));
         }
 
         mutate((prev) => [...(prev || []), newTrainer]);
-        toast.success(t("dashboard.user.trainers.create_successful"));
+        toast.success(t("dashboard.users.trainers.create_successful"));
       }
     } catch (error: any) {
       if (original) {
         if (error.message !== "Validation failed")
-          toast.error(t("dashboard.user.trainers.update_fail"));
+          toast.error(t("dashboard.users.trainers.update_fail"));
       } else {
         if (error.message !== "Validation failed")
-          toast.error(t("dashboard.user.trainers.create_fail"));
+          toast.error(t("dashboard.users.trainers.create_fail"));
       }
     }
   };
@@ -157,9 +157,9 @@ const TrainerPage = () => {
       mutate(
         (prev) => prev?.filter((u) => u.trainerId !== trainer.trainerId) || [],
       );
-      toast.success(t("dashboard.user.trainers.delete_successful"));
+      toast.success(t("dashboard.users.trainers.delete_successful"));
     } catch (e) {
-      toast.error(t("dashboard.user.trainers.delete_fail"));
+      toast.error(t("dashboard.users.trainers.delete_fail"));
     }
   };
 

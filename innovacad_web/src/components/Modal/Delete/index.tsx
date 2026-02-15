@@ -76,7 +76,7 @@ export default function ModalDelete<T extends Record<string, any>>(
                 {props.description || t("dashboard.modal.delete_title")}
               </p>
               <p class="text-sm text-base-content/60 mt-2">
-                t("dashboard.modal.delete_warn")
+                {t("dashboard.modal.delete_warn")}
               </p>
               {props.value() && (
                 <>

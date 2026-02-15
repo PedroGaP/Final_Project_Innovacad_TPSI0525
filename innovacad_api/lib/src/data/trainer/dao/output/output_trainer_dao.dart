@@ -21,9 +21,6 @@ class OutputTrainerDao extends OutputUserDao {
   @annotation.JsonKey(name: 'is_coordinator')
   final bool? isCoordinator;
 
-  @annotation.JsonKey(name: 'coordinated_class_ids')
-  final Map<String, String>? coordinatedClassIds;
-
   OutputTrainerDao({
     required super.id,
     required super.createdAt,
@@ -37,7 +34,7 @@ class OutputTrainerDao extends OutputUserDao {
     required this.birthdayDate,
     required this.skills,
     this.isCoordinator,
-    this.coordinatedClassIds,
+    super.coordinatedClassIds,
     super.image,
     super.token,
     super.sessionToken,
