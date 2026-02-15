@@ -6,6 +6,7 @@ import {
   Success,
   type Result,
 } from "@/api/api";
+import useI18n from "@/hooks/useL18N"; // Certifica-te que o caminho está correto
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import type { AttendanceStats } from "@/types/attendance";
 import type { SendVerificationData, SignInData } from "@/types/auth";
@@ -104,6 +105,7 @@ export interface SignInResponse {
 export const useApi = () => {
   const { user, logout, setUser } = useUserDetails();
   const navigate = useNavigate();
+  const { t } = useI18n(); // Hook de tradução
 
   /**
    * Centralized error handler for auth failures
@@ -112,7 +114,7 @@ export const useApi = () => {
     if (status === 401 || status === 403) {
       logout();
       Cookies.remove(SESSION_COOKIE_KEY);
-      toast.error("Your session has expired. Please sign in again.");
+      toast.error(t("messages.auth.session_expired"));
       navigate("/");
     } else {
       toast.error(message);
@@ -149,7 +151,7 @@ export const useApi = () => {
     try {
       if (!skipAuth && requiresAuth(path)) {
         if (!user() || !user()?.token) {
-          handleAuthFailure(403, "No authentication token provided");
+          handleAuthFailure(403, t("messages.auth.no_token"));
           return new Failure(
             new AppError(AppErrorType.FORBIDDEN, "No token was provided."),
           );
@@ -212,6 +214,7 @@ export const useApi = () => {
       return new Success(data as T);
     } catch (e) {
       console.error("[API ERROR]", e);
+      toast.error(t("messages.generics.network_error"));
       return new Failure(
         new AppError(AppErrorType.INTERNAL, "Network or parsing error."),
       );
@@ -231,9 +234,13 @@ export const useApi = () => {
     );
 
     if (res.isError) {
-      throw new Error(`Failed to generate auto schedule: ${res.error?.message}`);
+      toast.error(t("messages.schedules.fail_generate"));
+      throw new Error(
+        `Failed to generate auto schedule: ${res.error?.message}`,
+      );
     }
 
+    toast.success(t("messages.schedules.success_generate"));
     return res.data;
   };
 
@@ -258,8 +265,8 @@ export const useApi = () => {
       if (data.role === "coordinator") (trainer as any).is_coordinator = true;
 
       (trainer as any).coordinated_class_ids =
-        typeof data.coordinated_class_ids === 'object' &&
-          data.coordinated_class_ids !== null
+        typeof data.coordinated_class_ids === "object" &&
+        data.coordinated_class_ids !== null
           ? data.coordinated_class_ids
           : {};
 
@@ -302,6 +309,7 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.users.fail_sign_in"));
       throw new Error(`SignIn Failed: ${res.error?.message}`);
     }
 
@@ -310,21 +318,9 @@ export const useApi = () => {
     const user = mapToUserType(userData);
     setUser(user);
 
-    console.log("Raw emailVerified:", userData.emailVerified);
-    console.log("Type of emailVerified:", typeof userData.emailVerified);
-    console.log(
-      "Boolean check - !userData.emailVerified:",
-      !userData.emailVerified,
-    );
-    console.log("Raw twoFactorRedirect:", userData.twoFactorRedirect);
-    console.log(
-      "Type of twoFactorRedirect:",
-      typeof userData.twoFactorRedirect,
-    );
-
     if (userData.twoFactorRedirect === true) {
       console.log("NAVIGATING TO VERIFY 2FA PAGE");
-      toast.custom("Please verify your 2FA to access the dashboard", {
+      toast.custom(t("messages.users.verify_two_factor"), {
         duration: 3000,
       });
       navigate("/verify-2fa");
@@ -333,7 +329,7 @@ export const useApi = () => {
 
     if (userData.emailVerified === false) {
       console.log("NAVIGATING TO VERIFY PAGE");
-      toast.custom("Please verify your email to access the dashboard", {
+      toast.custom(t("messages.users.verify_email"), {
         duration: 3000,
       });
       navigate("/verify-email");
@@ -341,7 +337,7 @@ export const useApi = () => {
     }
 
     console.log("NAVIGATING TO DASHBOARD");
-    toast.success("Login successful. You'll be redirected to dashboard", {
+    toast.success(t("messages.users.success_sign_in"), {
       duration: 2000,
     });
     navigate("/dashboard");
@@ -361,13 +357,14 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.users.fail_create"));
       throw new Error(`SignUp Failed: ${res.error?.message}`);
     }
 
     const user = mapToUserType(res.data);
     setUser(user);
 
-    toast.success("User created successfully!", {
+    toast.success(t("messages.users.success_create"), {
       duration: 2000,
     });
 
@@ -384,6 +381,7 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.trainees.fail_fetch"));
       throw new Error(`Fetch trainees failed: ${res.error?.message}`);
     }
 
@@ -415,9 +413,11 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.trainees.fail_create"));
       throw new Error(`Create trainee failed: ${res.error?.message}`);
     }
 
+    toast.success(t("messages.trainees.success_create"));
     return new Trainee(
       res.data,
       res.data.trainee_id || "",
@@ -450,9 +450,11 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.trainees.fail_update"));
       throw new Error(`Update trainee failed: ${res.error?.message}`);
     }
 
+    toast.success(t("messages.trainees.success_update"));
     return new Trainee(
       res.data,
       res.data.trainee_id || "",
@@ -470,8 +472,10 @@ export const useApi = () => {
     );
 
     if (res.isError) {
+      toast.error(t("messages.trainees.fail_delete"));
       throw new Error(`Delete trainee failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.trainees.success_delete"));
   };
 
   /**
@@ -499,9 +503,11 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.trainers.fail_create"));
       throw new Error(`Create trainer failed: ${res.error?.message}`);
     }
 
+    toast.success(t("messages.trainers.success_create"));
     return new Trainer(
       res.data,
       res.data.trainee_id || "",
@@ -530,9 +536,11 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.trainers.fail_update"));
       throw new Error(`Update trainer failed: ${res.error?.message}`);
     }
 
+    toast.success(t("messages.trainers.success_update"));
     return new Trainer(
       res.data,
       res.data.trainer_id || "",
@@ -551,8 +559,10 @@ export const useApi = () => {
     );
 
     if (res.isError) {
+      toast.error(t("messages.trainers.fail_delete"));
       throw new Error(`Delete trainer failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.trainers.success_delete"));
   };
 
   /**
@@ -565,6 +575,7 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.trainers.fail_fetch"));
       throw new Error(`Fetch trainers failed: ${res.error?.message}`);
     }
 
@@ -588,10 +599,11 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.auth.fail_send_verification"));
       throw new Error(`Send verification email failed: ${res.error?.message}`);
     }
 
-    toast.success("Verification email sent! Check your inbox.", {
+    toast.success(t("messages.auth.success_send_verification"), {
       duration: 2000,
     });
 
@@ -615,16 +627,17 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.auth.fail_verify_email"));
       throw new Error(`Email verification failed: ${res.error?.message}`);
     }
 
     if (res.data.status) {
-      toast.success("Email verified! You can now login.", {
+      toast.success(t("messages.auth.success_verify_email"), {
         duration: 2000,
       });
       navigate("/");
     } else {
-      toast.error("Email verification failed. Token may be expired.");
+      toast.error(t("messages.auth.fail_verify_email"));
     }
 
     return res.data.status;
@@ -661,9 +674,11 @@ export const useApi = () => {
     if (res.isError || !res.data) {
       logout();
       Cookies.remove(SESSION_COOKIE_KEY);
+      // toast.error(t("messages.users.fail_get_session")); // Opcional: pode ser chato no load inicial
       return null;
     }
 
+    // toast.success(t("messages.users.success_get_session")); // Opcional
     const user = mapToUserType(res.data);
     setUser(user);
 
@@ -677,7 +692,7 @@ export const useApi = () => {
     logout();
     Cookies.remove(SESSION_COOKIE_KEY);
     navigate("/");
-    toast.success("Logged out successfully");
+    toast.success(t("messages.auth.success_logout"));
   };
 
   /**
@@ -700,6 +715,7 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.auth.fail_link_social"));
       throw new Error(`Social linking failed: ${res.error?.message}`);
     }
 
@@ -734,11 +750,14 @@ export const useApi = () => {
 
       if (res.isError || !res.data) {
         console.log(res.error);
+        toast.error(t("messages.email.fail_send"));
         throw new Error("[Send Email] > Failed to send email.");
       }
 
+      toast.success(t("messages.email.success_send"));
       return res.data;
     } catch (e: any) {
+      toast.error(t("messages.email.fail_send"));
       throw new Error("[Send Email] > Failed to send email.\n" + e.toString());
     }
   };
@@ -757,6 +776,7 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.auth.fail_social_login"));
       throw new Error(`Social login failed: ${res.error?.message}`);
     }
 
@@ -787,9 +807,11 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.auth.fail_enable_2fa"));
       throw new Error(`Failed to enable OTP: ${res.error?.message}`);
     }
 
+    toast.success(t("messages.auth.success_enable_2fa"));
     return res.data;
   };
 
@@ -800,9 +822,11 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.auth.fail_disable_2fa"));
       throw new Error(`Failed to disable OTP: ${res.error?.message}`);
     }
 
+    toast.success(t("messages.auth.success_disable_2fa"));
     return res.data;
   };
 
@@ -810,9 +834,11 @@ export const useApi = () => {
     const res = await fetchApi(API_ENDPOINTS.AUTH.SEND_2FA, "POST");
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.auth.fail_send_otp"));
       throw new Error(`Failed to send OTP: ${res.error?.message}`);
     }
 
+    toast.success(t("messages.auth.success_send_otp"));
     return res.data;
   };
 
@@ -823,6 +849,7 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.auth.fail_verify_otp"));
       throw new Error(`Failed to verify OTP: ${res.error?.message}`);
     }
 
@@ -832,7 +859,7 @@ export const useApi = () => {
 
     if (userData.emailVerified === false) {
       console.log("NAVIGATING TO VERIFY PAGE");
-      toast.custom("Please verify your email to access the dashboard", {
+      toast.custom(t("messages.users.verify_email"), {
         duration: 3000,
       });
       navigate("/verify-email");
@@ -841,7 +868,7 @@ export const useApi = () => {
 
     console.log("NAVIGATING TO DASHBOARD");
 
-    toast.success("Login successful. You'll be redirected to dashboard", {
+    toast.success(t("messages.users.success_sign_in"), {
       duration: 2000,
     });
     navigate("/dashboard");
@@ -861,12 +888,13 @@ export const useApi = () => {
 
     if (res.isError || !res.data) {
       console.log(res.error);
+      toast.error(t("messages.auth.fail_request_password_reset"));
       throw new Error(
         `Failed to request password reset: ${res.error?.message}`,
       );
     }
 
-    toast.success("Password reset email sent! Check your inbox.", {
+    toast.success(t("messages.auth.success_request_password_reset"), {
       duration: 2000,
     });
   };
@@ -878,11 +906,13 @@ export const useApi = () => {
     });
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.auth.fail_reset_password"));
       throw new Error(
         `Failed to request password reset: ${res.error?.message}`,
       );
     }
 
+    toast.success(t("messages.auth.success_reset_password"));
     return res.data;
   };
 
@@ -896,6 +926,7 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.classes.fail_fetch"));
       throw new Error(`Fetch classes failed: ${res.error?.message}`);
     }
 
@@ -912,6 +943,7 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.classes.fail_fetch"));
       throw new Error(`Fetch class failed: ${res.error?.message}`);
     }
 
@@ -940,9 +972,11 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.classes.fail_create"));
       throw new Error(`Create class failed: ${res.error?.message}`);
     }
 
+    toast.success(t("messages.classes.success_create"));
     return new Class(res.data);
   };
 
@@ -956,8 +990,10 @@ export const useApi = () => {
     );
 
     if (res.isError) {
+      toast.error(t("messages.classes.fail_delete"));
       throw new Error(`Delete class failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.classes.success_delete"));
   };
 
   /*
@@ -1000,9 +1036,11 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.classes.fail_update"));
       throw new Error(`Update class failed: ${res.error?.message}`);
     }
 
+    toast.success(t("messages.classes.success_update"));
     return new Class(res.data);
   };
 
@@ -1015,6 +1053,7 @@ export const useApi = () => {
       "GET",
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.courses.fail_fetch"));
       throw new Error(`Fetch courses failed: ${res.error?.message}`);
     }
     const courses = res.data.map((item) => new Course(item));
@@ -1037,8 +1076,10 @@ export const useApi = () => {
       data,
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.courses.fail_create"));
       throw new Error(`Create course failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.courses.success_create"));
     return new Course(res.data);
   };
 
@@ -1071,8 +1112,10 @@ export const useApi = () => {
       updateData,
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.courses.fail_update"));
       throw new Error(`Update course failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.courses.success_update"));
     return new Course(res.data);
   };
 
@@ -1086,8 +1129,10 @@ export const useApi = () => {
     );
 
     if (res.isError) {
+      toast.error(t("messages.courses.fail_delete"));
       throw new Error(`Delete course failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.courses.success_delete"));
   };
 
   /**
@@ -1099,6 +1144,7 @@ export const useApi = () => {
       "GET",
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.grades.fail_fetch"));
       throw new Error(`Fetch grades failed: ${res.error?.message}`);
     }
     const grades = res.data.map((item) => new Grade(item));
@@ -1121,8 +1167,10 @@ export const useApi = () => {
       data,
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.grades.fail_create"));
       throw new Error(`Create grade failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.grades.success_create"));
     return new Grade(res.data);
   };
 
@@ -1152,8 +1200,10 @@ export const useApi = () => {
       updateData,
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.grades.fail_update"));
       throw new Error(`Update grade failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.grades.success_update"));
     return new Grade(res.data);
   };
 
@@ -1167,8 +1217,10 @@ export const useApi = () => {
     );
 
     if (res.isError) {
+      toast.error(t("messages.grades.fail_delete"));
       throw new Error(`Delete grade failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.grades.success_delete"));
   };
 
   /**
@@ -1185,8 +1237,10 @@ export const useApi = () => {
     );
 
     if (res.isError) {
+      toast.error(t("messages.grades.fail_batch"));
       throw new Error(`Batch save failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.grades.success_batch"));
   };
 
   /**
@@ -1200,8 +1254,10 @@ export const useApi = () => {
     );
 
     if (res.isError) {
+      toast.error(t("messages.grades.fail_finalize"));
       throw new Error(`Finalize failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.grades.success_finalize"));
   };
 
   /**
@@ -1216,6 +1272,7 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.grades.fail_fetch"));
       throw new Error(`Fetch grades failed: ${res.error?.message}`);
     }
     return res.data.map((g) => new Grade(g));
@@ -1231,6 +1288,7 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.grades.fail_fetch"));
       throw new Error(`Fetch grades failed: ${res.error?.message}`);
     }
     return res.data.map((g) => new Grade(g));
@@ -1245,6 +1303,7 @@ export const useApi = () => {
       "GET",
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.rooms.fail_fetch"));
       throw new Error(`Fetch rooms failed: ${res.error?.message}`);
     }
     const rooms = res.data.map((item) => new Room(item));
@@ -1269,8 +1328,10 @@ export const useApi = () => {
       data,
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.rooms.fail_create"));
       throw new Error(`Create room failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.rooms.success_create"));
     return new Room(res.data);
   };
 
@@ -1312,8 +1373,10 @@ export const useApi = () => {
       updateData,
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.rooms.fail_update"));
       throw new Error(`Update room failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.rooms.success_update"));
     return new Room(res.data);
   };
 
@@ -1327,8 +1390,10 @@ export const useApi = () => {
     );
 
     if (res.isError) {
+      toast.error(t("messages.rooms.fail_delete"));
       throw new Error(`Delete room failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.rooms.success_delete"));
   };
 
   /**
@@ -1340,6 +1405,7 @@ export const useApi = () => {
       "GET",
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.modules.fail_fetch"));
       throw new Error(`Fetch modules failed: ${res.error?.message}`);
     }
     const rooms = res.data.map((item) => new Module(item));
@@ -1356,6 +1422,7 @@ export const useApi = () => {
       "GET",
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.modules.fail_fetch"));
       throw new Error(`Fetch modules by class failed: ${res.error?.message}`);
     }
     const rooms = res.data.map((item) => new Module(item));
@@ -1380,8 +1447,10 @@ export const useApi = () => {
       data,
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.modules.fail_create"));
       throw new Error(`Create module failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.modules.success_create"));
     return new Module(res.data);
   };
 
@@ -1423,8 +1492,10 @@ export const useApi = () => {
       updateData,
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.modules.fail_update"));
       throw new Error(`Update module failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.modules.success_update"));
     return new Module(res.data);
   };
 
@@ -1438,8 +1509,10 @@ export const useApi = () => {
     );
 
     if (res.isError) {
+      toast.error(t("messages.modules.fail_delete"));
       throw new Error(`Delete module failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.modules.success_delete"));
   };
 
   /**
@@ -1451,6 +1524,7 @@ export const useApi = () => {
       "GET",
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.enrollments.fail_fetch"));
       throw new Error(`Fetch enrollment failed: ${res.error?.message}`);
     }
     const rooms = res.data.map((item) => new Enrollment(item));
@@ -1472,8 +1546,10 @@ export const useApi = () => {
       data,
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.enrollments.fail_create"));
       throw new Error(`Create enrollment failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.enrollments.success_create"));
     return new Enrollment(res.data);
   };
 
@@ -1503,8 +1579,10 @@ export const useApi = () => {
       updateData,
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.enrollments.fail_update"));
       throw new Error(`Update enrollment failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.enrollments.success_update"));
     return new Enrollment(res.data);
   };
 
@@ -1518,8 +1596,10 @@ export const useApi = () => {
     );
 
     if (res.isError) {
+      toast.error(t("messages.enrollments.fail_delete"));
       throw new Error(`Delete enrollment failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.enrollments.success_delete"));
   };
 
   /**
@@ -1531,6 +1611,7 @@ export const useApi = () => {
       "GET",
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.availabilities.fail_fetch"));
       throw new Error(`Fetch availabilities failed: ${res.error?.message}`);
     }
     return res.data.map((item) => new Availability(item));
@@ -1556,8 +1637,10 @@ export const useApi = () => {
       },
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.availabilities.fail_create"));
       throw new Error(`Create availability failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.availabilities.success_create"));
     return new Availability(res.data);
   };
 
@@ -1587,8 +1670,10 @@ export const useApi = () => {
       updateData,
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.availabilities.fail_update"));
       throw new Error(`Update availability failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.availabilities.success_update"));
     return new Availability(res.data);
   };
 
@@ -1602,8 +1687,10 @@ export const useApi = () => {
     );
 
     if (res.isError) {
+      toast.error(t("messages.availabilities.fail_delete"));
       throw new Error(`Delete availability failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.availabilities.success_delete"));
   };
 
   const fetchSchedules = async (
@@ -1618,6 +1705,7 @@ export const useApi = () => {
       "GET",
     );
     if (res.isError || !res.data) {
+      toast.error(t("messages.schedules.fail_fetch"));
       throw new Error(
         `Fetch schedules (${classId}) failed: ${res.error?.message}`,
       );
@@ -1665,8 +1753,9 @@ export const useApi = () => {
       try {
         const err = await res.json();
         errorMessage = err.message || errorMessage;
-      } catch { }
+      } catch {}
 
+      toast.error(t("messages.documents.fail_fetch"));
       throw new Error(errorMessage);
     }
 
@@ -1696,8 +1785,10 @@ export const useApi = () => {
 
     if (!res.ok) {
       const err = await res.json();
+      toast.error(t("messages.documents.fail_upload"));
       throw new Error(err.message || "Upload failed");
     }
+    toast.success(t("messages.documents.success_upload"));
   };
 
   /**
@@ -1710,8 +1801,10 @@ export const useApi = () => {
     );
 
     if (res.isError) {
+      toast.error(t("messages.documents.fail_delete"));
       throw new Error(`Delete document failed: ${res.error?.message}`);
     }
+    toast.success(t("messages.documents.success_delete"));
   };
 
   const createSchedule = async (data: {
@@ -1736,8 +1829,10 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.schedules.fail_create"));
       throw new Error(res.error?.message || "Create schedule failed");
     }
+    toast.success(t("messages.schedules.success_create"));
     return new Schedule(res.data);
   };
 
@@ -1771,8 +1866,10 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.schedules.fail_update"));
       throw new Error(res.error?.message || "Update schedule failed");
     }
+    toast.success(t("messages.schedules.success_update"));
     return new Schedule(res.data);
   };
 
@@ -1786,8 +1883,10 @@ export const useApi = () => {
     );
 
     if (res.isError) {
+      toast.error(t("messages.schedules.fail_delete"));
       throw new Error(res.error?.message || "Delete schedule failed");
     }
+    toast.success(t("messages.schedules.success_delete"));
   };
 
   /**
@@ -1806,6 +1905,7 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.schedules.fail_fetch"));
       throw new Error(`Fetch user schedules failed: ${res.error?.message}`);
     }
 
@@ -1820,6 +1920,7 @@ export const useApi = () => {
     const res = await fetchApi<any>(API_ENDPOINTS.STATISTICS, "GET");
 
     if (res.isError || !res.data) {
+      // toast.error(t("messages.statistics.fail_fetch")); // Opcional
       throw new Error(`Fetch statistics failed: ${res.error?.message}`);
     }
 
@@ -1844,6 +1945,7 @@ export const useApi = () => {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
+      toast.error(t("messages.users.fail_export"));
       throw new Error(err.message || "Falha ao exportar a ficha do formando");
     }
 
@@ -1857,6 +1959,7 @@ export const useApi = () => {
 
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
+    toast.success(t("messages.users.success_export"));
   };
 
   const exportTrainerSheet = async (trainerId: string, name: string) => {
@@ -1874,6 +1977,7 @@ export const useApi = () => {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
+      toast.error(t("messages.users.fail_export"));
       throw new Error(err.message || "Failed to export trainer sheet");
     }
 
@@ -1886,6 +1990,7 @@ export const useApi = () => {
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
+    toast.success(t("messages.users.success_export"));
   };
 
   /**
@@ -1900,6 +2005,7 @@ export const useApi = () => {
     );
 
     if (res.isError || !res.data) {
+      toast.error(t("messages.summaries.fail_fetch"));
       throw new Error(
         `Fetch summary grid failed: ${res.error?.message || "Unknown error"}`,
       );
@@ -1919,11 +2025,13 @@ export const useApi = () => {
     );
 
     if (res.isError) {
+      toast.error(t("messages.summaries.fail_save"));
       throw new Error(
         `Save summary failed: ${res.error?.message || "Unknown error"}`,
       );
     }
 
+    toast.success(t("messages.summaries.success_save"));
     return true;
   };
 

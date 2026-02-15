@@ -18,7 +18,6 @@ const SignIn = () => {
     username: undefined,
     email: undefined,
   });
-  const navigate = useNavigate();
 
   const handleSocialLogin = async () => {
     try {
@@ -33,18 +32,8 @@ const SignIn = () => {
       email: signInStore.email,
       password: signInStore.password,
     });
+
     setUser(user!);
-
-    if (user?.twoFactorRedirect) {
-      navigate("/verify-2fa");
-      return;
-    }
-
-    if (!user?.verified) {
-      navigate("/verify-email");
-      return;
-    }
-    navigate("/dashboard");
   };
 
   const handleInput = debounce((key: any, value: any) => {

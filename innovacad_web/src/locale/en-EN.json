@@ -460,5 +460,159 @@
     "enabled_desc": "Your account is secure.",
     "please_enter_password": "Please enter your password to ",
     "current_password": "Current password"
+  },
+  "messages": {
+    "generics": {
+      "network_error": "Network error or invalid response."
+    },
+    "auth": {
+      "session_expired": "Your session has expired. Please sign in again.",
+      "no_token": "No authentication token provided",
+      "success_logout": "Logged out successfully",
+      "fail_link_social": "Failed to link social account",
+      "fail_social_login": "Social login failed",
+      "fail_enable_2fa": "Failed to enable 2FA",
+      "success_enable_2fa": "2FA enabled successfully",
+      "fail_disable_2fa": "Failed to disable 2FA",
+      "success_disable_2fa": "2FA disabled successfully",
+      "fail_send_otp": "Failed to send OTP",
+      "success_send_otp": "OTP sent successfully",
+      "fail_verify_otp": "Failed to verify OTP",
+      "fail_request_password_reset": "Failed to request password reset",
+      "success_request_password_reset": "Password reset email sent! Check your inbox.",
+      "fail_reset_password": "Failed to reset password",
+      "success_reset_password": "Password reset successfully",
+      "fail_send_verification": "Failed to send verification email",
+      "success_send_verification": "Verification email sent! Check your inbox.",
+      "fail_verify_email": "Email verification failed",
+      "success_verify_email": "Email verified! You can now login."
+    },
+    "email": {
+      "success_send": "Email sent successfully",
+      "fail_send": "Failed to send email"
+    },
+    "users": {
+      "fail_sign_in": "Failed to sign in, check your credentials and try again.",
+      "verify_email": "Please verify your email to access the dashboard.",
+      "success_sign_in": "Login successful. You'll be redirected to dashboard",
+      "verify_two_factor": "Please verify your 2FA to access the dashboard",
+      "fail_get_session": "Failed to fetch your session.",
+      "success_get_session": "Verified your session successfuly!",
+      "success_create": "User created successfully",
+      "fail_create": "Failed to create user",
+      "success_export": "Export successful",
+      "fail_export": "Export failed"
+    },
+    "trainees": {
+      "fail_fetch": "Failed to fetch trainees",
+      "success_create": "Trainee created successfully",
+      "fail_create": "Failed to create trainee",
+      "success_update": "Trainee updated successfully",
+      "fail_update": "Failed to update trainee",
+      "success_delete": "Trainee deleted successfully",
+      "fail_delete": "Failed to delete trainee"
+    },
+    "trainers": {
+      "fail_fetch": "Failed to fetch trainers",
+      "success_create": "Trainer created successfully",
+      "fail_create": "Failed to create trainer",
+      "success_update": "Trainer updated successfully",
+      "fail_update": "Failed to update trainer",
+      "success_delete": "Trainer deleted successfully",
+      "fail_delete": "Failed to delete trainer"
+    },
+    "classes": {
+      "fail_fetch": "Failed to fetch classes",
+      "success_create": "Class created successfully",
+      "fail_create": "Failed to create class",
+      "success_update": "Class updated successfully",
+      "fail_update": "Failed to update class",
+      "success_delete": "Class deleted successfully",
+      "fail_delete": "Failed to delete class"
+    },
+    "courses": {
+      "fail_fetch": "Failed to fetch courses",
+      "success_create": "Course created successfully",
+      "fail_create": "Failed to create course",
+      "success_update": "Course updated successfully",
+      "fail_update": "Failed to update course",
+      "success_delete": "Course deleted successfully",
+      "fail_delete": "Failed to delete course"
+    },
+    "grades": {
+      "fail_fetch": "Failed to fetch grades",
+      "success_create": "Grade created successfully",
+      "fail_create": "Failed to create grade",
+      "success_update": "Grade updated successfully",
+      "fail_update": "Failed to update grade",
+      "success_delete": "Grade deleted successfully",
+      "fail_delete": "Failed to delete grade",
+      "success_batch": "Grades saved successfully",
+      "fail_batch": "Failed to save grades",
+      "success_finalize": "Grades finalized successfully",
+      "fail_finalize": "Failed to finalize grades"
+    },
+    "rooms": {
+      "fail_fetch": "Failed to fetch rooms",
+      "success_create": "Room created successfully",
+      "fail_create": "Failed to create room",
+      "success_update": "Room updated successfully",
+      "fail_update": "Failed to update room",
+      "success_delete": "Room deleted successfully",
+      "fail_delete": "Failed to delete room"
+    },
+    "modules": {
+      "fail_fetch": "Failed to fetch modules",
+      "success_create": "Module created successfully",
+      "fail_create": "Failed to create module",
+      "success_update": "Module updated successfully",
+      "fail_update": "Failed to update module",
+      "success_delete": "Module deleted successfully",
+      "fail_delete": "Failed to delete module"
+    },
+    "enrollments": {
+      "fail_fetch": "Failed to fetch enrollments",
+      "success_create": "Enrollment created successfully",
+      "fail_create": "Failed to create enrollment",
+      "success_update": "Enrollment updated successfully",
+      "fail_update": "Failed to update enrollment",
+      "success_delete": "Enrollment deleted successfully",
+      "fail_delete": "Failed to delete enrollment"
+    },
+    "availabilities": {
+      "fail_fetch": "Failed to fetch availabilities",
+      "success_create": "Availability created successfully",
+      "fail_create": "Failed to create availability",
+      "success_update": "Availability updated successfully",
+      "fail_update": "Failed to update availability",
+      "success_delete": "Availability deleted successfully",
+      "fail_delete": "Failed to delete availability"
+    },
+    "schedules": {
+      "fail_fetch": "Failed to fetch schedules",
+      "success_create": "Schedule created successfully",
+      "fail_create": "Failed to create schedule",
+      "success_update": "Schedule updated successfully",
+      "fail_update": "Failed to update schedule",
+      "success_delete": "Schedule deleted successfully",
+      "fail_delete": "Failed to delete schedule",
+      "success_generate": "Automatic schedule generated successfully",
+      "fail_generate": "Failed to generate automatic schedule"
+    },
+    "documents": {
+      "fail_fetch": "Failed to fetch documents",
+      "success_upload": "Document uploaded successfully",
+      "fail_upload": "Failed to upload document",
+      "success_delete": "Document deleted successfully",
+      "fail_delete": "Failed to delete document"
+    },
+    "summaries": {
+      "fail_fetch": "Failed to fetch summary",
+      "success_save": "Summary saved successfully",
+      "fail_save": "Failed to save summary"
+    },
+    "statistics": {
+      "fail_fetch": "Failed to fetch statistics"
+    }
   }
 }

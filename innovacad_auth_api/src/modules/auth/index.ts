@@ -13,13 +13,6 @@ import { API } from "@/src/utils/env";
 import { sendTwoFactorEmail, sendVerificationEmail } from "../email";
 import nodemailer from "nodemailer";
 
-console.log("--- TENTATIVA DE CONEXÃO ---");
-console.log("Host:", API.MYSQL.HOSTNAME || "INDEFINIDO (Vou usar 127.0.0.1)");
-console.log("Port:", 3306); // Forçado
-console.log("User:", API.MYSQL.USERNAME);
-console.log("Database:", API.MYSQL.DATABASE);
-console.log("--------------------------");
-
 const pool = createPool({
   host: API.MYSQL.HOSTNAME,
   user: API.MYSQL.USERNAME,

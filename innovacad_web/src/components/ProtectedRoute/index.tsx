@@ -1,8 +1,8 @@
 import { useNavigate } from "@solidjs/router";
 import { Show, createEffect, onMount, createSignal, type JSX } from "solid-js";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
-import { useApi } from "@/hooks/useApi";
 import useI18n from "@/hooks/useL18N";
+import { useApi } from "@/hooks/useApi";
 
 const { t } = useI18n();
 
@@ -13,7 +13,12 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute = (props: ProtectedRouteProps) => {
   const { user, setUser } = useUserDetails();
-  const api = useApi();
+  const { getSession } = useApi();
+
+  if (!user()) {
+    return null;
+  }
+
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = createSignal(true);
@@ -27,7 +32,7 @@ export const ProtectedRoute = (props: ProtectedRouteProps) => {
 
   onMount(async () => {
     try {
-      const res = await api.getSession();
+      const res = await getSession();
 
       if (res) {
         setUser(res);
