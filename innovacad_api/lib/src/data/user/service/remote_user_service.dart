@@ -633,8 +633,16 @@ class RemoteUserService {
       }
 
       return Result.success(OutputUserDao.fromJson(userData));
-    } catch (e, _) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } catch (e, s) {
+      print(e);
+      print(s);
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          e.toString(),
+          details: {"stack": s.toString()},
+        ),
+      );
     }
   }
 

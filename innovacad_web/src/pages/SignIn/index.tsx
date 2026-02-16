@@ -1,5 +1,4 @@
-import { A, useNavigate } from "@solidjs/router";
-import { TbLogin } from "solid-icons/tb";
+import { A } from "@solidjs/router";
 import { createStore } from "solid-js/store";
 import GoogleLogo from "@/assets/google.svg";
 import type { SignInData } from "@/types/auth";
@@ -45,7 +44,6 @@ const SignIn = () => {
       <div class="card w-full max-w-sm bg-base-100 shadow-2xl overflow-hidden">
         <div class="bg-primary p-6 text-primary-content">
           <h2 class="card-title text-2xl font-bold flex items-center gap-2">
-            <TbLogin />
             {t("sign_in.title")}
           </h2>
           <p class="text-primary-content/80 text-sm mt-1">
