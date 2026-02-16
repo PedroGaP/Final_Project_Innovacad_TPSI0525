@@ -119,9 +119,9 @@ const AccountSettingsPage = () => {
 
       if (!newPic) throw new Error("Image uploaded but not found.");
 
-      let imagePath = newPic.file_path
-        .replace(/^public[\\/]/, "")
-        .replace(/\\/g, "/");
+      let imagePath = newPic.file_path;
+      //.replace(/^public[\\/]/, "")
+      //.replace(/\\/g, "/");
 
       if (u.role === "trainer" || u.role === "coordinator") {
         await updateTrainer((u as Trainer).trainerId!, {

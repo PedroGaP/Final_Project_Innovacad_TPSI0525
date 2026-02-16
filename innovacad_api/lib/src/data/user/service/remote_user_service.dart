@@ -628,6 +628,8 @@ class RemoteUserService {
         await MysqlConfiguration.closeConnection(db);
       } catch (_) {}
 
+      print(userData);
+
       final role = userData['role'];
 
       if ((role == 'trainer' || role == 'coordinator') &&
