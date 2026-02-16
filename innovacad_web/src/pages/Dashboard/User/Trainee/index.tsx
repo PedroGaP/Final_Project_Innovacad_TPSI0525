@@ -3,7 +3,7 @@ import type { Trainee } from "@/types/user";
 import { useApi } from "@/hooks/useApi";
 import toast from "solid-toast";
 import { newPasswordEmail } from "@/components/NewPasswordEmail";
-import EntityTable from "@/components/EntityTable";
+import EntityTable, { ActionsEnum } from "@/components/EntityTable";
 import UserDocumentsManager from "@/components/DocumentManager";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import useI18n from "@/hooks/useL18N";
@@ -101,6 +101,15 @@ const TraineePage = () => {
   const api = useApi();
 
   const [usersData, { mutate }] = createResource<Trainee[]>(api.fetchTrainees);
+
+  const handleActions = () => {
+    const actions = [ActionsEnum.EXPORT];
+    if (user()?.role === "admin") {
+      actions.push(ActionsEnum.EDIT, ActionsEnum.DELETE, ActionsEnum.ADD);
+    }
+
+    return actions;
+  };
 
   const handleSaveTrainee = async (
     trainee: Trainee,
@@ -206,6 +215,7 @@ const TraineePage = () => {
 
   return (
     <EntityTable<Trainee>
+      actions={handleActions()}
       title={t("dashboard.users.trainees.title")}
       data={usersData}
       handleExportClick={handleExport}

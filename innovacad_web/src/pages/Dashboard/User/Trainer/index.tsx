@@ -1,9 +1,9 @@
-import { createMemo, createResource, Show } from "solid-js";
+import { createResource, Show } from "solid-js";
 import type { Trainer } from "@/types/user";
 import { useApi } from "@/hooks/useApi";
 import toast from "solid-toast";
 import { newPasswordEmail } from "@/components/NewPasswordEmail";
-import EntityTable from "@/components/EntityTable";
+import EntityTable, { ActionsEnum } from "@/components/EntityTable";
 import UserDocumentsManager from "@/components/DocumentManager";
 import type { Class } from "@/types/class";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
@@ -59,6 +59,16 @@ const TrainerPage = () => {
     api.fetchTrainers,
   );
   const [classesData] = createResource<Class[]>(api.fetchClasses);
+
+  const handleActions = () => {
+    const actions = [ActionsEnum.EXPORT];
+
+    if (user()?.role === "admin") {
+      actions.push(ActionsEnum.EDIT, ActionsEnum.DELETE, ActionsEnum.ADD);
+    }
+
+    return actions;
+  };
 
   const handleSaveTrainer = async (
     trainer: Trainer,
@@ -151,6 +161,26 @@ const TrainerPage = () => {
     }
   };
 
+  const handleExport = async (trainer: Trainer) => {
+    try {
+      toast.loading(t("dashboard.users.trainers.pdf_generating"), {
+        id: "export-loading",
+      });
+
+      await api.exportTrainerSheet(
+        String(trainer.trainerId),
+        String(trainer.name || "Trainer"),
+      );
+
+      toast.dismiss("export-loading");
+      toast.success(t("dashboard.users.trainers.pdf_successful"));
+    } catch (error: any) {
+      toast.dismiss("export-loading");
+      console.error(error);
+      toast.error(t("dashboard.users.trainers.pdf_fail"));
+    }
+  };
+
   const confirmDelete = async (trainer: Trainer) => {
     try {
       await api.deleteTrainer(String(trainer.trainerId || trainer.id));
@@ -170,6 +200,8 @@ const TrainerPage = () => {
     <EntityTable<Trainer>
       title={t("dashboard.users.trainers.title")}
       data={trainersData}
+      handleExportClick={handleExport}
+      actions={handleActions()}
       handleEditClick={(user) => ({
         ...user,
         birthdayDate: epochToDateTime(user.birthdayDate!),

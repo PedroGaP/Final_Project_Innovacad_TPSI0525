@@ -66,10 +66,8 @@ export default function UserDocumentsManager(props: Props) {
   };
 
   const openFile = (path: string) => {
-    const cleanPath = path.startsWith("public/")
-      ? path.replace("public/", "")
-      : path;
-    window.open(`${API_ENDPOINTS.BASE}/${cleanPath}`, "_blank");
+    const cleanPath = path;
+    window.open(`${API_ENDPOINTS.BASE}/resource/${cleanPath}`, "_blank");
   };
 
   return (

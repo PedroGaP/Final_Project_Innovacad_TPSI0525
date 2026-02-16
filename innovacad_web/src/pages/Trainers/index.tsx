@@ -37,9 +37,7 @@ const Trainers = () => {
           <h1 class="text-4xl font-bold mb-2 text-primary">
             {t("public.trainers.title")}
           </h1>
-          <p class="text-base-content/60">
-            {t("public.trainers.desc")}
-          </p>
+          <p class="text-base-content/60">{t("public.trainers.desc")}</p>
         </div>
 
         <div class="mb-6">
@@ -98,7 +96,9 @@ const Trainers = () => {
                       <div
                         class={`badge ${trainer.is_coordinator ? "badge-primary" : "badge-ghost"} badge-lg`}
                       >
-                        {trainer.is_coordinator ? t("entity.coordinator") : t("entity.trainer")}
+                        {trainer.is_coordinator
+                          ? t("entity.coordinator")
+                          : t("entity.trainer")}
                       </div>
                       <Show when={trainer.verified}>
                         <div class="badge badge-success badge-sm gap-1">
@@ -170,11 +170,18 @@ const Trainers = () => {
                         Object.keys(trainer.coordinated_class_ids).length > 0
                       }
                     >
-                      <div class="divider my-2">{t("public.trainers.coordinated_classes")}</div>
+                      <div class="divider my-2">
+                        {t("public.trainers.coordinated_classes")}
+                      </div>
                       <div class="flex flex-wrap gap-1">
-                        <For each={Object.entries(trainer.coordinated_class_ids)}>
+                        <For
+                          each={Object.entries(trainer.coordinated_class_ids)}
+                        >
                           {([classId, className]) => (
-                            <div class="badge badge-primary badge-sm" title={classId}>
+                            <div
+                              class="badge badge-primary badge-sm"
+                              title={classId}
+                            >
                               {className}
                             </div>
                           )}

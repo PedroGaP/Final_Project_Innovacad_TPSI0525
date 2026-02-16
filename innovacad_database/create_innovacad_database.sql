@@ -332,6 +332,28 @@ CREATE INDEX idx_user_email_username ON user (email, username);
 CREATE INDEX idx_schedules_class_module_lookup ON schedules (class_module_id, schedule_id);
 CREATE INDEX idx_avail_sched ON schedule_slots(availability_id, schedule_id);
 
+-- Insert crucial data to tables
+INSERT INTO ref_slots (slot_number, start_time, end_time)
+VALUES (1, '08:00:00', '09:00:00'),
+       (2, '09:00:00', '10:00:00'),
+       (3, '10:00:00', '11:00:00'),
+       (4, '12:00:00', '13:00:00'),
+       (5, '13:00:00', '14:00:00'),
+       (6, '14:00:00', '15:00:00'),
+       (7, '16:00:00', '17:00:00'),
+       (8, '17:00:00', '18:00:00'),
+       (9, '18:00:00', '19:00:00'),
+       (10, '20:00:00', '21:00:00'),
+       (11, '21:00:00', '22:00:00'),
+       (12, '22:00:00', '23:00:00');
+
+INSERT INTO document_types (code, label)
+VALUES ('CV', 'Curriculum Vitae'),
+       ('DIPLOMA', 'Certificate/Diploma'),
+       ('ID_CARD', 'Identification Document'),
+       ('PROFILE_PIC', 'PROFILE PICTURE'),
+       ('OTHER', 'Other Attachment');
+
 -- Update trainee's grade with type of 'attendance' when a summary is created or update
 DELIMITER //
 

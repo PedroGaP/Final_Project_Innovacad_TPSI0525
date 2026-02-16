@@ -523,7 +523,7 @@ class TrainerRepositoryImpl implements ITrainerRepository {
           final cleanPath = imagePath.startsWith('/')
               ? imagePath.substring(1)
               : imagePath;
-          final imageUrl = "http://localhost:8080/$cleanPath";
+          final imageUrl = "http://localhost:8080/resource/$cleanPath";
 
           final response = await dio.get(
             imageUrl,

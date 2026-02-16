@@ -616,6 +616,20 @@ class RemoteUserService {
 
       userData = await _enrichWithLocalData(userData);
 
+      try {
+        final db = await MysqlConfiguration.connect();
+        final user = await db.getOne(
+          table: 'user',
+          where: {'id': userData['id']},
+        );
+        if (user.isNotEmpty && user['image'] != null) {
+          userData['image'] = user['image'];
+        }
+        await MysqlConfiguration.closeConnection(db);
+      } catch (_) {}
+
+      print(userData);
+
       final role = userData['role'];
 
       if ((role == 'trainer' || role == 'coordinator') &&
@@ -633,8 +647,16 @@ class RemoteUserService {
       }
 
       return Result.success(OutputUserDao.fromJson(userData));
-    } catch (e, _) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } catch (e, s) {
+      print(e);
+      print(s);
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          e.toString(),
+          details: {"stack": s.toString()},
+        ),
+      );
     }
   }
 
