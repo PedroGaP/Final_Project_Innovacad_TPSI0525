@@ -45,6 +45,15 @@ class DocumentRepositoryImpl {
         },
       );
 
+      if (bg <= BigInt.zero) {
+        return Result.failure(
+          AppError(
+            AppErrorType.badRequest,
+            "Couldn't save document to this user.",
+          ),
+        );
+      }
+
       await db.commit();
 
       return Result.success("Upload successful");

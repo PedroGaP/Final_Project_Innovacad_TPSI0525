@@ -1,5 +1,6 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
+import 'package:innovacad_api/src/data/trainer/dao/output/output_public_trainer_dao.dart';
 import 'package:innovacad_api/src/data/trainer/dao/skills_output/skill_output_dao.dart';
 import 'package:innovacad_api/src/domain/domain.dart';
 
@@ -20,12 +21,8 @@ abstract class ITrainerService
   @override
   Future<Result<OutputTrainerDao>> getById(String id);
 
-  @override
+  Future<Result<List<OutputPublicTrainerDao>>> getAllPublic();
   Future<Result<List<int>>> generateTrainerPdf(String id);
-
-  @override
   Future<Result<List<SkillOutputDao>>> getSkills(String id);
-
-  @override
   Future<Result<List<String>>> getCoordinatedClasses(String id);
 }

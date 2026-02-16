@@ -12,9 +12,9 @@ OutputPublicCourseDao _$OutputPublicCourseDaoFromJson(
   identifier: json['identifier'] as String,
   name: json['name'] as String,
   area: json['area'] as String,
-  coursesModules: (json['modules'] as List<dynamic>?)
-      ?.map((e) => OutputCourseModuleDao.fromJson(e as Map<String, dynamic>))
-      .toList(),
+  coursesModules: OutputPublicCourseDao.convertModules(
+    json['modules'] as List<OutputCourseModuleDao>,
+  ),
 );
 
 Map<String, dynamic> _$OutputPublicCourseDaoToJson(

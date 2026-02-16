@@ -18,6 +18,14 @@ class RoomController {
   Future<Response> getAll() async => resultToResponse(await _service.getAll());
 
   @ApiOperation(
+    summary: 'Get all rooms (PUBLIC)',
+    description: 'Retrieves a list of all rooms',
+  )
+  @Get('/public')
+  Future<Response> getAllPublic() async =>
+      resultToResponse(await _service.getAllPublic());
+
+  @ApiOperation(
     summary: 'Get room by ID',
     description: 'Retrieves a room by their unique identifier',
   )

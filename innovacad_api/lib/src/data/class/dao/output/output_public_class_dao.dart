@@ -5,17 +5,11 @@ import 'package:vaden/vaden.dart';
 import 'package:json_annotation/json_annotation.dart' as annotation;
 import 'package:json_annotation/json_annotation.dart';
 
-part 'output_class_dao.g.dart';
+part 'output_public_class_dao.g.dart';
 
 @DTO()
 @annotation.JsonSerializable()
-class OutputClassDao {
-  @annotation.JsonKey(name: 'class_id')
-  final String classId;
-
-  @annotation.JsonKey(name: 'course_id')
-  final String courseId;
-
+class OutputPublicClassDao {
   @annotation.JsonKey(name: 'course_identifier')
   final String courseIdentifier;
 
@@ -36,13 +30,11 @@ class OutputClassDao {
   @DateTimeConverter()
   final DateTime endDateTimestamp;
 
-  @annotation.JsonKey(name: 'modules')
-  @ModuleListConverter()
+  @annotation.JsonKey(name: 'modules', fromJson: convertModules)
+  //@ModuleListConverter()
   final List<OutputPublicClassModuleDao> modules;
 
-  OutputClassDao({
-    required this.classId,
-    required this.courseId,
+  OutputPublicClassDao({
     required this.location,
     required this.identifier,
     required this.status,
@@ -52,8 +44,14 @@ class OutputClassDao {
     required this.courseIdentifier,
   });
 
-  Map<String, dynamic> toJson() => _$OutputClassDaoToJson(this);
+  static convertModules(List<OutputPublicClassModuleDao> modules) {
+    return modules
+        .map((e) => OutputPublicClassModuleDao.fromJson(e.toJson()))
+        .toList();
+  }
 
-  factory OutputClassDao.fromJson(Map<String, dynamic> json) =>
-      _$OutputClassDaoFromJson(json);
+  Map<String, dynamic> toJson() => _$OutputPublicClassDaoToJson(this);
+
+  factory OutputPublicClassDao.fromJson(Map<String, dynamic> json) =>
+      _$OutputPublicClassDaoFromJson(json);
 }

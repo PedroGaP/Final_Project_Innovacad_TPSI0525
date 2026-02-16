@@ -1,5 +1,6 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
+import 'package:innovacad_api/src/data/room/dao/output/output_public_room_dao.dart';
 import 'package:innovacad_api/src/data/room/dao/output/output_room_busy_dao.dart';
 import 'package:innovacad_api/src/domain/domain.dart';
 import 'package:vaden/vaden.dart';
@@ -13,6 +14,17 @@ class RoomServiceImpl implements IRoomService {
   @override
   Future<Result<List<OutputRoomDao>>> getAll() async =>
       await _repository.getAll();
+
+  @override
+  Future<Result<List<OutputPublicRoomDao>>> getAllPublic() async {
+    final rooms = await _repository.getAll();
+
+    if (rooms.isFailure) return Result.failure(rooms.error!);
+
+    return Result.success(
+      rooms.data!.map((r) => OutputPublicRoomDao.fromJson(r.toJson())).toList(),
+    );
+  }
 
   @override
   Future<Result<OutputRoomDao>> getById(String id) async =>

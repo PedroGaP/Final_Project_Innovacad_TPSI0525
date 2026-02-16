@@ -25,5 +25,5 @@ Map<String, dynamic> _$OutputCourseDaoToJson(OutputCourseDao instance) =>
       'identifier': instance.identifier,
       'name': instance.name,
       'area': instance.area,
-      'modules': OutputCourseDao.convertCoursesModules(instance.coursesModules),
+      'modules': instance.coursesModules,
     };

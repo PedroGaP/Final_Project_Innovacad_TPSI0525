@@ -73,12 +73,15 @@ export const API_ENDPOINTS = {
   },
   ENTITY: {
     CLASS: "/classes",
+    CLASS_PUBLIC: "/classes/public",
     COURSE: "/courses",
     ROOM: "/rooms",
+    ROOM_PUBLIC: "/rooms/public",
     MODULE: "/modules",
     ENROLLMENT: "/enrollments",
     AVAILABILITY: "/availabilities",
     SCHEDULE: "/schedules",
+    SCHEDULE_PUBLIC: "/schedules/public",
     GRADE: "/grades",
     GRADE_BATCH: "/grades/batch",
     GRADE_FINALIZE: "/grades/finalize",
@@ -141,7 +144,10 @@ export const useApi = () => {
       !path.includes(API_ENDPOINTS.AUTH.REQUEST_RESET_PASSWORD) &&
       !path.includes(API_ENDPOINTS.ENTITY.COURSE_PUBLIC) &&
       !path.includes(API_ENDPOINTS.USERS.TRAINEES_PUBLIC) &&
-      !path.includes(API_ENDPOINTS.USERS.TRAINERS_PUBLIC)
+      !path.includes(API_ENDPOINTS.USERS.TRAINERS_PUBLIC) &&
+      !path.includes(API_ENDPOINTS.ENTITY.CLASS_PUBLIC) &&
+      !path.includes(API_ENDPOINTS.ENTITY.SCHEDULE_PUBLIC) &&
+      !path.includes(API_ENDPOINTS.ENTITY.ROOM_PUBLIC)
     );
   };
 
@@ -593,6 +599,25 @@ export const useApi = () => {
   /**
    * Fetch all trainers
    */
+  const fetchTrainersPublic = async (): Promise<Trainer[]> => {
+    const res = await fetchApi<UserResponseData[]>(
+      API_ENDPOINTS.USERS.TRAINERS_PUBLIC,
+      "GET",
+    );
+
+    if (res.isError || !res.data) {
+      toast.error(t("messages.trainers.fail_fetch"));
+      throw new Error(`Fetch trainers failed: ${res.error?.message}`);
+    }
+
+    return res.data.map(
+      (item) => new Trainer(item, item.trainer_id || "", item.birthday_date),
+    );
+  };
+
+  /**
+   * Fetch all trainers
+   */
   const fetchTrainers = async (): Promise<Trainer[]> => {
     const res = await fetchApi<UserResponseData[]>(
       API_ENDPOINTS.USERS.TRAINERS,
@@ -939,6 +964,23 @@ export const useApi = () => {
 
     toast.success(t("messages.auth.success_reset_password"));
     return res.data;
+  };
+
+  /**
+   * Fetch all classes
+   */
+  const fetchClassesPublic = async (): Promise<Class[]> => {
+    const res = await fetchApi<ClassResponseData[]>(
+      API_ENDPOINTS.ENTITY.CLASS_PUBLIC,
+      "GET",
+    );
+
+    if (res.isError || !res.data) {
+      toast.error(t("messages.classes.fail_fetch"));
+      throw new Error(`Fetch classes failed: ${res.error?.message}`);
+    }
+
+    return res.data.map((item) => new Class(item));
   };
 
   /**
@@ -1329,6 +1371,23 @@ export const useApi = () => {
       throw new Error(`Fetch grades failed: ${res.error?.message}`);
     }
     return res.data.map((g) => new Grade(g));
+  };
+
+  /**
+   * Fetch all rooms
+   */
+  const fetchRoomsPublic = async (): Promise<Room[]> => {
+    const res = await fetchApi<RoomResponseData[]>(
+      `${API_ENDPOINTS.ENTITY.ROOM_PUBLIC}`,
+      "GET",
+    );
+    if (res.isError || !res.data) {
+      toast.error(t("messages.rooms.fail_fetch"));
+      throw new Error(`Fetch rooms failed: ${res.error?.message}`);
+    }
+    const rooms = res.data.map((item) => new Room(item));
+    console.log(rooms);
+    return rooms;
   };
 
   /**
@@ -1728,6 +1787,20 @@ export const useApi = () => {
       throw new Error(`Delete availability failed: ${res.error?.message}`);
     }
     toast.success(t("messages.availabilities.success_delete"));
+  };
+
+  const fetchSchedulesPublic = async (): Promise<Schedule[]> => {
+    const res = await fetchApi<ScheduleResponseData[]>(
+      `${API_ENDPOINTS.ENTITY.SCHEDULE_PUBLIC}`,
+      "GET",
+    );
+    if (res.isError || !res.data) {
+      toast.error(t("messages.schedules.fail_fetch"));
+      throw new Error(`Fetch schedules failed: ${res.error?.message}`);
+    }
+    const rooms = res.data.map((item) => new Schedule(item));
+    console.log(rooms);
+    return rooms;
   };
 
   const fetchSchedules = async (
@@ -2132,6 +2205,7 @@ export const useApi = () => {
     updateTrainer,
     deleteTrainer,
     exportTrainerSheet,
+    fetchTrainersPublic,
 
     // Classes
     fetchClasses,
@@ -2139,6 +2213,7 @@ export const useApi = () => {
     createClass,
     updateClass,
     deleteClass,
+    fetchClassesPublic,
 
     // Courses
     fetchCourses,
@@ -2159,6 +2234,7 @@ export const useApi = () => {
 
     // Rooms
     fetchRooms,
+    fetchRoomsPublic,
     createRoom,
     updateRoom,
     deleteRoom,
@@ -2184,6 +2260,7 @@ export const useApi = () => {
 
     // Schedules
     fetchSchedules,
+    fetchSchedulesPublic,
     fetchRoomAvailability,
     fetchUserSchedules,
     createSchedule,

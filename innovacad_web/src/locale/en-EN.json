@@ -97,7 +97,9 @@
     "disabled": "Disabled",
     "enable": "Enable",
     "disable": "Disable",
-    "link": "Link"
+    "link": "Link",
+    "capacity": "Capacity",
+    "equipment": "Equipment"
   },
   "fields": {
     "required_name": "Name is required",
@@ -513,7 +515,7 @@
       "select_prompt_trainer": "Select a trainer to view schedules"
     },
     "rooms_page": {
-      "title": "Room Allocation",
+      "title": "Rooms",
       "desc": "Check room availability and schedules",
       "select_room": "Select Room",
       "select_all_rooms": "All Rooms",

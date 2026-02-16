@@ -21,9 +21,17 @@ class ScheduleController {
   }
 
   @ApiOperation(
+    summary: 'Get all schedules (PUBLIC)',
+    description: 'Retrieves a list of all schedules',
+  )
+  @Get('/public')
+  Future<Response> getAllPublic() async {
+    return resultToResponse(await _service.getAllPublic());
+  }
+
+  @ApiOperation(
     summary: 'Get schedules by User ID',
-    description:
-        'Retrieves schedules associated with a specific user',
+    description: 'Retrieves schedules associated with a specific user',
   )
   @ApiParam(
     name: 'userId',

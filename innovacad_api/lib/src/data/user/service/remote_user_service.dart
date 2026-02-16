@@ -443,7 +443,7 @@ class RemoteUserService {
         AppError(
           AppErrorType.internal,
           "Something went wrong while trying to link the user social account...",
-          details: {"error": e.toString()},
+          details: {"error": e.toString(), "stack": s.toString()},
         ),
       );
     }
