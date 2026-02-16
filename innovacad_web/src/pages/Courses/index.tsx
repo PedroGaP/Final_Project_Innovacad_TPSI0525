@@ -7,7 +7,7 @@ import { useI18n } from "@/hooks/useL18N";
 const CoursesPage = () => {
   const api = useApi();
   const { t } = useI18n();
-  const [coursesData] = createResource<Course[]>(api.fetchCourses);
+  const [coursesData] = createResource<Course[]>(api.fetchPublicCourses);
   const [searchQuery, setSearchQuery] = createSignal("");
 
   const filteredCourses = () => {
@@ -31,9 +31,7 @@ const CoursesPage = () => {
           <h1 class="text-4xl font-bold mb-2 text-primary">
             {t("public.courses.title")}
           </h1>
-          <p class="text-base-content/60">
-            {t("public.courses.desc")}
-          </p>
+          <p class="text-base-content/60">{t("public.courses.desc")}</p>
         </div>
 
         <div class="mb-6">
@@ -93,7 +91,8 @@ const CoursesPage = () => {
                         {course.identifier}
                       </div>
                       <div class="badge badge-ghost badge-sm">
-                        {course.modules?.length || 0} {t("public.courses.modules")}
+                        {course.modules?.length || 0}{" "}
+                        {t("public.courses.modules")}
                       </div>
                     </div>
 
@@ -109,7 +108,9 @@ const CoursesPage = () => {
                     </div>
 
                     <Show when={course.modules && course.modules.length > 0}>
-                      <div class="divider my-2">{t("public.courses.modules_title")}</div>
+                      <div class="divider my-2">
+                        {t("public.courses.modules_title")}
+                      </div>
                       <div class="space-y-2 max-h-48 overflow-y-auto">
                         <For each={course.modules}>
                           {(module) => (

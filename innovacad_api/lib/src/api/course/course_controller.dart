@@ -20,6 +20,15 @@ class CourseController {
   }
 
   @ApiOperation(
+    summary: 'Get all courses (PUBLIC)',
+    description: 'Retrieves a list of all courses',
+  )
+  @Get('/public')
+  Future<Response> getAllPublic() async {
+    return resultToResponse(await _service.getAllPublic());
+  }
+
+  @ApiOperation(
     summary: 'Get course by ID',
     description: 'Retrieves a course by their unique identifier',
   )

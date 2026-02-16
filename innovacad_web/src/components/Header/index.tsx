@@ -11,10 +11,10 @@ export default function Header() {
   const navigate = useNavigate();
 
   const items = () => [
-    {
+    /*{
       name: t("header.dashboard"),
       onClick: () => navigate("dashboard"),
-    },
+    },*/
     {
       name: t("entity.courses"),
       onClick: () => navigate("courses"),

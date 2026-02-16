@@ -66,7 +66,9 @@ export const API_ENDPOINTS = {
     REQUEST_RESET_PASSWORD: "/sign/request-password-reset",
   },
   USERS: {
+    TRAINEES_PUBLIC: "/trainees/public",
     TRAINEES: "/trainees",
+    TRAINERS_PUBLIC: "/trainers/public",
     TRAINERS: "/trainers",
   },
   ENTITY: {
@@ -80,6 +82,7 @@ export const API_ENDPOINTS = {
     GRADE: "/grades",
     GRADE_BATCH: "/grades/batch",
     GRADE_FINALIZE: "/grades/finalize",
+    COURSE_PUBLIC: "/courses/public",
   },
   SUMMARY: {
     BASE: "/summaries",
@@ -135,7 +138,10 @@ export const useApi = () => {
       !path.includes(API_ENDPOINTS.AUTH.SEND_2FA) &&
       !path.includes(API_ENDPOINTS.AUTH.VERIFY_2FA) &&
       !path.includes(API_ENDPOINTS.AUTH.RESET_PASSWORD) &&
-      !path.includes(API_ENDPOINTS.AUTH.REQUEST_RESET_PASSWORD)
+      !path.includes(API_ENDPOINTS.AUTH.REQUEST_RESET_PASSWORD) &&
+      !path.includes(API_ENDPOINTS.ENTITY.COURSE_PUBLIC) &&
+      !path.includes(API_ENDPOINTS.USERS.TRAINEES_PUBLIC) &&
+      !path.includes(API_ENDPOINTS.USERS.TRAINERS_PUBLIC)
     );
   };
 
@@ -369,6 +375,25 @@ export const useApi = () => {
     });
 
     return user;
+  };
+
+  /**
+   * Fetch all trainees
+   */
+  const fetchTraineesPublic = async (): Promise<Trainee[]> => {
+    const res = await fetchApi<UserResponseData[]>(
+      API_ENDPOINTS.USERS.TRAINEES_PUBLIC,
+      "GET",
+    );
+
+    if (res.isError || !res.data) {
+      toast.error(t("messages.trainees.fail_fetch"));
+      throw new Error(`Fetch trainees failed: ${res.error?.message}`);
+    }
+
+    return res.data.map(
+      (item) => new Trainee(item, item.trainee_id || "", item.birthday_date),
+    );
   };
 
   /**
@@ -1044,6 +1069,19 @@ export const useApi = () => {
     return new Class(res.data);
   };
 
+  const fetchPublicCourses = async (): Promise<Course[]> => {
+    const res = await fetchApi<CourseResponseData[]>(
+      API_ENDPOINTS.ENTITY.COURSE_PUBLIC,
+      "GET",
+    );
+    if (res.isError || !res.data) {
+      toast.error(t("messages.courses.fail_fetch"));
+      throw new Error(`Fetch courses failed: ${res.error?.message}`);
+    }
+    const courses = res.data.map((item) => new Course(item));
+    return courses;
+  };
+
   /**
    * Fetch all courses
    */
@@ -1057,7 +1095,6 @@ export const useApi = () => {
       throw new Error(`Fetch courses failed: ${res.error?.message}`);
     }
     const courses = res.data.map((item) => new Course(item));
-    console.log(courses);
     return courses;
   };
 
@@ -2087,6 +2124,7 @@ export const useApi = () => {
     updateTrainee,
     deleteTrainee,
     exportTraineeSheet,
+    fetchTraineesPublic,
 
     // Trainers
     fetchTrainers,
@@ -2107,6 +2145,7 @@ export const useApi = () => {
     createCourse,
     updateCourse,
     deleteCourse,
+    fetchPublicCourses,
 
     // Grades
     fetchGrades,

@@ -19,7 +19,7 @@ class OutputCourseDao {
   @annotation.JsonKey(name: 'area')
   final String area;
 
-  @annotation.JsonKey(name: 'modules')
+  @annotation.JsonKey(name: 'modules', toJson: convertCoursesModules)
   final List<OutputCourseModuleDao>? coursesModules;
 
   OutputCourseDao({
@@ -29,6 +29,10 @@ class OutputCourseDao {
     required this.area,
     this.coursesModules,
   });
+
+  static convertCoursesModules(List<OutputCourseModuleDao>? cms) {
+    return cms?.map((e) => e.toJson()).toList();
+  }
 
   Map<String, dynamic> toJson() => _$OutputCourseDaoToJson(this);
 
