@@ -616,6 +616,18 @@ class RemoteUserService {
 
       userData = await _enrichWithLocalData(userData);
 
+      try {
+        final db = await MysqlConfiguration.connect();
+        final user = await db.getOne(
+          table: 'user',
+          where: {'id': userData['id']},
+        );
+        if (user.isNotEmpty && user['image'] != null) {
+          userData['image'] = user['image'];
+        }
+        await MysqlConfiguration.closeConnection(db);
+      } catch (_) {}
+
       final role = userData['role'];
 
       if ((role == 'trainer' || role == 'coordinator') &&
