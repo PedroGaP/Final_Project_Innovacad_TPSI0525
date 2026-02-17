@@ -460,21 +460,26 @@ The database consists of 24 interconnected tables designed to handle all aspects
    ```
 
 2. **Configure environment**:
-   Create a `.env` file with:
+   Create a `.env` file in auth api with:
 
    ```env
-   DB_HOST=localhost
-   DB_PORT=3306
-   DB_NAME=innovacad_tpsi0525
-   DB_USER=your_user
-   DB_PASSWORD=your_password
-   REDIS_HOST=localhost
-   REDIS_PORT=6379
-   JWT_SECRET=your_jwt_secret
-   SMTP_HOST=smtp.example.com
-   SMTP_PORT=587
-   SMTP_USER=your_email
-   SMTP_PASSWORD=your_password
+    API_PORT="10000"
+    GOOGLE_CLIENT_ID="id"
+    GOOGLE_CLIENT_SECRET="secret"
+    FACEBOOK_CLIENT_ID="id"
+    FACEBOOK_CLIENT_SECRET="secret"
+    MYSQL_HOSTNAME="host"
+    MYSQL_USERNAME="user"
+    MYSQL_DATABASE="database"
+    MYSQL_PASSWORD="password"
+    JWT_ISSUER="issuer"
+    JWT_AUDIENCE="issuer"
+    JWT_SECRET="a_secure_secret"
+    DEFAULT_ADMIN_NAME="admin@email.com"
+    DEFAULT_ADMIN_PASSWORD="admin12345"
+    DEFAULT_ADMIN_NAME="Default Admin"
+    DEFAULT_ADMIN_USERNAME="admin"
+    GOOGLE_GMAIL_SECRET="secret"
    ```
 
 3. **Run in development**:
