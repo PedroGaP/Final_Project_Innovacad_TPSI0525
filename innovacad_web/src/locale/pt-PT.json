@@ -237,6 +237,9 @@
       "updating_profile_pic": "A atualizar a fotografia de perfil...",
       "upload_successful": "Documento enviado com sucesso!"
     },
+    "skills": {
+      "title": "Habilidades do Formador"
+    },
     "users": {
       "email_new_password_subject": "Criação de Conta - Nova Palavra-Passe - Innovacad",
       "send_email_fail": "Não foi possível enviar o email.",
@@ -255,7 +258,10 @@
         "title": "Gerir Formadores",
         "save_to_upload_documents": "Crie o formador primeiro para inserir documentos.",
         "coordination_classes": "Turmas da Coordenação",
-        "promote_coordinator": "Selecionar turmas promove automaticamente este utilizador a Coordenador."
+        "promote_coordinator": "Selecionar turmas promove automaticamente este utilizador a Coordenador.",
+        "skills": "Habilidades",
+        "no_skills": "Nenhuma habilidade foi adicionada ainda. Edite o treinador para adicionar habilidades.",
+        "select_module": "Habilidade para o módulo..."
       },
       "trainees": {
         "validate_fail": "Não foi possível validar o formando.",

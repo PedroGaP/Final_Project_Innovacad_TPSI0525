@@ -8,6 +8,8 @@ import UserDocumentsManager from "@/components/DocumentManager";
 import type { Class } from "@/types/class";
 import { useUserDetails } from "@/providers/UserDetailsProvider";
 import useI18n from "@/hooks/useL18N";
+import TrainerSkillsManager from "@/components/TrainerSkillsManager";
+import type { Module } from "@/types/module";
 
 const { t } = useI18n();
 
@@ -59,6 +61,7 @@ const TrainerPage = () => {
     api.fetchTrainers,
   );
   const [classesData] = createResource<Class[]>(api.fetchClasses);
+  const [modulesData] = createResource<Module[]>(api.fetchModules);
 
   const handleActions = () => {
     const actions = [ActionsEnum.EXPORT];
@@ -84,6 +87,9 @@ const TrainerPage = () => {
       const currentClassIds = Object.keys(trainer.coordinated_class_ids) || [];
       const isCoordinator = currentClassIds.length > 0;
 
+      console.log("Current Skills:", trainer.skills);
+      console.log("Original Skills:", original?.skills);
+
       if (original) {
         const changes: any = {};
 
@@ -106,6 +112,21 @@ const TrainerPage = () => {
         if (original.is_coordinator !== isCoordinator) {
           changes.is_coordinator = isCoordinator;
         }
+
+        const currentSkills = trainer.skills || [];
+        const originalSkills = original.skills || [];
+
+        const skillsToRemove = originalSkills
+          .filter(os => !currentSkills.some(cs => cs.module_id === os.module_id))
+          .map(s => s.module_id);
+
+        const skillsToAdd = currentSkills.filter(cs => {
+          const originalSkill = originalSkills.find(os => os.module_id === cs.module_id);
+          return !originalSkill || originalSkill.competence_level !== cs.competence_level;
+        });
+
+        if (skillsToRemove.length > 0) changes.skills_to_remove = skillsToRemove.join(",");
+        if (skillsToAdd.length > 0) changes.skills_to_add = skillsToAdd;
 
         if (Object.keys(changes).length === 0) return;
 
@@ -133,6 +154,7 @@ const TrainerPage = () => {
           password: tempPassword,
           classIds: currentClassIds,
           isCoordinator: isCoordinator,
+          skills_to_add: trainer.skills,
         };
 
         const newTrainer = await api.createTrainer(trainerObj);
@@ -333,6 +355,13 @@ const TrainerPage = () => {
               </span>
             </label>
           </div>
+
+          <div class="divider">{t("dashboard.skills.title")}</div>
+          <TrainerSkillsManager
+            skills={formData.skills || []}
+            allModules={modulesData() || []}
+            onChange={(newSkills) => setFormData((prev: any) => ({ ...prev, skills: newSkills }))}
+          />
 
           <Show when={formData.id}>
             <div class="divider">{t("dashboard.documents.title")}</div>

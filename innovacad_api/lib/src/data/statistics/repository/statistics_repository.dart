@@ -56,8 +56,14 @@ class StatisticsRepository {
           ),
         );
       });
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, e.toString()));
+    } catch (e, s) {
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          e.toString(),
+          details: {"stackTrace": s.toString()},
+        ),
+      );
     }
   }
 }

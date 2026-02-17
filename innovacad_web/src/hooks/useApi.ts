@@ -266,7 +266,7 @@ export const useApi = () => {
 
       (trainer as any).coordinated_class_ids =
         typeof data.coordinated_class_ids === "object" &&
-        data.coordinated_class_ids !== null
+          data.coordinated_class_ids !== null
           ? data.coordinated_class_ids
           : {};
 
@@ -1753,7 +1753,7 @@ export const useApi = () => {
       try {
         const err = await res.json();
         errorMessage = err.message || errorMessage;
-      } catch {}
+      } catch { }
 
       toast.error(t("messages.documents.fail_fetch"));
       throw new Error(errorMessage);

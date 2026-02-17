@@ -237,6 +237,9 @@
       "updating_profile_pic": "Updating profile picture...",
       "upload_successful": "Document uploaded successfully!"
     },
+    "skills": {
+      "title": "Trainer Skills"
+    },
     "users": {
       "email_new_password_subject": "Account Creation - New Password - Innovacad",
       "send_email_fail": "Failed to send email",
@@ -255,7 +258,10 @@
         "title": "Manage Trainers",
         "save_to_upload_documents": "Save the trainer first to upload documents.",
         "coordination_classes": "Coordination Classes",
-        "promote_coordinator": "Selecting classes will automatically promote this user to Coordinator."
+        "promote_coordinator": "Selecting classes will automatically promote this user to Coordinator.",
+        "skills": "Skills",
+        "no_skills": "No skills added yet. Edit the trainer to add skills.",
+        "select_module": "Skill for module..."
       },
       "trainees": {
         "validate_fail": "Trainee validation failed",

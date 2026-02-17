@@ -32,4 +32,12 @@ export const ThemeProvider = (props: { children: JSX.Element }) => {
   );
 };
 
-export const useTheme = () => useContext<ThemeContextType>(ThemeContext);
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error(
+      "useTheme: cannot find a ThemeContext. Did you forget to wrap your app in <ThemeProvider>?",
+    );
+  }
+  return context;
+};
