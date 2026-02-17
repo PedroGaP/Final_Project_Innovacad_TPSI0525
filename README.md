@@ -27,6 +27,14 @@
 
 ---
 
+## 📹 Demo
+
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=U0Q-Y8bKx4I">
+    <img src="https://img.youtube.com/vi/U0Q-Y8bKx4I/maxresdefault.jpg" alt="Watch the video" style="width:100%;">
+  </a>
+</div>
+
 ## 🎯 Overview
 
 **InnovAcad** is a full-stack academic management system designed for ATEC (Academia de Formação) to streamline secretariat operations, course management, and student tracking. The platform consists of multiple integrated applications:
