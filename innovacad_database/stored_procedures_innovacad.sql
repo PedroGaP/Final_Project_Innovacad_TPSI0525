@@ -111,7 +111,7 @@ BEGIN
             IF p_extend_schedule_id IS NOT NULL AND p_extend_schedule_id != 'NULL' AND v_trainer_id = v_forced_trainer_id THEN
                 UPDATE schedules
                 SET end_date_timestamp = v_end_timestamp,
-                    total_hours = TIMESTAMPDIFF(MINUTE, start_date_timestamp, v_end_timestamp) / 60.0
+                    total_hours = total_hours + (TIMESTAMPDIFF(MINUTE, v_start_timestamp, v_end_timestamp) / 60.0)
                 WHERE schedule_id = p_extend_schedule_id;
                 SET p_schedule_id = p_extend_schedule_id;
             ELSE
@@ -121,7 +121,7 @@ BEGIN
                     created_at, start_date_timestamp, end_date_timestamp, total_hours
                 ) VALUES (
                     p_schedule_id, p_class_module_id, v_trainer_id, v_room_id, p_is_online,
-                    NOW(), v_start_timestamp, v_end_timestamp, 1.0
+                    NOW(), v_start_timestamp, v_end_timestamp, (TIMESTAMPDIFF(MINUTE, v_start_timestamp, v_end_timestamp) / 60.0)
                 );
             END IF;
 

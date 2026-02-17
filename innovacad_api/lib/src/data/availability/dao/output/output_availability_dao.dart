@@ -14,7 +14,7 @@ class OutputAvailabilityDao {
   final String trainerId;
 
   @annotation.JsonKey(name: 'date_day')
-  @DateTimeConverter()
+  @DateOnlyConverter()
   final DateTime dateDay;
 
   @annotation.JsonKey(name: 'slot_number')

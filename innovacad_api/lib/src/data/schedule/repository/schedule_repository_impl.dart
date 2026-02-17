@@ -307,7 +307,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         }
 
         final scheduleId = Uuid().v4();
-        final duration = dto.endTime.difference(dto.startTime).inMinutes / 60.0;
+        final duration = availabilitiesToBook.length * 1.0;
         availabilitiesToBook.sort();
 
         await txn.query(
@@ -566,12 +566,29 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
               );
             }
 
+            final double oldDuration = oldSlotsResult.numOfRows * 1.0;
+            final double newDuration = newAvailabilityIds.length > 0
+                ? newAvailabilityIds.length * 1.0
+                : oldDuration;
+
+            if (isTimeChanged ||
+                newAvailabilityIds.length != oldSlotsResult.numOfRows) {
+              updateData['total_hours'] = newDuration;
+
+              final double diff = newDuration - oldDuration;
+              if (diff != 0) {
+                await txn.query(
+                  "UPDATE classes_modules SET current_duration = current_duration + ? WHERE classes_modules_id = ?",
+                  whereValues: [diff, current['class_module_id']],
+                  isStmt: true,
+                );
+              }
+            }
+
             if (isTrainerChanged) updateData['trainer_id'] = targetTrainerId;
             if (isTimeChanged) {
               updateData['start_date_timestamp'] = _toSqlDate(targetStart);
               updateData['end_date_timestamp'] = _toSqlDate(targetEnd);
-              updateData['total_hours'] =
-                  targetEnd.difference(targetStart).inMinutes / 60.0;
             }
 
             if (updateData.isNotEmpty) {
@@ -684,15 +701,16 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
         table: schedulesTable,
         where: {'schedule_id': id},
       );
-      final classModuleId = rawData['class_module_id'];
-      final double hoursToRemove =
-          double.tryParse(rawData['total_hours'].toString()) ?? 0.0;
+      final classModuleId = rawData['class_module_id'].toString();
 
       final slots = await db.query(
         "SELECT availability_id FROM schedule_slots WHERE schedule_id = ?",
         whereValues: [id],
         isStmt: true,
       );
+
+      final double hoursToRemove = slots.numOfRows * 1.0;
+
       List<String> availIdsToFree = [];
       for (var row in slots.rows) {
         availIdsToFree.add("'${row['availability_id']}'");
@@ -769,201 +787,240 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
     try {
       db = await MysqlConfiguration.connect();
 
-      String timeCondition = dto.regimeType == 0
-          ? "start_time >= '08:00:00' AND start_time <= '14:00:00' AND start_time != '11:00:00'"
-          : "start_time >= '16:00:00' AND start_time < '23:00:00' AND start_time != '19:00:00'";
+      return await db.transaction((txn) async {
+        final String timeCondition;
+        final List<Object> timeArgs;
 
-      final slotsResult = await db.query(
-        "SELECT slot_number FROM ref_slots WHERE $timeCondition ORDER BY start_time ASC",
-      );
+        if (dto.regimeType == 0) {
+          timeCondition =
+              "start_time >= ? AND start_time <= ? AND HOUR(start_time) != ?";
+          timeArgs = ['08:00:00', '14:00:00', 11];
+        } else {
+          timeCondition =
+              "start_time >= ? AND start_time < ? AND HOUR(start_time) != ?";
+          timeArgs = ['16:00:00', '23:00:00', 19];
+        }
 
-      if (slotsResult.numOfRows == 0)
-        return Result.failure(AppError(AppErrorType.badRequest, "Sem slots."));
+        final slotsResult = await txn.query(
+          "SELECT slot_number, start_time, end_time FROM ref_slots WHERE $timeCondition ORDER BY start_time ASC",
+          whereValues: timeArgs,
+          isStmt: true,
+        );
 
-      final List<int> allowedSlots = slotsResult.rows
-          .map((r) => int.parse(r['slot_number'].toString()))
-          .toList();
+        if (slotsResult.numOfRows == 0) {
+          return Result.failure(
+            AppError(AppErrorType.badRequest, "No slots found for regime."),
+          );
+        }
 
-      final modulesQuery = """
+        final List<Map<String, dynamic>> allowedSlots = slotsResult.rowsAssoc
+            .map((r) => Map<String, dynamic>.from(r.assoc()))
+            .toList();
 
-        SELECT 
-
-            cm.classes_modules_id, 
-
-            cm.current_duration,
-
-            m.module_id, 
-
-            m.name, 
-
-            m.duration,
-
-            crm.sequence_course_module_id,
-
-            (SELECT cm_prev.classes_modules_id 
-
-             FROM classes_modules cm_prev 
-
-             WHERE cm_prev.class_id = cm.class_id 
-
+        final modulesResult = await txn.query(
+          """
+        SELECT
+          cm.classes_modules_id,
+          cm.current_duration,
+          m.module_id,
+          m.name,
+          m.duration,
+          crm.sequence_course_module_id,
+          (SELECT cm_prev.classes_modules_id
+           FROM classes_modules cm_prev
+           WHERE cm_prev.class_id = cm.class_id
              AND cm_prev.courses_modules_id = crm.sequence_course_module_id) as dependency_id
-
         FROM classes_modules cm
-
         JOIN courses_modules crm ON cm.courses_modules_id = crm.courses_modules_id
-
         JOIN modules m ON crm.module_id = m.module_id
-
         WHERE cm.class_id = ?
-
         ORDER BY crm.sequence_course_module_id ASC
+        """,
+          whereValues: [dto.classId],
+          isStmt: true,
+        );
 
-      """;
+        List<Map<String, dynamic>> modulesList = modulesResult.rowsAssoc
+            .map((r) => Map<String, dynamic>.from(r.assoc()))
+            .toList();
 
-      final allModulesResult = await db.query(
-        modulesQuery,
+        final Map<String, DateTime> completionDates = {};
+        final DateTime safetyLimit = dto.startDate.add(
+          const Duration(days: 120),
+        );
 
-        whereValues: [dto.classId],
+        bool madeProgress = true;
 
-        isStmt: true,
-      );
+        while (modulesList.any((m) => _getHoursRemaining(m) > 0) &&
+            madeProgress) {
+          madeProgress = false;
 
-      List<Map<String, dynamic>> modulesList = [];
+          for (var mod in modulesList) {
+            final String classModId = mod['classes_modules_id'].toString();
+            double hoursRemaining = _getHoursRemaining(mod);
 
-      for (var row in allModulesResult.rowsAssoc) {
-        modulesList.add(Map<String, dynamic>.from(row.assoc()));
-      }
-
-      Map<String, DateTime> completionDates = {};
-
-      DateTime globalStartDate = dto.startDate;
-
-      bool madeProgress = true;
-
-      while (modulesList.any((m) => _getHoursRemaining(m) > 0) &&
-          madeProgress) {
-        madeProgress = false;
-
-        for (var mod in modulesList) {
-          double hoursRemaining = _getHoursRemaining(mod);
-
-          String classModId = mod['classes_modules_id'].toString();
-
-          if (hoursRemaining <= 0) {
-            if (!completionDates.containsKey(classModId)) {
-              completionDates[classModId] = globalStartDate;
-            }
-
-            continue;
-          }
-
-          String? depId = mod['dependency_id']?.toString();
-
-          DateTime startDateForThisModule = globalStartDate;
-
-          if (depId != null && depId != 'null' && depId.isNotEmpty) {
-            if (!completionDates.containsKey(depId)) {
+            if (hoursRemaining <= 0) {
+              if (!completionDates.containsKey(classModId)) {
+                completionDates[classModId] = dto.startDate;
+                madeProgress = true;
+              }
               continue;
             }
 
-            startDateForThisModule = completionDates[depId]!;
-          }
+            final String? depId = mod['dependency_id']?.toString();
+            if (depId != null && depId != 'null' && depId.isNotEmpty) {
+              if (!completionDates.containsKey(depId)) {
+                continue;
+              }
+            }
 
-          await db.startTrans();
+            final DateTime moduleStart =
+                (depId != null &&
+                    depId != 'null' &&
+                    depId.isNotEmpty &&
+                    completionDates.containsKey(depId))
+                ? completionDates[depId]!
+                : dto.startDate;
 
-          try {
+            DateTime dateCursor = moduleStart;
             String? lastScheduleId;
-
-            int lastSlotNumber = -999;
-
-            DateTime? lastDate;
-
-            DateTime moduleDateCursor = startDateForThisModule;
-
-            final DateTime safetyLimit = moduleDateCursor.add(
-              Duration(days: 120),
-            );
+            int lastSlotIndex = -999;
+            DateTime? lastSlotEndTime;
 
             while (hoursRemaining > 0) {
-              if (moduleDateCursor.isAfter(safetyLimit)) break;
+              if (dateCursor.isAfter(safetyLimit)) {
+                throw AppError(
+                  AppErrorType.internal,
+                  "Safety limit reached for module '${mod['name']}'. Could not schedule all hours.",
+                );
+              }
 
-              if (moduleDateCursor.weekday < DateTime.saturday) {
-                for (int slotNum in allowedSlots) {
-                  if (hoursRemaining <= 0) break;
+              if (dateCursor.weekday >= DateTime.saturday) {
+                dateCursor = dateCursor.add(const Duration(days: 1));
+                lastScheduleId = null;
+                lastSlotIndex = -999;
+                lastSlotEndTime = null;
+                continue;
+              }
 
-                  final sqlDate = _toSqlDate(moduleDateCursor);
+              for (int i = 0; i < allowedSlots.length; i++) {
+                if (hoursRemaining <= 0) break;
 
-                  String paramExtendId = "NULL";
+                final slotData = allowedSlots[i];
+                final int slotNum = int.parse(
+                  slotData['slot_number'].toString(),
+                );
 
-                  if (lastScheduleId != null &&
-                      _isSameDay(lastDate, moduleDateCursor) &&
-                      slotNum == lastSlotNumber + 1) {
-                    paramExtendId = "'$lastScheduleId'";
-                  } else {
-                    lastScheduleId = null;
+                final String sqlDateOnly =
+                    "${dateCursor.year}-${dateCursor.month.toString().padLeft(2, '0')}-${dateCursor.day.toString().padLeft(2, '0')}";
 
-                    paramExtendId = "NULL";
-                  }
+                final DateTime currentSlotStartTime = _combineDateAndTime(
+                  dateCursor,
+                  slotData['start_time'].toString(),
+                );
+                final DateTime currentSlotEndTime = _combineDateAndTime(
+                  dateCursor,
+                  slotData['end_time'].toString(),
+                );
 
-                  final callQuery =
-                      "CALL sp_book_slot_if_available('${dto.classId}', '${mod['module_id']}', '$classModId', '$sqlDate', $slotNum, ${dto.isOnline ? 1 : 0}, $paramExtendId, @success, @new_schedule_id)";
+                final bool isContiguous =
+                    (lastSlotEndTime != null &&
+                    currentSlotStartTime.isAtSameMomentAs(lastSlotEndTime!));
 
-                  await db.query(callQuery);
+                final String? mergeWithId =
+                    (lastScheduleId != null &&
+                        i == lastSlotIndex + 1 &&
+                        isContiguous)
+                    ? lastScheduleId
+                    : null;
 
-                  final res = await db.query(
-                    "SELECT @success as success, @new_schedule_id as sched_id",
+                await txn.query(
+                  "CALL sp_book_slot_if_available(?, ?, ?, ?, ?, ?, ?, @success, @new_schedule_id)",
+                  whereValues: [
+                    dto.classId,
+                    mod['module_id'],
+                    classModId,
+                    sqlDateOnly,
+                    slotNum,
+                    dto.isOnline ? 1 : 0,
+                    mergeWithId,
+                  ],
+                  isStmt: true,
+                );
+
+                final res = await txn.query(
+                  "SELECT @success as success, @new_schedule_id as sched_id",
+                );
+
+                final bool booked = (res.rows.first['success'] == 1);
+                final String? returnedId = res.rows.first['sched_id']
+                    ?.toString();
+
+                if (booked) {
+                  await txn.query(
+                    "UPDATE classes_modules SET current_duration = current_duration + 1 WHERE classes_modules_id = ?",
+                    whereValues: [classModId],
+                    isStmt: true,
                   );
 
-                  final bool booked = (res.rows.first['success'] == 1);
+                  hoursRemaining -= 1.0;
+                  mod['current_duration'] =
+                      (double.tryParse(mod['current_duration'].toString()) ??
+                          0.0) +
+                      1.0;
 
-                  final String? returnedId = res.rows.first['sched_id']
-                      ?.toString();
-
-                  if (booked) {
-                    hoursRemaining -= 1.0;
-
-                    lastScheduleId = returnedId;
-
-                    lastSlotNumber = slotNum;
-
-                    lastDate = moduleDateCursor;
-
-                    await db.query(
-                      "UPDATE classes_modules SET current_duration = current_duration + 1 WHERE classes_modules_id = ?",
-
-                      whereValues: [classModId],
-
-                      isStmt: true,
-                    );
-                  } else {
+                  lastScheduleId = returnedId;
+                  lastSlotIndex = i;
+                  lastSlotEndTime = currentSlotEndTime;
+                } else {
+                  if (mergeWithId != null) {
                     lastScheduleId = null;
+                    lastSlotIndex = -999;
+                    lastSlotEndTime = null;
+                    i--;
+                    continue;
                   }
+                  lastScheduleId = null;
+                  lastSlotIndex = -999;
+                  lastSlotEndTime = null;
                 }
               }
 
               if (hoursRemaining > 0) {
-                moduleDateCursor = moduleDateCursor.add(Duration(days: 1));
+                dateCursor = dateCursor.add(const Duration(days: 1));
                 lastScheduleId = null;
-                lastSlotNumber = -999;
+                lastSlotIndex = -999;
+                lastSlotEndTime = null;
               }
             }
 
-            await db.commit();
-
-            mod['current_duration'] = double.parse(mod['duration'].toString());
-
-            completionDates[classModId] = moduleDateCursor;
-
+            completionDates[classModId] = dateCursor;
             madeProgress = true;
-          } catch (e) {
-            await db.rollback();
           }
         }
-      }
 
-      return Result.success(true);
-    } catch (e) {
-      return Result.failure(AppError(AppErrorType.internal, "Erro: $e"));
+        final incomplete = modulesList
+            .where((m) => _getHoursRemaining(m) > 0)
+            .toList();
+        if (incomplete.isNotEmpty) {
+          final names = incomplete.map((m) => m['name']).join(', ');
+          throw AppError(
+            AppErrorType.internal,
+            "Safety limit reached for modules: $names. Could not schedule all hours.",
+          );
+        }
+
+        return Result.success(true);
+      });
+    } catch (e, s) {
+      if (e is AppError) return Result.failure(e);
+      return Result.failure(
+        AppError(
+          AppErrorType.internal,
+          "Auto schedule generation failed: $e",
+          details: {"stack": s.toString()},
+        ),
+      );
     } finally {
       await MysqlConfiguration.closeConnection(db);
     }

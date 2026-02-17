@@ -13,7 +13,7 @@ class CreateAvailabilityDto {
 
   @annotation.JsonKey(name: 'date_day')
   @vaden.JsonKey('date_day')
-  @DateTimeConverter()
+  @DateOnlyConverter()
   final DateTime dateDay;
 
   @annotation.JsonKey(name: 'slot_number')
