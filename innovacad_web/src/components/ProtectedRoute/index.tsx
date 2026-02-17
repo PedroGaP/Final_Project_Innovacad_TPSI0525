@@ -15,10 +15,6 @@ export const ProtectedRoute = (props: ProtectedRouteProps) => {
   const { user, setUser } = useUserDetails();
   const { getSession } = useApi();
 
-  if (!user()) {
-    return null;
-  }
-
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = createSignal(true);

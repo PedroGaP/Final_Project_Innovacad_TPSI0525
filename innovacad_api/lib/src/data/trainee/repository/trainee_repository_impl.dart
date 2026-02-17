@@ -254,7 +254,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
     try {
       final db = await MysqlConfiguration.connect();
 
-      // 1. Buscar dados do Formando
       final traineeData = await db.query(
         """
         SELECT u.name, u.email, u.username, u.image, t.birthday_date, t.trainee_id 
@@ -272,7 +271,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
         );
       }
 
-      // 2. Buscar os Cursos (Enrollments) e a Média Final já calculada
       final enrollmentsData = await db.query(
         """
         SELECT c.course_id, c.name as course_name, e.final_grade
@@ -286,7 +284,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
         isStmt: true,
       );
 
-      // 3. Buscar todas as notas detalhadas dos módulos
       final gradesData = await db.query(
         """
         SELECT c.course_id, m.name as module, g.grade, g.created_at
@@ -303,36 +300,30 @@ class TraineeRepositoryImpl implements ITraineeRepository {
         isStmt: true,
       );
 
-      // 4. Estruturar os dados em memória (Agrupar por Curso)
-      // Mapa: CourseID -> { Nome, NotaFinal, ListaDeModulos }
       Map<String, Map<String, dynamic>> coursesMap = {};
 
-      // Inicializar com os enrollments
       for (var row in enrollmentsData.rows) {
         final courseId = row['course_id'].toString();
         coursesMap[courseId] = {
           'course_name': row['course_name'],
           'final_grade': double.tryParse(row['final_grade'].toString()) ?? 0.0,
-          'modules': <List<String>>[], // Lista para a tabela do PDF
+          'modules': <List<String>>[],
         };
       }
 
-      // Preencher com as notas dos módulos
       for (var row in gradesData.rows) {
         final courseId = row['course_id'].toString();
         final gradeVal = double.tryParse(row['grade'].toString()) ?? 0.0;
 
-        // Só adiciona se o curso existir nos enrollments (segurança)
         if (coursesMap.containsKey(courseId)) {
           coursesMap[courseId]!['modules'].add([
             row['module'].toString(),
-            row['created_at'].toString().split(' ')[0], // Data
-            gradeVal.toStringAsFixed(2), // Nota
+            row['created_at'].toString().split(' ')[0],
+            gradeVal.toStringAsFixed(2),
           ]);
         }
       }
 
-      // 5. Preparação para o PDF
       final user = traineeData.rows.first;
       final now = DateTime.now();
       final dateFormatted =
@@ -398,7 +389,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
           ),
           build: (pw.Context context) {
             return [
-              // Cabeçalho do Formando
               pw.Container(
                 padding: const pw.EdgeInsets.all(15),
                 decoration: pw.BoxDecoration(
@@ -466,7 +456,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
 
               pw.SizedBox(height: 30),
 
-              // Título
               pw.Text(
                 "Histórico Académico por Curso",
                 style: pw.TextStyle(
@@ -476,7 +465,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
               ),
               pw.SizedBox(height: 15),
 
-              // Se não houver cursos
               if (coursesMap.isEmpty)
                 pw.Center(
                   child: pw.Text(
@@ -484,7 +472,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
                   ),
                 ),
 
-              // Loop para gerar uma tabela por cada curso
               ...coursesMap.values.map((courseData) {
                 final modules = courseData['modules'] as List<List<String>>;
                 final finalGrade = courseData['final_grade'] as double;
@@ -495,7 +482,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      // Nome do Curso e Média
                       pw.Container(
                         padding: const pw.EdgeInsets.symmetric(
                           vertical: 5,
@@ -537,7 +523,6 @@ class TraineeRepositoryImpl implements ITraineeRepository {
 
                       pw.SizedBox(height: 8),
 
-                      // Tabela de Módulos deste curso
                       if (modules.isEmpty)
                         pw.Padding(
                           padding: const pw.EdgeInsets.only(left: 10),

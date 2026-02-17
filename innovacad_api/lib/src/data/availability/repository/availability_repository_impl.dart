@@ -80,14 +80,14 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
 
       final db = await MysqlConfiguration.getConnection();
       final availabilityId = const Uuid().v4();
-      final dateDay = DateTime(
+      final dateDay = DateTime.utc(
         dto.dateDay.year,
         dto.dateDay.month,
         dto.dateDay.day,
         0,
         0,
         0,
-      ).toIso8601String();
+      ).toIso8601String().replaceAll('T', ' ').replaceAll('Z', '');
 
       return await db.transaction((txn) async {
         await txn.insert(
@@ -145,14 +145,14 @@ class AvailabilityRepositoryImpl implements IAvailabilityRepository {
         final updateData = <String, dynamic>{};
         if (dto.trainerId != null) updateData["trainer_id"] = dto.trainerId;
         if (dto.dateDay != null) {
-          final dateDay = DateTime(
+          final dateDay = DateTime.utc(
             dto.dateDay!.year,
             dto.dateDay!.month,
             dto.dateDay!.day,
             0,
             0,
             0,
-          ).toIso8601String();
+          ).toIso8601String().replaceAll('T', ' ').replaceAll('Z', '');
           updateData["date_day"] = dateDay;
         }
         if (dto.slotNumber != null) updateData["slot_number"] = dto.slotNumber;

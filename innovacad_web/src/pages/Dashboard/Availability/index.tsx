@@ -60,15 +60,26 @@ const getTrainerId = (u: any): string => {
 };
 
 const toInputDate = (dateVal?: string | number | Date): string => {
-  if (!dateVal) return new Date().toISOString().split("T")[0];
+  if (!dateVal) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
   try {
     const strVal = String(dateVal);
     if (strVal.includes("T")) return strVal.split("T")[0];
     if (strVal.includes("-") && strVal.length === 10) return strVal;
-    if (!isNaN(Number(strVal))) {
-      let ts = Number(strVal);
+
+    let ts = Number(strVal);
+    if (!isNaN(ts)) {
       if (ts < 100000000000) ts *= 1000;
-      return new Date(ts).toISOString().split("T")[0];
+      const d = new Date(ts);
+      const year = d.getUTCFullYear();
+      const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(d.getUTCDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
     }
     return strVal;
   } catch {
@@ -457,12 +468,11 @@ const AvailabilitiesPage = () => {
 
     if (
       confirm(
-        `${t("dashboard.availabilities.alerts.delete_confirmation")} ${
-          idsToDelete.length > 1
-            ? t("dashboard.availabilities.alerts.delete_slots_info", {
-                count: idsToDelete.length,
-              })
-            : ""
+        `${t("dashboard.availabilities.alerts.delete_confirmation")} ${idsToDelete.length > 1
+          ? t("dashboard.availabilities.alerts.delete_slots_info", {
+            count: idsToDelete.length,
+          })
+          : ""
         }`,
       )
     ) {

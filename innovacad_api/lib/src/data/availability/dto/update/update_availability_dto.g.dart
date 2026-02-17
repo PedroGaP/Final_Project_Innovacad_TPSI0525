@@ -12,7 +12,7 @@ UpdateAvailabilityDto _$UpdateAvailabilityDtoFromJson(
   trainerId: json['trainer_id'] as String?,
   dateDay: _$JsonConverterFromJson<Object, DateTime>(
     json['date_day'],
-    const DateTimeConverter().fromJson,
+    const DateOnlyConverter().fromJson,
   ),
   slotNumber: (json['slot_number'] as num?)?.toInt(),
   isBooked: (json['is_booked'] as num?)?.toInt(),
@@ -24,7 +24,7 @@ Map<String, dynamic> _$UpdateAvailabilityDtoToJson(
   'trainer_id': instance.trainerId,
   'date_day': _$JsonConverterToJson<Object, DateTime>(
     instance.dateDay,
-    const DateTimeConverter().toJson,
+    const DateOnlyConverter().toJson,
   ),
   'slot_number': instance.slotNumber,
   'is_booked': instance.isBooked,
