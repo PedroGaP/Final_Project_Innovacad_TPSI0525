@@ -192,7 +192,8 @@
       "active_trainees": "Formandos ativos",
       "courses_per_area": "Cursos por área",
       "course_plural": "Curso(s)",
-      "top_trainers": "TOP 10 Formadores (Horas)"
+      "top_trainers": "TOP 10 Formadores (Horas)",
+      "no_data": "Sem dados disponiveis"
     },
     "schedule": {
       "update_successful": "Sessão atualizada com sucesso!",

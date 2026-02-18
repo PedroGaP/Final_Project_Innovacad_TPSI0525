@@ -38,7 +38,7 @@ class OutputClassDao {
 
   @annotation.JsonKey(name: 'modules')
   @ModuleListConverter()
-  final List<OutputPublicClassModuleDao> modules;
+  final List<OutputClassModuleDao> modules;
 
   OutputClassDao({
     required this.classId,

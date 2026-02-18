@@ -200,12 +200,12 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
   }
 
   @override
-  Future<Result<OutputScheduleDao>> create(CreateScheduleDto dto) async {
+  Future<Result<dynamic>> create(CreateScheduleDto dto) async {
     MysqlUtils? db;
     try {
       db = await MysqlConfiguration.getConnection();
 
-      final result = await db.transaction((txn) async {
+      Result<dynamic> result = await db.transaction((txn) async {
         if (dto.startTime.isAfter(dto.endTime) ||
             dto.startTime.isAtSameMomentAs(dto.endTime)) {
           return Result.failure(
@@ -356,7 +356,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       if (result.isSuccess) {
         return await _getSingleScheduleById(result.data);
       } else {
-        return result as Result<OutputScheduleDao>;
+        return result as Result<dynamic>;
       }
     } catch (e, s) {
       return Result.failure(
