@@ -18,7 +18,14 @@ class SecurityConfiguration {
       RequestMatcher('/email/**').permitAll(),
       RequestMatcher('/statistics/**').permitAll(),
       RequestMatcher('/resource/**').permitAll(),
+
+      // Public
+      RequestMatcher('/courses/public').permitAll(),
+      RequestMatcher('/trainees/public').permitAll(),
+      RequestMatcher('/trainers/public').permitAll(),
       RequestMatcher('/classes/public').permitAll(),
+      RequestMatcher('/schedules/public').permitAll(),
+      RequestMatcher('/rooms/public').permitAll(),
 
       // Trainees
       RequestMatcher(

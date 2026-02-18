@@ -21,6 +21,16 @@ class TrainerController {
   }
 
   @ApiOperation(
+    summary: 'Get all trainers (PUBLIC)',
+    description: 'Retrieves a list of all trainers',
+  )
+  @Get('/public')
+  Future<Response> getAllPublic() async {
+    final result = await _service.getAllPublic();
+    return resultToResponse(result);
+  }
+
+  @ApiOperation(
     summary: 'Get trainer by ID',
     description: 'Retrieves a trainer by their unique identifier',
   )

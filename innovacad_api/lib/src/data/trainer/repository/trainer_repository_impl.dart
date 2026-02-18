@@ -15,14 +15,12 @@ import 'package:pdf/widgets.dart' as pw;
 class TrainerRepositoryImpl implements ITrainerRepository {
   final RemoteUserService _remoteUserService;
   final IModuleRepository _moduleRepository;
-  final IClassRepository _classRepository;
   final Dio dio;
   final String table = "trainers";
 
   TrainerRepositoryImpl(
     this._remoteUserService,
     this._moduleRepository,
-    this._classRepository,
     this.dio,
   );
 

@@ -1,4 +1,5 @@
 import 'package:innovacad_api/src/core/core.dart';
+import 'package:innovacad_api/src/data/course/dao/output/output_public_course_dao.dart';
 import 'package:innovacad_api/src/data/data.dart';
 import 'package:innovacad_api/src/domain/course/repository/i_course_repository.dart';
 import 'package:innovacad_api/src/domain/course/service/i_course_service.dart';
@@ -13,6 +14,19 @@ class CourseServiceImpl implements ICourseService {
   @override
   Future<Result<List<OutputCourseDao>>> getAll() async {
     return await _repository.getAll();
+  }
+
+  @override
+  Future<Result<List<OutputPublicCourseDao>>> getAllPublic() async {
+    final courses = await _repository.getAll();
+
+    if (courses.isFailure) return Result.failure(courses.error!);
+
+    return Result.success(
+      courses.data!
+          .map((c) => OutputPublicCourseDao.fromJson(c.toJson()))
+          .toList(),
+    );
   }
 
   @override

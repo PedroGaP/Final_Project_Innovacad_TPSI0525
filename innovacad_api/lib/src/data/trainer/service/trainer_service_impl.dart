@@ -1,5 +1,6 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
+import 'package:innovacad_api/src/data/trainer/dao/output/output_public_trainer_dao.dart';
 import 'package:innovacad_api/src/data/trainer/dao/skills_output/skill_output_dao.dart';
 import 'package:innovacad_api/src/domain/domain.dart';
 import 'package:vaden/vaden.dart';
@@ -13,6 +14,19 @@ class TrainerServiceImpl implements ITrainerService {
   @override
   Future<Result<List<OutputTrainerDao>>> getAll() async {
     return await _repository.getAll();
+  }
+
+  @override
+  Future<Result<List<OutputPublicTrainerDao>>> getAllPublic() async {
+    final trainers = await _repository.getAll();
+
+    if (trainers.isFailure) return Result.failure(trainers.error!);
+
+    return Result.success(
+      trainers.data!
+          .map((t) => OutputPublicTrainerDao.fromJson(t.toJson()))
+          .toList(),
+    );
   }
 
   @override

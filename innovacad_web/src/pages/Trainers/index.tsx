@@ -7,7 +7,7 @@ import { useI18n } from "@/hooks/useL18N";
 const Trainers = () => {
   const api = useApi();
   const { t } = useI18n();
-  const [trainersData] = createResource<Trainer[]>(api.fetchTrainers);
+  const [trainersData] = createResource<Trainer[]>(api.fetchTrainersPublic);
   const [searchQuery, setSearchQuery] = createSignal("");
 
   const filteredTrainers = () => {

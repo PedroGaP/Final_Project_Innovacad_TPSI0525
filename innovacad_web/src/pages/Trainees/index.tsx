@@ -7,7 +7,7 @@ import { useI18n } from "@/hooks/useL18N";
 const Trainees = () => {
   const api = useApi();
   const { t } = useI18n();
-  const [traineesData] = createResource<Trainee[]>(api.fetchTrainees);
+  const [traineesData] = createResource<Trainee[]>(api.fetchTraineesPublic);
   const [searchQuery, setSearchQuery] = createSignal("");
 
   const filteredTrainees = () => {
@@ -37,9 +37,7 @@ const Trainees = () => {
           <h1 class="text-4xl font-bold mb-2 text-primary">
             {t("public.trainees.title")}
           </h1>
-          <p class="text-base-content/60">
-            {t("public.trainees.desc")}
-          </p>
+          <p class="text-base-content/60">{t("public.trainees.desc")}</p>
         </div>
 
         <div class="mb-6">
@@ -95,7 +93,9 @@ const Trainees = () => {
                 <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
                   <div class="card-body">
                     <div class="flex items-start justify-between mb-3">
-                      <div class="badge badge-ghost badge-lg">{t("entity.trainee")}</div>
+                      <div class="badge badge-ghost badge-lg">
+                        {t("entity.trainee")}
+                      </div>
                       <Show when={trainee.verified}>
                         <div class="badge badge-success badge-sm gap-1">
                           <Icon name="CircleCheck" size={12} />

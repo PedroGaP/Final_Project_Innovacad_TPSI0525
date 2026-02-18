@@ -7,7 +7,7 @@ import { useI18n } from "@/hooks/useL18N";
 const Classes = () => {
   const api = useApi();
   const { t } = useI18n();
-  const [classesData] = createResource<Class[]>(api.fetchClasses);
+  const [classesData] = createResource<Class[]>(api.fetchClassesPublic);
   const [searchQuery, setSearchQuery] = createSignal("");
 
   const filteredClasses = () => {
@@ -44,10 +44,10 @@ const Classes = () => {
     <div class="min-h-screen bg-base-200 p-6">
       <div class="w-full">
         <div class="mb-8">
-          <h1 class="text-4xl font-bold mb-2 text-primary">{t("public.classes.title")}</h1>
-          <p class="text-base-content/60">
-            {t("public.classes.desc")}
-          </p>
+          <h1 class="text-4xl font-bold mb-2 text-primary">
+            {t("public.classes.title")}
+          </h1>
+          <p class="text-base-content/60">{t("public.classes.desc")}</p>
         </div>
 
         <div class="mb-6">
@@ -139,13 +139,17 @@ const Classes = () => {
 
                     <div class="grid grid-cols-2 gap-2 mb-4">
                       <div class="bg-base-200/50 rounded-lg p-2">
-                        <p class="text-xs text-base-content/60 mb-1">{t("entity.start")}</p>
+                        <p class="text-xs text-base-content/60 mb-1">
+                          {t("entity.start")}
+                        </p>
                         <p class="text-sm font-medium">
                           {formatDate(cls.start_date_timestamp!)}
                         </p>
                       </div>
                       <div class="bg-base-200/50 rounded-lg p-2">
-                        <p class="text-xs text-base-content/60 mb-1">{t("entity.end")}</p>
+                        <p class="text-xs text-base-content/60 mb-1">
+                          {t("entity.end")}
+                        </p>
                         <p class="text-sm font-medium">
                           {formatDate(cls.end_date_timestamp)}
                         </p>
@@ -160,7 +164,8 @@ const Classes = () => {
                             <div class="p-2 rounded-lg bg-base-200/50 hover:bg-base-200 transition-colors">
                               <div class="flex items-center justify-between mb-1">
                                 <p class="text-sm font-medium line-clamp-1">
-                                  {module.module_name || t("public.classes.unnamed_module")}
+                                  {module.module_name ||
+                                    t("public.classes.unnamed_module")}
                                 </p>
                                 <Show when={module.trainer_id}>
                                   <Icon
@@ -200,10 +205,6 @@ const Classes = () => {
                       <div class="mt-3 flex gap-2">
                         <div class="badge badge-neutral badge-sm">
                           {cls.modules.length} {t("entity.modules")}
-                        </div>
-                        <div class="badge badge-primary badge-sm">
-                          {cls.modules.filter((m) => m.trainer_id).length}{" "}
-                          {t("public.classes.assigned")}
                         </div>
                       </div>
                     </Show>

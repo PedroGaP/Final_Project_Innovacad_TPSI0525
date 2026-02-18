@@ -18,6 +18,14 @@ class ClassController {
   Future<Response> getAll() async => resultToResponse(await _service.getAll());
 
   @ApiOperation(
+    summary: 'Get all classes (PUBLIC)',
+    description: 'Retrieves a list of all classes',
+  )
+  @Get('/public')
+  Future<Response> getAllPublic() async =>
+      resultToResponse(await _service.getAllPublic());
+
+  @ApiOperation(
     summary: 'Get class by ID',
     description: 'Retrieves a class by their unique identifier',
   )

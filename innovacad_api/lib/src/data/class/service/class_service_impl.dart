@@ -1,4 +1,5 @@
 import 'package:innovacad_api/src/core/core.dart';
+import 'package:innovacad_api/src/data/class/dao/output/output_public_class_dao.dart';
 import 'package:innovacad_api/src/data/data.dart';
 import 'package:innovacad_api/src/domain/domain.dart';
 import 'package:vaden/vaden.dart';
@@ -12,6 +13,19 @@ class ClassServiceImpl implements IClassService {
   @override
   Future<Result<List<OutputClassDao>>> getAll() async =>
       await _repository.getAll();
+
+  @override
+  Future<Result<List<OutputPublicClassDao>>> getAllPublic() async {
+    final classes = await _repository.getAll();
+
+    if (classes.isFailure) return Result.failure(classes.error!);
+
+    return Result.success(
+      classes.data!
+          .map((e) => OutputPublicClassDao.fromJson(e.toJson()))
+          .toList(),
+    );
+  }
 
   @override
   Future<Result<OutputClassDao>> getById(String id) async =>

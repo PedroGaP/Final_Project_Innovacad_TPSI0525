@@ -1,5 +1,6 @@
 import 'package:innovacad_api/src/core/core.dart';
 import 'package:innovacad_api/src/data/data.dart';
+import 'package:innovacad_api/src/data/schedule/dao/output/output_public_schedule_dao.dart';
 import 'package:innovacad_api/src/data/schedule/dto/auto/auto_schedule_dto.dart';
 import 'package:innovacad_api/src/domain/schedule/repository/i_schedule_repository.dart';
 import 'package:innovacad_api/src/domain/schedule/service/i_schedule_service.dart';
@@ -14,6 +15,19 @@ class ScheduleServiceImpl implements IScheduleService {
   @override
   Future<Result<List<OutputScheduleDao>>> getAll() async =>
       await _repository.getAll();
+
+  @override
+  Future<Result<List<OutputPublicScheduleDao>>> getAllPublic() async {
+    final schedules = await _repository.getAll();
+
+    if (schedules.isFailure) return Result.failure(schedules.error!);
+
+    return Result.success(
+      schedules.data!
+          .map((s) => OutputPublicScheduleDao.fromJson(s.toJson()))
+          .toList(),
+    );
+  }
 
   @override
   Future<Result<List<OutputScheduleDao>>> getById(String id) async =>

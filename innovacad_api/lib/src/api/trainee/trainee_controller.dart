@@ -21,6 +21,16 @@ class TraineeController {
   }
 
   @ApiOperation(
+    summary: 'Get all trainees (PUBLIC)',
+    description: 'Retrieves a list of all trainees',
+  )
+  @Get('/public')
+  Future<Response> getAllPublic() async {
+    final result = await _service.getAllPublic();
+    return resultToResponse(result);
+  }
+
+  @ApiOperation(
     summary: 'Get trainee by ID',
     description: 'Retrieves a trainee by their unique identifier',
   )
