@@ -6,7 +6,7 @@ abstract class IScheduleRepository {
   Future<Result<List<OutputScheduleDao>>> getAll();
   Future<Result<List<OutputScheduleDao>>> getById(String id);
   Future<Result<List<OutputScheduleDao>>> getByUser(String userId);
-  Future<Result<OutputScheduleDao>> create(CreateScheduleDto dto);
+  Future<Result<dynamic>> create(CreateScheduleDto dto);
   Future<Result<OutputScheduleDao>> update(String id, UpdateScheduleDto dto);
   Future<Result<OutputScheduleDao>> delete(String id);
   Future<Result<bool>> generateAutomaticSchedule(AutoScheduleDto dto);

@@ -38,7 +38,7 @@ class ScheduleServiceImpl implements IScheduleService {
       await _repository.getByUser(userId);
 
   @override
-  Future<Result<OutputScheduleDao>> create(CreateScheduleDto dto) async =>
+  Future<Result<dynamic>> create(CreateScheduleDto dto) async =>
       await _repository.create(dto);
 
   @override

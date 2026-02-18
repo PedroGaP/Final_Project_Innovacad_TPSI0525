@@ -24,11 +24,12 @@ class DocumentRepositoryImpl {
 
       BigInt bg = BigInt.zero;
 
-      if (typeCode == "PROFILE_PIC") {
+      if (typeCode.toLowerCase() == "PROFILE_PIC".toLowerCase()) {
         bg = await db.update(
           table: 'user',
           updateData: {"image": filePath},
           where: {"id": userId},
+          debug: true,
         );
       }
 
@@ -43,16 +44,10 @@ class DocumentRepositoryImpl {
           'type_code': typeCode,
           'user_id': userId,
         },
+        debug: true,
       );
 
-      if (bg <= BigInt.zero) {
-        return Result.failure(
-          AppError(
-            AppErrorType.badRequest,
-            "Couldn't save document to this user.",
-          ),
-        );
-      }
+      print(bg);
 
       await db.commit();
 

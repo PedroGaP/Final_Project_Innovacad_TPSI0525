@@ -194,7 +194,8 @@
       "active_trainees": "Active Trainees",
       "courses_per_area": "Courses per Area",
       "course_plural": "Course(s)",
-      "top_trainers": "TOP 10 Trainers (Hours)"
+      "top_trainers": "TOP 10 Trainers (Hours)",
+      "no_data": "No data available"
     },
     "schedule": {
       "update_successful": "Updated schedule successfully!",
