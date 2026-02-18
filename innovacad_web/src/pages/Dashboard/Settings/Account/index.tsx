@@ -168,8 +168,8 @@ const AccountSettingsPage = () => {
   const handleDownload = async (doc: Document) => {
     const toastId = toast.loading(t("general.loading"));
     try {
-      const cleanPath = doc.file_path.replace(/^public[\\/]/, "");
-      const fileUrl = `${API_ENDPOINTS.BASE}/resource/${cleanPath}`;
+      const fileUrl = `${API_ENDPOINTS.BASE}/resource/${doc.file_path}`;
+
       const response = await fetch(fileUrl);
       if (!response.ok) throw new Error(`File not found`);
       const blob = await response.blob();
